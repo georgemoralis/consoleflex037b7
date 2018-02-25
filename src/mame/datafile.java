@@ -6,7 +6,7 @@ package mame;
 
 import arcadeflex.javaspecific.historyFileParser;
 import arcadeflex.javaspecific.mameInfoFileParser;
-import static old.mame.driverH.*;
+import static mess.messH.*;
 
 public class datafile {
 

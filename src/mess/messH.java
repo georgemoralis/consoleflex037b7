@@ -3,7 +3,12 @@
  */
 package mess;
 
+import WIP.arcadeflex.fucPtr.*;
 import static consoleflex.funcPtr.*;
+import mame.commonH.RomModule;
+import static mame.commonH.*;
+import old.mame.driverH.MachineDriver;
+import static old.mame.driverH.ROT0;
 import static old.mame.inptportH.*;
 
 public class messH {
@@ -244,6 +249,7 @@ public class messH {
             this(type, 0, "", 0, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
         }
     }
+
     /*TODO*///
 /*TODO*////* these are called from mame.c run_game() */
 /*TODO*///
@@ -298,25 +304,50 @@ public class messH {
 /*TODO*/// * CONS and CONSX are for consoles
 /*TODO*/// * COMP and COMPX are for computers
 /*TODO*/// ******************************************************************************/
-/*TODO*///#define CONS(YEAR,NAME,PARENT,MACHINE,INPUT,INIT,COMPANY,FULLNAME)	\
-/*TODO*///extern struct GameDriver driver_##PARENT;	\
-/*TODO*///struct GameDriver driver_##NAME =			\
-/*TODO*///{											\
-/*TODO*///	__FILE__,								\
-/*TODO*///	&driver_##PARENT,						\
-/*TODO*///	#NAME,									\
-/*TODO*///	FULLNAME,								\
-/*TODO*///	#YEAR,									\
-/*TODO*///	COMPANY,								\
-/*TODO*///	&machine_driver_##MACHINE,				\
-/*TODO*///	input_ports_##INPUT,					\
-/*TODO*///	init_##INIT,							\
-/*TODO*///	rom_##NAME,								\
-/*TODO*///	io_##NAME, 								\
-/*TODO*///	ROT0									\
-/*TODO*///};
-/*TODO*///
-/*TODO*///#define CONSX(YEAR,NAME,PARENT,MACHINE,INPUT,INIT,COMPANY,FULLNAME,FLAGS)	\
+    public static class GameDriver {
+
+        //this is used instead of GAME macro
+        public GameDriver(String year, String name, String source, RomLoadPtr romload, GameDriver parent, MachineDriver drv, InputPortPtr input, InitDriverPtr init, IODevice[] dev, String manufacture, String fullname) {
+            this.year = year;
+            this.source_file = source;
+            this.clone_of = parent;
+            this.name = name;
+            this.description = fullname;
+            this.manufacturer = manufacture;
+            this.drv = drv;
+            //inputports
+            this.driver_init = init;
+            romload.handler();//load the rom
+            input.handler();//load input
+            this.input_ports = input_macro;//copy input macro to input ports
+            this.rom = rommodule_macro; //copy rommodule_macro to rom
+            this.dev = dev;
+            this.flags = ROT0;
+        }
+
+        public String source_file;
+        public GameDriver clone_of;
+        /* if this is a clone, point to */
+ /* the main version of the game */
+        public String name;
+        public String description;
+        public String year;
+        public String manufacturer;
+        public MachineDriver drv;
+        public InputPortTiny[] input_ports;
+        public InitDriverPtr driver_init;
+        /* optional function to be called during initialization */
+ /* This is called ONCE, unlike Machine->init_machine */
+ /* which is called every time the game is reset. */
+
+        public RomModule[] rom;
+        public IODevice[] dev;//mess
+
+        public int flags;
+        /* orientation and other flags; see defines below */
+
+    }
+    /*TODO*///#define CONSX(YEAR,NAME,PARENT,MACHINE,INPUT,INIT,COMPANY,FULLNAME,FLAGS)	\
 /*TODO*///extern struct GameDriver driver_##PARENT;	\
 /*TODO*///struct GameDriver driver_##NAME =			\
 /*TODO*///{											\

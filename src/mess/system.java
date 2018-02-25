@@ -3,7 +3,8 @@
  */
 package mess;
 
-import old.mame.driverH.GameDriver;
+import static mess.messH.*;
+import static mess.systems.coleco.*;
 
 public class system {
 
@@ -22,7 +23,7 @@ public class system {
         /*TODO*///	DRIVER( channelf )	/* Channel F									  */
         /*TODO*///
         /*TODO*///    /* COLECO */
-        /*TODO*///	DRIVER( coleco )	/* ColecoVision (Original BIOS )				  */
+        driver_coleco,	/* ColecoVision (Original BIOS )				  */
         /*TODO*///#if 0						/* Please dont include these next 2 in a distribution, they are Hacks	*/
         /*TODO*///	DRIVER( colecofb )	/* ColecoVision (Fast BIOS load)				  */
         /*TODO*///	DRIVER( coleconb )	/* ColecoVision (No BIOS load)					  */

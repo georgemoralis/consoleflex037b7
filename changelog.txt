@@ -1,6 +1,7 @@
 26/2/2018
 =========
 -IODevice structure added in mess.h
+-Added CONS (gamedriver macro) . Project is now compileable (with a few todos in coleco machine according loading)
 
 25/2/2018
 =========
