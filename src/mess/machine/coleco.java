@@ -7,6 +7,7 @@ package mess.machine;
 import static WIP.arcadeflex.libc_v2.*;
 import static WIP.arcadeflex.fucPtr.*;
 import static old.mame.inptport.*;
+import static mess.vidhrdw.tms9928a.*;
 
 public class coleco {
 
@@ -19,8 +20,7 @@ public class coleco {
     //static UBytePtr ROM;
     int coleco_id_rom(int id) {
         FILE * romfile;
-        unsigned char magic[
-        2];
+        unsigned char magic[2];
 		int retval = ID_FAILED;
 
         logerror("---------coleco_id_rom-----\n");

@@ -1,3 +1,6 @@
 25/2/2017
 =========
-Intial project creation
+-Intial project creation
+-Started working on coleco system (Still source is not compileable)
+-Some modifications in driverH to support mess functions
+-Finished tms9928a vidhrdw need for coleco system
