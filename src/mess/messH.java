@@ -3,6 +3,7 @@
  */
 package mess;
 
+import static consoleflex.funcPtr.*;
 import static old.mame.inptportH.*;
 
 public class messH {
@@ -172,48 +173,78 @@ public class messH {
 /*TODO*/// *	output_chunk		output chunk of data (eg. sector or track)
 /*TODO*/// ******************************************************************************/
 /*TODO*///
-/*TODO*///enum {
-/*TODO*///	IO_END = 0,
-/*TODO*///	IO_CARTSLOT,
-/*TODO*///	IO_FLOPPY,
-/*TODO*///	IO_HARDDISK,
-/*TODO*///	IO_CASSETTE,
-/*TODO*///	IO_PRINTER,
-/*TODO*///	IO_SERIAL,
-/*TODO*///	IO_SNAPSHOT,
-/*TODO*///	IO_QUICKLOAD,
-/*TODO*///	IO_ALIAS,  /* dummy type for alias names from mess.cfg */
-/*TODO*///	IO_COUNT
-/*TODO*///};
-/*TODO*///
-/*TODO*///enum {
-/*TODO*///	IO_RESET_NONE,		/* changing the device file doesn't reset anything */
-/*TODO*///	IO_RESET_CPU,		/* only reset the CPU */
-/*TODO*///	IO_RESET_ALL		/* restart the driver including audio/video */
-/*TODO*///};
-/*TODO*///
-/*TODO*///struct IODevice {
-/*TODO*///	int type;
-/*TODO*///	int count;
-/*TODO*///	const char *file_extensions;
-/*TODO*///	int reset_depth;
-/*TODO*///	int (*id)(int id);
-/*TODO*///	int (*init)(int id);
-/*TODO*///	void (*exit)(int id);
-/*TODO*///	const void *(*info)(int id, int whatinfo);
-/*TODO*///	int (*open)(int id, int mode, void *args);
-/*TODO*///	void (*close)(int id);
-/*TODO*///	int (*status)(int id, int newstatus);
-/*TODO*///    int (*seek)(int id, int offset, int whence);
-/*TODO*///    int (*tell)(int id);
-/*TODO*///	int (*input)(int id);
-/*TODO*///	void (*output)(int id, int data);
-/*TODO*///	int (*input_chunk)(int id, void *dst, int chunks);
-/*TODO*///	int (*output_chunk)(int id, void *src, int chunks);
-/*TODO*///	UINT32 (*partialcrc)(const unsigned char *buf, unsigned int size);
-/*TODO*///
-/*TODO*///};
-/*TODO*///
+    public static int IO_END = 0;
+    public static int IO_CARTSLOT = 1;
+    public static int IO_FLOPPY = 2;
+    public static int IO_HARDDISK = 3;
+    public static int IO_CASSETTE = 4;
+    public static int IO_PRINTER = 5;
+    public static int IO_SERIAL = 6;
+    public static int IO_SNAPSHOT = 7;
+    public static int IO_QUICKLOAD = 8;
+    public static int IO_ALIAS = 9;
+    /* dummy type for alias names from mess.cfg */
+    public static int IO_COUNT = 10;
+
+    public static int IO_RESET_NONE = 0;
+    /* changing the device file doesn't reset anything */
+    public static int IO_RESET_CPU = 1;
+    /* only reset the CPU */
+    public static int IO_RESET_ALL = 2;
+
+    /* restart the driver including audio/video */
+    public static class IODevice {
+
+        public int type;
+        public int count;
+        public String file_extensions;
+        public int reset_depth;
+        public io_idPtr id;
+        public io_initPtr init;
+        public io_exitPtr exit;
+        public io_infoPtr info;
+        public io_openPtr open;
+        public io_closePtr close;
+        public io_statusPtr status;
+        public io_seekPtr seek;
+        public io_tellPtr tell;
+        public io_inputPtr input;
+        public io_outputPtr output;
+        public io_input_chunkPtr input_chunk;
+        public io_output_chunkPtr output_chunk;
+        public io_partialcrcPtr partialcrc;
+
+        public IODevice(int type, int count, String file_extensions, int reset_depth, io_idPtr id, io_initPtr init, io_exitPtr exit, io_infoPtr info, io_openPtr open, io_closePtr close, io_statusPtr status, io_seekPtr seek, io_tellPtr tell, io_inputPtr input, io_outputPtr output, io_input_chunkPtr input_chunk, io_output_chunkPtr output_chunk, io_partialcrcPtr partialcrc) {
+            this.type = type;
+            this.count = count;
+            this.file_extensions = file_extensions;
+            this.reset_depth = reset_depth;
+            this.id = id;
+            this.init = init;
+            this.exit = exit;
+            this.info = info;
+            this.open = open;
+            this.close = close;
+            this.status = status;
+            this.seek = seek;
+            this.tell = tell;
+            this.input = input;
+            this.output = output;
+            this.input_chunk = input_chunk;
+            this.output_chunk = output_chunk;
+            this.partialcrc = partialcrc;
+        }
+
+        public IODevice(int type, int count, String file_extensions, int reset_depth, io_idPtr id, io_initPtr init, io_exitPtr exit, io_infoPtr info, io_openPtr open, io_closePtr close, io_statusPtr status, io_seekPtr seek, io_tellPtr tell, io_inputPtr input, io_outputPtr output, io_input_chunkPtr input_chunk, io_output_chunkPtr output_chunk) {
+            this(type, count, file_extensions, reset_depth, id, init, exit, info, open, close, status, seek, tell, input, output, input_chunk, output_chunk, null);
+
+        }
+
+        public IODevice(int type) {
+            this(type, 0, "", 0, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+        }
+    }
+    /*TODO*///
 /*TODO*////* these are called from mame.c run_game() */
 /*TODO*///
 /*TODO*///extern int get_filenames(void);

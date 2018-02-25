@@ -217,27 +217,27 @@ public class coleco
 	//	ROM_LOAD ("coleconb.rom", 0x0000, 0x2000, 0x66cda476);/* no screen */
 	//ROM_END(); }}; 
 	
-	static const struct IODevice io_coleco[] = {
-		{
+	static IODevice io_coleco[] = {
+		new IODevice(
 			IO_CARTSLOT,		/* type */
 			1,					/* count */
 			"rom\0",            /* file extensions */
 			IO_RESET_CPU,		/* reset if file changed */
-	        coleco_id_rom,      /* id */
+                        coleco_id_rom,      /* id */
 			coleco_load_rom,	/* init */
-			NULL,				/* exit */
-			NULL,				/* info */
-			NULL,				/* open */
-			NULL,				/* close */
-			NULL,				/* status */
-			NULL,				/* seek */
-			NULL,				/* tell */
-	        NULL,               /* input */
-			NULL,				/* output */
-			NULL,				/* input_chunk */
-			NULL				/* output_chunk */
-	    },
-		{ IO_END }
+			null,				/* exit */
+			null,				/* info */
+			null,				/* open */
+			null,				/* close */
+			null,				/* status */
+			null,				/* seek */
+			null,				/* tell */
+                        null,               /* input */
+			null,				/* output */
+			null,				/* input_chunk */
+			null				/* output_chunk */
+                ),
+		new IODevice( IO_END )
 	};
 	
 	/*    YEAR  NAME      PARENT    MACHINE   INPUT     INIT      COMPANY   FULLNAME */

@@ -6,6 +6,7 @@ package mess.machine;
 
 import static WIP.arcadeflex.libc_v2.*;
 import static WIP.arcadeflex.fucPtr.*;
+import static consoleflex.funcPtr.*;
 import static old.mame.inptport.*;
 import static mess.vidhrdw.tms9928a.*;
 
@@ -18,7 +19,7 @@ public class coleco {
     static int JoyMode = 0;
 
     //static UBytePtr ROM;
-    int coleco_id_rom(int id) {
+    public static io_idPtr coleco_id_rom=new io_idPtr(){ public int handler(int id) {
         FILE * romfile;
         unsigned char magic[2];
 		int retval = ID_FAILED;
@@ -48,9 +49,9 @@ public class coleco {
 
         osd_fclose(romfile);
         return retval;
-    }
+    }};
 
-    int coleco_load_rom(int id) {
+    public static io_initPtr coleco_load_rom=new io_initPtr(){ public int handler(int id) {
         FILE * cartfile;
 
         UINT8 * ROM = memory_region(REGION_CPU1);
@@ -77,7 +78,7 @@ public class coleco {
         }
 
         return 0;
-    }
+    }};
 
     public static ReadHandlerPtr coleco_ram_r = new ReadHandlerPtr() {
         public int handler(int offset) {

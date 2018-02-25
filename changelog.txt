@@ -1,6 +1,10 @@
-25/2/2017
+26/2/2018
+=========
+-IODevice structure added in mess.h
+
+25/2/2018
 =========
 -Intial project creation
 -Started working on coleco system (Still source is not compileable)
 -Some modifications in driverH to support mess functions
--Finished tms9928a vidhrdw need for coleco system
+-Finished tms9928a vidhrdw needed for coleco system
