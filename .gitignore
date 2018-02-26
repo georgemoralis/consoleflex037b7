@@ -25,3 +25,4 @@ hs_err_pid*
 /src/old/*
 /src/WIP/*
 /build/*
+/arcadeflex.cfg
