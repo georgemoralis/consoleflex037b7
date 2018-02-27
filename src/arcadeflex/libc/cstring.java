@@ -26,4 +26,22 @@ public class cstring {
             dst[mem] = (char) value;
         }
     }
+    /**
+     * Locate last occurrence of character in string Returns a pointer to the last occurrence of character in the C string str.
+     * @param str
+     * @param ch
+     * @return 
+     */
+    public static String strrchr(String str,char ch)
+    {
+        int found = str.lastIndexOf(ch);
+        if(found==-1)//not found
+        {
+            return null;
+        }
+        else
+        {
+            return Integer.toString(found);//return in String
+        }
+    }
 }

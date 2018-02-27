@@ -3,6 +3,11 @@
  */
 package mess;
 
+import static WIP.mame.mame.options;
+import mame.mameH;
+import mame.mameH.ImageFile;
+import static mame.mameH.MAX_IMAGES;
+import static mess.mess.device_typename;
 import static mess.messH.*;
 import static mess.system.drivers;
 import static old.arcadeflex.osdepend.*;
@@ -15,34 +20,35 @@ public class msdos {
 /*TODO*////* fronthlp functions */
 /*TODO*///extern int strwildcmp(const char *sp1, const char *sp2);
 /*TODO*///
-/*TODO*///
-/*TODO*////*
-/*TODO*/// * Detect the type of image given in 'arg':
-/*TODO*/// * 1st: user specified type (after -rom, -floppy ect.)
-/*TODO*/// * 2nd: match extensions specified by the driver
-/*TODO*/// * default: add image to the list of names for IO_CARTSLOT
-/*TODO*/// */
-/*TODO*///static int detect_image_type(int game_index, int type, char *arg)
-/*TODO*///{
-/*TODO*///	const struct GameDriver *drv = drivers[game_index];
-/*TODO*///	char *ext;
-/*TODO*///
-/*TODO*///	if (options.image_count >= MAX_IMAGES)
-/*TODO*///	{
-/*TODO*///		printf("Too many image names specified!\n");
-/*TODO*///		return 1;
-/*TODO*///	}
-/*TODO*///
-/*TODO*///	if (type)
-/*TODO*///	{
-/*TODO*///		logerror("User specified %s for %s\n", device_typename(type), arg);
-/*TODO*///		/* the user specified a device type */
-/*TODO*///		options.image_files[options.image_count].type = type;
-/*TODO*///		options.image_files[options.image_count].name = strdup(arg);
-/*TODO*///		options.image_count++;
-/*TODO*///		return 0;
-/*TODO*///	}
-/*TODO*///
+
+/*
+ * Detect the type of image given in 'arg':
+ * 1st: user specified type (after -rom, -floppy ect.)
+ * 2nd: match extensions specified by the driver
+ * default: add image to the list of names for IO_CARTSLOT
+ */
+public static int detect_image_type(int game_index, int type, String arg)
+{
+	GameDriver drv = drivers[game_index];
+	String ext;
+
+	if (options.image_count >= MAX_IMAGES)
+	{
+		printf("Too many image names specified!\n");
+		return 1;
+	}
+
+	if (type!=0)
+	{
+		logerror("User specified %s for %s\n", device_typename(type), arg);
+		/* the user specified a device type */
+		options.image_files[options.image_count].type = type;
+		options.image_files[options.image_count].name = arg;
+		options.image_count++;
+		return 0;
+	}
+        
+        throw new UnsupportedOperationException("unimplemented");
 /*TODO*///	/* Look up the filename extension in the drivers device list */
 /*TODO*///	ext = strrchr(arg, '.');
 /*TODO*///	if (ext)
@@ -79,9 +85,9 @@ public class msdos {
 /*TODO*///	options.image_files[options.image_count].name = strdup(arg);
 /*TODO*///	options.image_count++;
 /*TODO*///	return 0;
-/*TODO*///}
-/*TODO*///
-/*TODO*///
+}
+
+
 
     /* Small check to see if system supports device */
     public static int system_supports_device(int game_index, int type) {
@@ -188,6 +194,9 @@ public class msdos {
 
     public static int load_image(int argc, String[] argv, int j, int game_index) {
         String driver = drivers[game_index].name;
+        for (int im = 0; im < MAX_IMAGES; im++) { //init image files (consoleflex stuff)
+            options.image_files[im] = new ImageFile();
+        }
         int i, k;
         int res = 0;
         int type = IO_END;
@@ -254,17 +263,12 @@ public class msdos {
 /*TODO*///
 /*TODO*///				}
 /*TODO*///
+                } /* use normal command line argument! */ else if (type != IO_END) {
+                    logerror("Loading image - No alias used\n");
+                    res = detect_image_type(game_index, type, argv[i]);
+                    type = IO_END;
+                    /* image detected, reset type */
                 }
-                
-
-			/* use normal command line argument! */
-			else if (type != IO_END)
-			{
-                            throw new UnsupportedOperationException("unimplemented");
-/*TODO*///				logerror("Loading image - No alias used\n");
-/*TODO*///				res = detect_image_type(game_index, type, argv[i]);
-/*TODO*///				type = IO_END; /* image detected, reset type */
-			}
             }
             /* If we had an error bail out now */
             if (res != 0) {
