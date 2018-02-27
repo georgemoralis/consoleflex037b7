@@ -1,3 +1,9 @@
+27/2/2018
+=========
+-Ported mameH to 0.37b7 adding mess stuff
+-Added load_image for mess
+-Implemented get_filenames in mess.java enough for coleco system at least
+
 26/2/2018
 =========
 -IODevice structure added in mess.h

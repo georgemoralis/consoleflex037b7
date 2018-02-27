@@ -3,7 +3,11 @@
  */
 package mess;
 
+import static WIP.mame.mame.Machine;
+import static WIP.mame.mame.options;
+import mess.messH.IODevice;
 import static mess.messH.IO_COUNT;
+import static old.arcadeflex.osdepend.logerror;
 
 public class mess {
 
@@ -19,19 +23,20 @@ public class mess {
 /*TODO*////* Globals */
 /*TODO*///int mess_keep_going;
 /*TODO*///
-/*TODO*///struct image_info {
-/*TODO*///	char *name;
-/*TODO*///	UINT32 crc;
-/*TODO*///	UINT32 length;
-/*TODO*///	char *longname;
-/*TODO*///	char *manufacturer;
-/*TODO*///	char *year;
-/*TODO*///	char *playable;
-/*TODO*///	char *extrainfo;
-/*TODO*///};
-/*TODO*///
-/*TODO*///static struct image_info *images[IO_COUNT] = {NULL,};
-/*TODO*///static int count[IO_COUNT] = {0,};
+    public static class image_info {
+
+        String name;
+        int/*UINT32*/ crc;
+        int /*UINT32*/ length;
+        String longname;
+        String manufacturer;
+        String year;
+        String playable;
+        String extrainfo;
+    };
+
+    static image_info[][] images = new image_info[50][IO_COUNT];/*TODO*///static struct image_info *images[IO_COUNT] = {NULL,};
+    static int[] count = new int[IO_COUNT];
     static String typename[] = {
         "NONE",
         "Cartridge ",
@@ -297,6 +302,7 @@ public class mess {
         }
         return "UNKNOWN";
     }
+
     /*TODO*///
 /*TODO*///const char *briefdevice_typename(int type)
 /*TODO*///{
@@ -487,24 +493,22 @@ public class mess {
 /*TODO*///		return images[type][id].extrainfo;
 /*TODO*///	return NULL;
 /*TODO*///}
-/*TODO*///
-/*TODO*////*
-/*TODO*/// * Copy the image names from options.image_files[] to
-/*TODO*/// * the array of filenames we keep here, depending on the
-/*TODO*/// * type identifier of each image.
-/*TODO*/// */
-/*TODO*///int get_filenames(void)
-/*TODO*///{
-/*TODO*///	const struct IODevice *dev = Machine->gamedrv->dev;
-/*TODO*///	int i;
-/*TODO*///
-/*TODO*///	for( i = 0; i < options.image_count; i++ )
-/*TODO*///	{
-/*TODO*///		int type = options.image_files[i].type;
-/*TODO*///
-/*TODO*///		if (type < IO_COUNT)
-/*TODO*///		{
-/*TODO*///			/* Add a filename to the arrays of names */
+
+    /*
+    * Copy the image names from options.image_files[] to
+    * the array of filenames we keep here, depending on the
+    * type identifier of each image.
+     */
+    public static int get_filenames() {
+        IODevice[] dev = Machine.gamedrv.dev;
+        int dev_ptr = 0;
+        int i;
+
+        for (i = 0; i < options.image_count; i++) {
+            int type = options.image_files[i].type;
+
+            if (type < IO_COUNT) {
+                /*TODO*///			/* Add a filename to the arrays of names */
 /*TODO*///			if( images[type] )
 /*TODO*///				images[type] = realloc(images[type],(count[type]+1)*sizeof(struct image_info));
 /*TODO*///			else
@@ -520,22 +524,32 @@ public class mess {
 /*TODO*///			}
 /*TODO*///			logerror("%s #%d: %s\n", typename[type], count[type]+1, images[type][count[type]].name);
 /*TODO*///			count[type]++;
-/*TODO*///		}
-/*TODO*///		else
-/*TODO*///		{
-/*TODO*///			logerror("Invalid IO_ type %d for %s\n", type, options.image_files[i].name);
-/*TODO*///			return 1;
-/*TODO*///		}
-/*TODO*///	}
-/*TODO*///
-/*TODO*///	/* Does the driver have any IODevices defined? */
-/*TODO*///	if( dev )
-/*TODO*///	{
-/*TODO*///		while( dev->count )
-/*TODO*///		{
-/*TODO*///			int type = dev->type;
-/*TODO*///			while( count[type] < dev->count )
-/*TODO*///			{
+//TODO below code needs to be tested
+                images[type][count[type]] = new image_info();
+                if (options.image_files[i].name != null) {
+                    images[type][count[type]].name = options.image_files[i].name;
+                    if (images[type][count[type]].name == null) {
+                        return 1;
+                    }
+                }
+                logerror("%s #%d: %s\n", typename[type], count[type] + 1, images[type][count[type]].name);
+                count[type]++;
+            } else {
+                logerror("Invalid IO_ type %d for %s\n", type, options.image_files[i].name);
+                return 1;
+            }
+        }
+        
+        
+	/* Does the driver have any IODevices defined? */
+	if( dev!=null )
+	{
+		while( dev[dev_ptr].count!=0 )
+		{
+			int type = dev[dev_ptr].type;
+			while( count[type] < dev[dev_ptr].count )
+			{
+                            throw new UnsupportedOperationException("unimplemented");
 /*TODO*///				/* Add an empty slot name the arrays of names */
 /*TODO*///				if( images[type] )
 /*TODO*///					images[type] = realloc(images[type],(count[type]+1)*sizeof(struct image_info));
@@ -545,15 +559,15 @@ public class mess {
 /*TODO*///					return 1;
 /*TODO*///				memset(&images[type][count[type]], 0, sizeof(struct image_info));
 /*TODO*///				count[type]++;
-/*TODO*///			}
-/*TODO*///			dev++;
-/*TODO*///		}
-/*TODO*///	}
-/*TODO*///
-/*TODO*///	/* everything was fine */
-/*TODO*///	return 0;
-/*TODO*///}
-/*TODO*///
+			}
+			dev_ptr++;
+		}
+	}
+
+	/* everything was fine */
+	return 0;
+    }
+    /*TODO*///
 /*TODO*////*
 /*TODO*/// * Call the init() functions for all devices of a driver
 /*TODO*/// * with all user specified image names.
