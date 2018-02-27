@@ -1,3 +1,7 @@
+28/2/2018
+=========
+-Added init_devices in mess.java
+
 27/2/2018
 =========
 -Ported mameH to 0.37b7 adding mess stuff

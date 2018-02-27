@@ -3,10 +3,13 @@
  */
 package mess;
 
+import static WIP.arcadeflex.libc_v2.sprintf;
 import static WIP.mame.mame.Machine;
 import static WIP.mame.mame.options;
+import mess.messH.GameDriver;
 import mess.messH.IODevice;
-import static mess.messH.IO_COUNT;
+import static mess.messH.*;
+import static old.arcadeflex.libc_old.printf;
 import static old.arcadeflex.osdepend.logerror;
 
 public class mess {
@@ -317,23 +320,23 @@ public class mess {
 /*TODO*///		return brieftypename[type];
 /*TODO*///	return "UNKNOWN";
 /*TODO*///}
-/*TODO*///
-/*TODO*////* Return a name for a device of type 'type' with id 'id' */
-/*TODO*///const char *device_typename_id(int type, int id)
-/*TODO*///{
-/*TODO*///	static char typename_id[40][31+1];
-/*TODO*///	static int which = 0;
-/*TODO*///	if (type < IO_COUNT)
-/*TODO*///	{
-/*TODO*///		which = ++which % 40;
-/*TODO*///		/* for the average user counting starts at #1 ;-) */
-/*TODO*///		sprintf(typename_id[which], "%s #%d", typename[type], id+1);
-/*TODO*///		return typename_id[which];
-/*TODO*///	}
-/*TODO*///	return "UNKNOWN";
-/*TODO*///}
-/*TODO*///
-/*TODO*////*
+
+    /* Return a name for a device of type 'type' with id 'id' */
+    static String[] typename_id_dev = new String[40];
+    static int which_dev = 0;
+
+    public static String device_typename_id(int type, int id) {
+
+        if (type < IO_COUNT) {
+            which_dev = ++which_dev % 40;
+            /* for the average user counting starts at #1 ;-) */
+            typename_id_dev[which_dev] = sprintf("%s #%d", typename[type], id + 1);
+            return typename_id_dev[which_dev];
+        }
+        return "UNKNOWN";
+    }
+
+    /*TODO*////*
 /*TODO*/// * Return the number of filenames for a device of type 'type'.
 /*TODO*/// */
 /*TODO*///int device_count(int type)
@@ -342,21 +345,22 @@ public class mess {
 /*TODO*///		return 0;
 /*TODO*///	return count[type];
 /*TODO*///}
-/*TODO*///
-/*TODO*////*
-/*TODO*/// * Return the 'id'th filename for a device of type 'type',
-/*TODO*/// * NULL if not enough image names of that type are available.
-/*TODO*/// */
-/*TODO*///const char *device_filename(int type, int id)
-/*TODO*///{
-/*TODO*///	if (type >= IO_COUNT)
-/*TODO*///		return NULL;
-/*TODO*///	if (id < count[type])
-/*TODO*///		return images[type][id].name;
-/*TODO*///	return NULL;
-/*TODO*///}
-/*TODO*///
-/*TODO*////*
+
+    /*
+    * Return the 'id'th filename for a device of type 'type',
+    * NULL if not enough image names of that type are available.
+     */
+    public static String device_filename(int type, int id) {
+        if (type >= IO_COUNT) {
+            return null;
+        }
+        if (id < count[type]) {
+            return images[type][id].name;
+        }
+        return null;
+    }
+
+    /*TODO*////*
 /*TODO*/// * Return the 'num'th file extension for a device of type 'type',
 /*TODO*/// * NULL if no file extensions of that type are available.
 /*TODO*/// */
@@ -539,18 +543,14 @@ public class mess {
                 return 1;
             }
         }
-        
-        
-	/* Does the driver have any IODevices defined? */
-	if( dev!=null )
-	{
-		while( dev[dev_ptr].count!=0 )
-		{
-			int type = dev[dev_ptr].type;
-			while( count[type] < dev[dev_ptr].count )
-			{
-                            throw new UnsupportedOperationException("unimplemented");
-/*TODO*///				/* Add an empty slot name the arrays of names */
+
+        /* Does the driver have any IODevices defined? */
+        if (dev != null) {
+            while (dev[dev_ptr].count != 0) {
+                int type = dev[dev_ptr].type;
+                while (count[type] < dev[dev_ptr].count) {
+                    throw new UnsupportedOperationException("unimplemented");
+                    /*TODO*///				/* Add an empty slot name the arrays of names */
 /*TODO*///				if( images[type] )
 /*TODO*///					images[type] = realloc(images[type],(count[type]+1)*sizeof(struct image_info));
 /*TODO*///				else
@@ -559,87 +559,77 @@ public class mess {
 /*TODO*///					return 1;
 /*TODO*///				memset(&images[type][count[type]], 0, sizeof(struct image_info));
 /*TODO*///				count[type]++;
-			}
-			dev_ptr++;
-		}
-	}
+                }
+                dev_ptr++;
+            }
+        }
 
-	/* everything was fine */
-	return 0;
+        /* everything was fine */
+        return 0;
+    }
+
+    /*
+    * Call the init() functions for all devices of a driver
+    * with all user specified image names.
+     */
+    public static int init_devices(GameDriver game) {
+        //  throw new UnsupportedOperationException("unimplemented");
+        GameDriver gamedrv = game;
+        IODevice[] dev = gamedrv.dev;
+        int dev_ptr = 0;
+        int id;
+
+        /* initialize all devices */
+        while (dev[dev_ptr].count != 0) {
+
+            /* try and check for valid image and compute 'partial' CRC
+		   for imageinfo if possible */
+            if (dev[dev_ptr].id != null) {
+                for (id = 0; id < dev[dev_ptr].count; id++) {
+                    int result;
+
+                    /* initialize */
+                    logerror("%s id (%s)\n", device_typename_id(dev[dev_ptr].type, id), device_filename(dev[dev_ptr].type, id) != null ? device_filename(dev[dev_ptr].type, id) : "NULL");
+                    result = (dev[dev_ptr].id).handler(id);
+                    logerror("%s id returns %d\n", device_typename_id(dev[dev_ptr].type, id), result);
+
+                    if (result != ID_OK && device_filename(dev[dev_ptr].type, id) != null) {
+                        printf("%s id failed (%s)\n", device_typename_id(dev[dev_ptr].type, id), device_filename(dev[dev_ptr].type, id));
+                        /* HJB: I think we can't abort if a device->id function fails _yet_, because
+ * we first would have to clean up every driver to use the correct return values.
+ * device->init will fail if a file really can't be loaded.
+                         */
+ /*					return 1; */
+                    }
+                }
+            } else {
+                logerror("%s does not support id!\n", device_typename(dev[dev_ptr].type));
+            }
+
+            /* if this device supports initialize (it should!) */
+            if (dev[dev_ptr].init != null) {
+                /* all instances */
+                for (id = 0; id < dev[dev_ptr].count; id++) {
+                    int result;
+
+                    /* initialize */
+                    logerror("%s init (%s)\n", device_typename_id(dev[dev_ptr].type, id), device_filename(dev[dev_ptr].type, id) != null ? device_filename(dev[dev_ptr].type, id) : "NULL");
+                    result = (dev[dev_ptr].init).handler(id);
+                    logerror("%s init returns %d\n", device_typename_id(dev[dev_ptr].type, id), result);
+
+                    if (result != INIT_OK && device_filename(dev[dev_ptr].type, id) != null) {
+                        printf("%s init failed (%s)\n", device_typename_id(dev[dev_ptr].type, id), device_filename(dev[dev_ptr].type, id));
+                        return 1;
+                    }
+                }
+            } else {
+                logerror("%s does not support init!\n", device_typename(dev[dev_ptr].type));
+            }
+            dev_ptr++;
+        }
+        return 0;
     }
     /*TODO*///
-/*TODO*////*
-/*TODO*/// * Call the init() functions for all devices of a driver
-/*TODO*/// * with all user specified image names.
-/*TODO*/// */
-/*TODO*///int init_devices(const void *game)
-/*TODO*///{
-/*TODO*///	const struct GameDriver *gamedrv = game;
-/*TODO*///	const struct IODevice *dev = gamedrv->dev;
-/*TODO*///	int id;
-/*TODO*///
-/*TODO*///	/* initialize all devices */
-/*TODO*///	while( dev->count )
-/*TODO*///	{
-/*TODO*///
-/*TODO*///		/* try and check for valid image and compute 'partial' CRC
-/*TODO*///		   for imageinfo if possible */
-/*TODO*///		if( dev->id )
-/*TODO*///		{
-/*TODO*///			for( id = 0; id < dev->count; id++ )
-/*TODO*///			{
-/*TODO*///				int result;
-/*TODO*///
-/*TODO*///				/* initialize */
-/*TODO*///				logerror("%s id (%s)\n", device_typename_id(dev->type,id), device_filename(dev->type,id) ? device_filename(dev->type,id) : "NULL");
-/*TODO*///				result = (*dev->id)(id);
-/*TODO*///				logerror("%s id returns %d\n", device_typename_id(dev->type,id), result);
-/*TODO*///
-/*TODO*///				if( result != ID_OK && device_filename(dev->type,id) )
-/*TODO*///				{
-/*TODO*///					mess_printf("%s id failed (%s)\n", device_typename_id(dev->type,id), device_filename(dev->type,id) );
-/*TODO*////* HJB: I think we can't abort if a device->id function fails _yet_, because
-/*TODO*/// * we first would have to clean up every driver to use the correct return values.
-/*TODO*/// * device->init will fail if a file really can't be loaded.
-/*TODO*/// */
-/*TODO*////*					return 1; */
-/*TODO*///				}
-/*TODO*///			}
-/*TODO*///		}
-/*TODO*///		else
-/*TODO*///		{
-/*TODO*///			logerror("%s does not support id!\n", device_typename(dev->type));
-/*TODO*///		}
-/*TODO*///
-/*TODO*///		/* if this device supports initialize (it should!) */
-/*TODO*///		if( dev->init )
-/*TODO*///		{
-/*TODO*///			/* all instances */
-/*TODO*///			for( id = 0; id < dev->count; id++ )
-/*TODO*///			{
-/*TODO*///				int result;
-/*TODO*///
-/*TODO*///				/* initialize */
-/*TODO*///				logerror("%s init (%s)\n", device_typename_id(dev->type,id), device_filename(dev->type,id) ? device_filename(dev->type,id) : "NULL");
-/*TODO*///				result = (*dev->init)(id);
-/*TODO*///				logerror("%s init returns %d\n", device_typename_id(dev->type,id), result);
-/*TODO*///
-/*TODO*///				if( result != INIT_OK && device_filename(dev->type,id) )
-/*TODO*///				{
-/*TODO*///					mess_printf("%s init failed (%s)\n", device_typename_id(dev->type,id), device_filename(dev->type,id) );
-/*TODO*///					return 1;
-/*TODO*///				}
-/*TODO*///			}
-/*TODO*///		}
-/*TODO*///		else
-/*TODO*///		{
-/*TODO*///			logerror("%s does not support init!\n", device_typename(dev->type));
-/*TODO*///		}
-/*TODO*///		dev++;
-/*TODO*///	}
-/*TODO*///	return 0;
-/*TODO*///}
-/*TODO*///
 /*TODO*////*
 /*TODO*/// * Call the exit() functions for all devices of a
 /*TODO*/// * driver for all images.

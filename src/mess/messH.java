@@ -49,20 +49,19 @@ public class messH {
     public static int IPT_SELECT4 = IPT_COIN4;
     public static int IPT_KEYBOARD = IPT_TILT;
     /* driver.h - end */
- /*TODO*///
-/*TODO*///
-/*TODO*////* The wrapper for osd_fopen() */
-/*TODO*///void *image_fopen(int type, int id, int filetype, int read_or_write);
-/*TODO*///
-/*TODO*////* IODevice Initialisation return values.  Use these to determine if */
-/*TODO*////* the emulation can continue if IODevice initialisation fails */
-/*TODO*///enum { INIT_OK, INIT_FAILED, INIT_UNKNOWN };
-/*TODO*///
-/*TODO*///
-/*TODO*////* IODevice ID return values.  Use these to determine if */
-/*TODO*////* the emulation can continue if image cannot be positively IDed */
-/*TODO*///enum { ID_FAILED, ID_OK, ID_UNKNOWN };
-/*TODO*///
+/* IODevice Initialisation return values.  Use these to determine if */
+/* the emulation can continue if IODevice initialisation fails */
+    public static int INIT_OK = 0;
+    public static int INIT_FAILED = 1;
+    public static int INIT_UNKNOWN = 2;
+    
+
+/* IODevice ID return values.  Use these to determine if */
+/* the emulation can continue if image cannot be positively IDed */
+    public static int ID_FAILED = 0;
+    public static int ID_OK = 1;
+    public static int ID_UNKNOWN = 2;
+    /*TODO*///
 /*TODO*///
 /*TODO*////* fileio.c */
 /*TODO*///typedef struct
