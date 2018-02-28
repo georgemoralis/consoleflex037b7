@@ -1,6 +1,7 @@
 28/2/2018
 =========
 -Added init_devices in mess.java
+-Fixed to mess.java and finished function in machine/coleco.java . First colecovision game is playable (dkong)
 
 27/2/2018
 =========

@@ -9,6 +9,8 @@ import static WIP.mame.mame.options;
 import mess.messH.GameDriver;
 import mess.messH.IODevice;
 import static mess.messH.*;
+import static old.arcadeflex.fileio.osd_fopen;
+import old.arcadeflex.libc_old.FILE;
 import static old.arcadeflex.libc_old.printf;
 import static old.arcadeflex.osdepend.logerror;
 
@@ -133,42 +135,41 @@ public class mess {
 /*TODO*///
 /*TODO*///static int read_crc_config (const char *, struct image_info *, const char*);
 /*TODO*///
-/*TODO*///void *image_fopen(int type, int id, int filetype, int read_or_write)
-/*TODO*///{
-/*TODO*///	struct image_info *img = &images[type][id];
-/*TODO*///	const char *sysname;
-/*TODO*///	void *file;
-/*TODO*///	int extnum;
-/*TODO*///
-/*TODO*///	if( type >= IO_COUNT )
-/*TODO*///	{
-/*TODO*///		logerror("image_fopen: type out of range (%d)\n", type);
-/*TODO*///		return NULL;
-/*TODO*///	}
-/*TODO*///
-/*TODO*///	if( id >= count[type] )
-/*TODO*///	{
-/*TODO*///		logerror("image_fopen: id out of range (%d)\n", id);
-/*TODO*///		return NULL;
-/*TODO*///	}
-/*TODO*///
-/*TODO*///	if( img->name == NULL )
-/*TODO*///		return NULL;
-/*TODO*///
-/*TODO*///	/* try the supported extensions */
-/*TODO*///	extnum = 0;
-/*TODO*///	for( ;; )
-/*TODO*///	{
+    public static Object image_fopen(int type, int id, int filetype, int read_or_write) {
+        image_info img = images[type][id];
+	String sysname;
+	Object file;
+	int extnum;
+
+	if( type >= IO_COUNT )
+	{
+		logerror("image_fopen: type out of range (%d)\n", type);
+		return null;
+	}
+
+	if( id >= count[type] )
+	{
+		logerror("image_fopen: id out of range (%d)\n", id);
+		return null;
+	}
+
+	if( img.name == null )
+		return null;
+
+	/* try the supported extensions */
+	extnum = 0;
+	for( ;; )
+	{
 /*TODO*///		const char *ext;
 /*TODO*///		char *p;
 /*TODO*///		int l;
-/*TODO*///
-/*TODO*///		sysname = Machine->gamedrv->name;
-/*TODO*///		logerror("image_fopen: trying %s for system %s\n", img->name, sysname);
-/*TODO*///		file = osd_fopen(sysname, img->name, filetype, read_or_write);
-/*TODO*///		/* file found, break out */
-/*TODO*///		if( file )
-/*TODO*///			break;
+
+		sysname = Machine.gamedrv.name;
+		logerror("image_fopen: trying %s for system %s\n", img.name, sysname);
+		file = osd_fopen(sysname, img.name, filetype, read_or_write);
+		/* file found, break out */
+		if( file!=null )
+			break;
 /*TODO*///		if( Machine->gamedrv->clone_of &&
 /*TODO*///			Machine->gamedrv->clone_of != &driver_0 )
 /*TODO*///		{
@@ -214,7 +215,7 @@ public class mess {
 /*TODO*///			}
 /*TODO*///			sprintf(img->name + l, ".%s", ext);
 /*TODO*///		}
-/*TODO*///	}
+	}
 /*TODO*///
 /*TODO*///	if( file )
 /*TODO*///	{
@@ -263,9 +264,10 @@ public class mess {
 /*TODO*///		config = config_open(crcfile);
 /*TODO*///	}
 /*TODO*///
-/*TODO*///	return file;
-/*TODO*///}
-/*TODO*///
+	return file;
+    }
+
+    /*TODO*///
 /*TODO*///
 /*TODO*///static int read_crc_config (const char *file, struct image_info *img, const char* sysname)
 /*TODO*///{
