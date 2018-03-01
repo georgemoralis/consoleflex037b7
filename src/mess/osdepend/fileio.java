@@ -7,6 +7,8 @@ package mess.osdepend;
 import WIP.arcadeflex.libc_v2.UBytePtr;
 import static WIP.mame.osdependH.*;
 import arcadeflex.javaspecific.CRC;
+import static arcadeflex.libc.cstring.strchr;
+import static arcadeflex.libc.cstring.strrchr;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -367,35 +369,35 @@ public class fileio {
                     }
                 }
                 break;
-            /*TODO*///
-/*TODO*///	case OSD_FILETYPE_IMAGE_R:
-/*TODO*///		/* only for reading */
-/*TODO*///		if (_write)
-/*TODO*///		{
-/*TODO*///			logerror("osd_fopen: type %02x write not supported\n", filetype);
-/*TODO*///			break;
-/*TODO*///		}
-/*TODO*///
-/*TODO*///		pathc = softpathc;
+
+            case OSD_FILETYPE_IMAGE_R:
+                /* only for reading */
+                if (_write != 0) {
+                    logerror("osd_fopen: type %02x write not supported\n", filetype);
+                    break;
+                }
+//hacked predefined software directories
+                /*TODO*///		pathc = softpathc;
 /*TODO*///		pathv = softpathv;
-/*TODO*///		logerror("osd_fopen: using softwarepath (%d directories)\n", pathc);
-/*TODO*///
-/*TODO*///		logerror("Open IMAGE_R '%s' for %s\n", filename, game);
-/*TODO*///		for (indx = 0; indx < pathc && !found; indx++)
-/*TODO*///		{
-/*TODO*///			char file[256];
-/*TODO*///            char *extension;
-/*TODO*///            const char *dir_name = pathv[indx];
-/*TODO*///
-/*TODO*///			strcpy(file, filename);
-/*TODO*///
-/*TODO*///            /* load from exact path specified in mess.cfg */
-/*TODO*///			if (!found)
-/*TODO*///			{
-/*TODO*///				sprintf(name, "%s", dir_name);
-/*TODO*///				if (cache_stat(name, &stat_buffer) == 0 && (stat_buffer.st_mode & S_IFDIR))
-/*TODO*///				{
-/*TODO*///					sprintf(name, "%s/%s", dir_name, filename);
+                pathc = 1;
+                pathv = new String[1];
+                pathv[0] = "software";
+                logerror("osd_fopen: using softwarepath (%d directories)\n", pathc);
+
+                logerror("Open IMAGE_R '%s' for %s\n", filename, game);
+                for (indx = 0; indx < pathc && found == 0; ++indx) {
+                    String file = "";
+                    String extension;
+                    String dir_name = pathv[indx];
+
+                    file = filename;//strcpy(file, filename);
+
+                    /* load from exact path specified in mess.cfg */
+                    if (found == 0) {
+                        name = sprintf("%s", dir_name);
+                        if (new File(name).isDirectory() && new File(name).exists())//if (cache_stat(name, &stat_buffer) == 0 && (stat_buffer.st_mode & S_IFDIR))
+                        {
+                            /*TODO*///					sprintf(name, "%s/%s", dir_name, filename);
 /*TODO*///					if (checksum_file(name, &f->data, &f->length, &f->crc) == 0)
 /*TODO*///					{
 /*TODO*///						logerror("Found '%s'\n", name);
@@ -403,16 +405,15 @@ public class fileio {
 /*TODO*///						f->offset = 0;
 /*TODO*///						found = 1;
 /*TODO*///					}
-/*TODO*///				}
-/*TODO*///			}
-/*TODO*///
-/*TODO*///			/* load from path specified in mess.cfg with system name appended */
-/*TODO*///			if (!found)
-/*TODO*///			{
-/*TODO*///				sprintf(name, "%s/%s", dir_name, game);
-/*TODO*///				if (cache_stat(name, &stat_buffer) == 0 && (stat_buffer.st_mode & S_IFDIR))
-/*TODO*///				{
-/*TODO*///					sprintf(name, "%s/%s/%s", dir_name, game, filename);
+                        }
+                    }
+
+                    /* load from path specified in mess.cfg with system name appended */
+                    if (found == 0) {
+                        name = sprintf("%s/%s", dir_name, game);
+                        if (new File(name).isDirectory() && new File(name).exists())//if (cache_stat(name, &stat_buffer) == 0 && (stat_buffer.st_mode & S_IFDIR))
+                        {
+                            /*TODO*///					sprintf(name, "%s/%s/%s", dir_name, game, filename);
 /*TODO*///					if (checksum_file(name, &f->data, &f->length, &f->crc) == 0)
 /*TODO*///					{
 /*TODO*///						logerror("Found '%s'\n", name);
@@ -420,11 +421,11 @@ public class fileio {
 /*TODO*///						f->offset = 0;
 /*TODO*///						found = 1;
 /*TODO*///					}
-/*TODO*///				}
-/*TODO*///			}
-/*TODO*///
-/*TODO*///			/* load zipped image from exact path specified in mess.cfg */
-/*TODO*///			if (!found)
+                        }
+                    }
+
+                    /* load zipped image from exact path specified in mess.cfg */
+ /*TODO*///			if (found==0)
 /*TODO*///			{
 /*TODO*///				sprintf(name, "%s/%s", dir_name, filename);
 /*TODO*///				extension = strrchr(name, '.');		/* find extension */
@@ -486,13 +487,64 @@ public class fileio {
 /*TODO*///					}
 /*TODO*///				}
 /*TODO*///            }
-/*TODO*///			extension = strrchr(file, '.');
-/*TODO*///			if (extension && strchr(extension, '/') == NULL && strchr(extension,'\\') == NULL)
-/*TODO*///			{
-/*TODO*///				/* strip extension */
-/*TODO*///				*extension++ = '\0';
-/*TODO*///				/* load from path specified in mess.cfg but append extension */
-/*TODO*///				if (!found)
+
+//the above code is custom to read file with extension (shadow)
+                    extension = strrchr(file, '.');
+                    if (extension != null && strchr(extension, '/') == null && strchr(extension, '\\') == null) {
+                        /* strip extension */
+                        //extension = file.substring(Integer.parseInt(extension), file.length());//*extension++ = '\0';
+                        if (found == 0) {
+                            name = sprintf("%s/%s/%s", dir_name, game, filename);
+                            logerror("Trying %s\n", name);
+                            //java code to emulate stat command (shadow)
+                            osdepend.dlprogress.setFileName("loading file: " + name);
+                            //case where file exists in rom folder
+                            if (new File(name).exists()) // if( cache_stat (name, &stat_buffer) == 0 && (stat_buffer.st_mode & S_IFDIR) )               
+                            {
+                                //name = sprintf("%s/%s/%s", dir_name, gamename, filename);
+                                //java issue since there is no way to pass by reference the data table 
+                                //get it here
+                                f.file = fopen(name, "rb");
+                                long size = ftell(f.file);
+                                f.data = new char[(int) size];
+                                fclose(f.file);
+                                int tlen[] = new int[1];
+                                int tcrc[] = new int[1];
+                                if (checksum_file(name, f.data, tlen, tcrc) == 0) {
+                                    f.type = kRAMFile;
+                                    f.offset = 0;
+                                    found = 1;
+                                }
+                                //copy values where they belong
+                                f.length = tlen[0];
+                                f.crc = tcrc[0];
+
+                            }
+                        }
+                        if (found == 0) {
+                            /* try with a .zip extension */
+                            name = sprintf("%s/%s/%s.zip", dir_name, game,file.substring(0, Integer.parseInt(extension)));
+                            logerror("Trying %s\n", name);
+                            if (new File(name).exists())//if (cache_stat(name, &stat_buffer) == 0)
+                            {
+                                byte[] bytes = unZipIt3(name, filename);
+                                f.file = fopen(bytes, filename, "rb");
+                                long size = ftell(f.file);
+                                f.data = new char[(int) size];
+                                fclose(f.file);
+                                int tlen[] = new int[1];
+                                int tcrc[] = new int[1];
+                                checksum_file_zipped(bytes, filename, f.data, tlen, tcrc);
+                                f.type = kZippedFile;
+                                f.offset = 0;
+                                f.length = tlen[0];
+                                f.crc = tcrc[0];
+                                found = 1;
+                            }
+                        }
+
+                        /* load from path specified in mess.cfg but append extension */
+ /*TODO*///				if (!found)
 /*TODO*///				{
 /*TODO*///					sprintf(name, "%s/%s", dir_name, extension);
 /*TODO*///					if (cache_stat(name, &stat_buffer) == 0 && (stat_buffer.st_mode & S_IFDIR))
@@ -508,8 +560,8 @@ public class fileio {
 /*TODO*///					}
 /*TODO*///				}
 /*TODO*///
-/*TODO*///				/* load from path specified in mess.cfg with system name and extension appended */
-/*TODO*///				if (!found)
+                        /* load from path specified in mess.cfg with system name and extension appended */
+ /*TODO*///				if (found==0)
 /*TODO*///				{
 /*TODO*///					sprintf(name, "%s/%s/%s", dir_name, game, extension);
 /*TODO*///					if (cache_stat(name, &stat_buffer) == 0 && (stat_buffer.st_mode & S_IFDIR))
@@ -578,14 +630,16 @@ public class fileio {
 /*TODO*///						}
 /*TODO*///					}
 /*TODO*///				}
-/*TODO*///            }
-/*TODO*///
-/*TODO*///            if (found)
-/*TODO*///				logerror("IMAGE_R %s FOUND in %s!\n", filename, name);
-/*TODO*///		}
-/*TODO*///		break;							/* end of IMAGE_R */
-/*TODO*///
-/*TODO*///	case OSD_FILETYPE_IMAGE_RW:
+                    }
+
+                    if (found != 0) {
+                        logerror("IMAGE_R %s FOUND in %s!\n", filename, name);
+                    }
+                }
+                break;
+            /* end of IMAGE_R */
+
+ /*TODO*///	case OSD_FILETYPE_IMAGE_RW:
 /*TODO*///		{
 /*TODO*///			static char *write_modes[] = {"rb", "wb", "r+b", "r+b", "w+b"};
 /*TODO*///			char file[256];
@@ -1059,7 +1113,7 @@ public class fileio {
     public static int osd_fread_lsbfirst(Object file, char[] buffer, int length) {
         return osd_fread(file, buffer, 0, length);
     }
-    
+
     public static int osd_fread_lsbfirst(Object file, byte[] buffer, int length) {
         char[] buf = new char[length];
         int r = osd_fread(file, buf, 0, length);

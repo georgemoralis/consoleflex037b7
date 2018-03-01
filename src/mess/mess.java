@@ -9,7 +9,7 @@ import static WIP.mame.mame.options;
 import mess.messH.GameDriver;
 import mess.messH.IODevice;
 import static mess.messH.*;
-import static old.arcadeflex.fileio.osd_fopen;
+import static mess.osdepend.fileio.osd_fopen;
 import old.arcadeflex.libc_old.FILE;
 import static old.arcadeflex.libc_old.printf;
 import static old.arcadeflex.osdepend.logerror;
@@ -215,6 +215,7 @@ public class mess {
 /*TODO*///			}
 /*TODO*///			sprintf(img->name + l, ".%s", ext);
 /*TODO*///		}
+                img.name=img.name+".rom";
 	}
 /*TODO*///
 /*TODO*///	if( file )

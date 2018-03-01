@@ -1,6 +1,7 @@
 01/03/2018
 ==========
 -Started rewritting fileio for mess . Roms are now loaded from bios folder
+-fileio works for "software" folder now
 
 28/2/2018
 =========
