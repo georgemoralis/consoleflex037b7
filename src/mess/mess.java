@@ -6,6 +6,7 @@ package mess;
 import static WIP.arcadeflex.libc_v2.sprintf;
 import static WIP.mame.mame.Machine;
 import static WIP.mame.mame.options;
+import static arcadeflex.libc.cstring.strrchr;
 import mess.messH.GameDriver;
 import mess.messH.IODevice;
 import static mess.messH.*;
@@ -137,40 +138,38 @@ public class mess {
 /*TODO*///
     public static Object image_fopen(int type, int id, int filetype, int read_or_write) {
         image_info img = images[type][id];
-	String sysname;
-	Object file;
-	int extnum;
+        String sysname;
+        Object file;
+        int extnum;
 
-	if( type >= IO_COUNT )
-	{
-		logerror("image_fopen: type out of range (%d)\n", type);
-		return null;
-	}
+        if (type >= IO_COUNT) {
+            logerror("image_fopen: type out of range (%d)\n", type);
+            return null;
+        }
 
-	if( id >= count[type] )
-	{
-		logerror("image_fopen: id out of range (%d)\n", id);
-		return null;
-	}
+        if (id >= count[type]) {
+            logerror("image_fopen: id out of range (%d)\n", id);
+            return null;
+        }
 
-	if( img.name == null )
-		return null;
+        if (img.name == null) {
+            return null;
+        }
 
-	/* try the supported extensions */
-	extnum = 0;
-	for( ;; )
-	{
-/*TODO*///		const char *ext;
-/*TODO*///		char *p;
-/*TODO*///		int l;
+        /* try the supported extensions */
+        extnum = 0;
+        for (;;) {
+            String ext;
+            String p;
 
-		sysname = Machine.gamedrv.name;
-		logerror("image_fopen: trying %s for system %s\n", img.name, sysname);
-		file = osd_fopen(sysname, img.name, filetype, read_or_write);
-		/* file found, break out */
-		if( file!=null )
-			break;
-/*TODO*///		if( Machine->gamedrv->clone_of &&
+            sysname = Machine.gamedrv.name;
+            logerror("image_fopen: trying %s for system %s\n", img.name, sysname);
+            file = osd_fopen(sysname, img.name, filetype, read_or_write);
+            /* file found, break out */
+            if (file != null) {
+                break;
+            }
+            /*TODO*///		if( Machine->gamedrv->clone_of &&
 /*TODO*///			Machine->gamedrv->clone_of != &driver_0 )
 /*TODO*///		{
 /*TODO*///			sysname = Machine->gamedrv->clone_of->name;
@@ -180,18 +179,17 @@ public class mess {
 /*TODO*///		if( file )
 /*TODO*///			break;
 /*TODO*///
-/*TODO*///		ext = device_file_extension(type,extnum);
-/*TODO*///		extnum++;
-/*TODO*///
-/*TODO*///		/* no (more) extensions, break out */
-/*TODO*///		if( !ext )
-/*TODO*///			break;
-/*TODO*///
-/*TODO*///		l = strlen(img->name);
-/*TODO*///		p = strrchr(img->name, '.');
-/*TODO*///		/* does the current name already have an extension? */
-/*TODO*///		if( p )
-/*TODO*///		{
+            ext = device_file_extension(type, extnum);
+            extnum++;
+            
+		/* no (more) extensions, break out */
+		if( ext==null )
+			break;
+		p = strrchr(img.name, '.');
+		/* does the current name already have an extension? */
+		if( p!=null )
+		{
+                    throw new UnsupportedOperationException("unimplemented");
 /*TODO*///			++p; /* skip the dot */
 /*TODO*///			/* new extension won't fit? */
 /*TODO*///			if( strlen(p) < strlen(ext) )
@@ -204,20 +202,13 @@ public class mess {
 /*TODO*///				}
 /*TODO*///			}
 /*TODO*///			strcpy(p, ext);
-/*TODO*///		}
-/*TODO*///		else
-/*TODO*///		{
-/*TODO*///			img->name = realloc(img->name, l + 1 + strlen(ext) + 1);
-/*TODO*///			if( !img->name )
-/*TODO*///			{
-/*TODO*///				logerror("image_fopen: realloc failed.. damn it!\n");
-/*TODO*///				return NULL;
-/*TODO*///			}
-/*TODO*///			sprintf(img->name + l, ".%s", ext);
-/*TODO*///		}
-                img.name=img.name+".rom";
-	}
-/*TODO*///
+		}
+		else
+		{
+			img.name+=sprintf(".%s", ext);
+		}
+        }
+        /*TODO*///
 /*TODO*///	if( file )
 /*TODO*///	{
 /*TODO*///		void *config;
@@ -265,7 +256,7 @@ public class mess {
 /*TODO*///		config = config_open(crcfile);
 /*TODO*///	}
 /*TODO*///
-	return file;
+        return file;
     }
 
     /*TODO*///
@@ -363,32 +354,38 @@ public class mess {
         return null;
     }
 
-    /*TODO*////*
-/*TODO*/// * Return the 'num'th file extension for a device of type 'type',
-/*TODO*/// * NULL if no file extensions of that type are available.
-/*TODO*/// */
-/*TODO*///const char *device_file_extension(int type, int extnum)
-/*TODO*///{
-/*TODO*///	const struct IODevice *dev = Machine->gamedrv->dev;
-/*TODO*///	const char *ext;
-/*TODO*///	if (type >= IO_COUNT)
-/*TODO*///		return NULL;
-/*TODO*///	while( dev->count )
-/*TODO*///	{
-/*TODO*///		if( type == dev->type )
-/*TODO*///		{
-/*TODO*///			ext = dev->file_extensions;
-/*TODO*///			while( ext && *ext && extnum-- > 0 )
-/*TODO*///				ext = ext + strlen(ext) + 1;
-/*TODO*///			if( ext && !*ext )
-/*TODO*///				ext = NULL;
-/*TODO*///			return ext;
-/*TODO*///		}
-/*TODO*///		dev++;
-/*TODO*///	}
-/*TODO*///	return NULL;
-/*TODO*///}
-/*TODO*///
+    /*
+    * Return the 'num'th file extension for a device of type 'type',
+    * NULL if no file extensions of that type are available.
+     */
+    public static String device_file_extension(int type, int extnum) {
+        IODevice[] dev = Machine.gamedrv.dev;
+        int dev_ptr = 0;
+        String ext;
+        if (type >= IO_COUNT) {
+            return null;
+        }
+        while (dev[dev_ptr].count != 0) {
+            if (type == dev[dev_ptr].type) {
+                ext = dev[dev_ptr].file_extensions;
+                String[] rt = ext.split("\0");
+                if (rt[extnum] != null) {
+                    return rt[extnum];
+                } else {
+                    return null;
+                }
+                /*while( ext && *ext && extnum-- > 0 )
+				ext = ext + strlen(ext) + 1;
+			if( ext && !*ext )
+				ext = NULL;
+			return ext;*/
+            }
+            dev_ptr++;
+        }
+        return null;
+    }
+
+    /*TODO*///
 /*TODO*////*
 /*TODO*/// * Return the 'id'th crc for a device of type 'type',
 /*TODO*/// * NULL if not enough image names of that type are available.

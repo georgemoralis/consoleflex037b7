@@ -2,6 +2,7 @@
 ==========
 -Started rewritting fileio for mess . Roms are now loaded from bios folder
 -fileio works for "software" folder now
+-Some fixes to mess.java . now rom detection is better
 
 28/2/2018
 =========
