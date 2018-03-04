@@ -8,7 +8,6 @@ import static WIP.arcadeflex.fucPtr.*;
 import static WIP.arcadeflex.libc_v2.*;
 import WIP.mame.osdependH.osd_bitmap;
 import static old.arcadeflex.osdepend.logerror;
-import static WIP.arcadeflex.libc.memset.*;
 import static WIP.arcadeflex.libc.memcpy.*;
 import static WIP.mame.common.bitmap_alloc;
 import static WIP.mame.mame.Machine;

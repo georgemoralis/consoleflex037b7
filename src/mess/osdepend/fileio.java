@@ -1131,6 +1131,9 @@ public class fileio {
         }
         return r;
     }
+    public static int osd_fread(Object file, UBytePtr buffer, int offset, int length) {
+        return osd_fread(file, buffer.memory, buffer.offset + offset, length);     
+    }
 
     /*TODO*///int osd_fread_swap(void *file, void *buffer, int length)
 /*TODO*///{

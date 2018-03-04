@@ -1,5 +1,7 @@
 package arcadeflex.libc;
 
+import WIP.arcadeflex.libc_v2.UBytePtr;
+
 /**
  *
  * @author shadow
@@ -24,6 +26,21 @@ public class cstring {
     public static void memset(char[] dst, int value, int size) {
         for (int mem = 0; mem < size; mem++) {
             dst[mem] = (char) value;
+        }
+    }
+    public static void memset(int[] dst, int value, int size) {
+        for (int mem = 0; mem < size; mem++) {
+            dst[mem] = value;
+        }
+    }
+    public static void memset(UBytePtr ptr,int offset, int value, int length) {
+        for (int i = 0; i < length; i++) {
+            ptr.write(i+offset, value);
+        }
+    }
+    public static void memset(UBytePtr ptr,int value, int length) {
+        for (int i = 0; i < length; i++) {
+            ptr.write(i, value);
         }
     }
     /**

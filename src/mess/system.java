@@ -5,7 +5,7 @@ package mess;
 
 import static mess.messH.*;
 import static mess.systems.coleco.*;
-
+import static mess.systems.sms.*;
 public class system {
 
     public static GameDriver drivers[] = {
@@ -40,8 +40,8 @@ public class system {
         /*TODO*///	DRIVER( pce )		/* PC/Engine - Turbo Graphics-16  NEC 1989-1993   */
         /*TODO*///
         /*TODO*///	/* SEGA */
-        /*TODO*///	DRIVER( gamegear )	/* Sega Game Gear Handheld						  */
-        /*TODO*///	DRIVER( sms )		/* Sega Sega Master System						  */
+        driver_gamegear,	/* Sega Game Gear Handheld						  */
+        driver_sms,		/* Sega Sega Master System						  */
         /*TODO*///	DRIVER( genesis )	/* Sega Genesis/MegaDrive						  */
         /*TODO*///
         /*TODO*///	/* GCE */

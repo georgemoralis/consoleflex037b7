@@ -1,6 +1,7 @@
 04/03/2018
 ==========
 -Added ym2413 sound chip needed for sms emulation
+-Added sms driver (WIP)
 
 01/03/2018
 ==========
