@@ -1,3 +1,7 @@
+04/03/2018
+==========
+-Added ym2413 sound chip needed for sms emulation
+
 01/03/2018
 ==========
 -Started rewritting fileio for mess . Roms are now loaded from bios folder
