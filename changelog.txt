@@ -1,3 +1,8 @@
+17/03/2018
+==========
+-Used z80 from arcadeflex_037b7 accurate project
+-Some fixes to sms vdp (increased vdp mem) . Now sonic appears to work ok. Some more sms games appears to work as well
+
 04/03/2018
 ==========
 -Added ym2413 sound chip needed for sms emulation

@@ -29,7 +29,7 @@ public class smsvdp
 	
 	static int[]/*UINT8*/ u8_reg=new int[0x10];
 	static int[]/*UINT8*/ u8_cram=new int[0x40];
-	static UBytePtr vram=new UBytePtr(0x4000);
+	static UBytePtr vram=new UBytePtr(0x10000); //0x4000
 	static int addr;
 	static int code;
 	static int pending;
