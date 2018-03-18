@@ -6,6 +6,8 @@ package mess;
 import static mess.messH.*;
 import static mess.systems.coleco.*;
 import static mess.systems.sms.*;
+import static mess.systems.nes.*;
+
 public class system {
 
     public static GameDriver drivers[] = {
@@ -23,15 +25,15 @@ public class system {
         /*TODO*///	DRIVER( channelf )	/* Channel F									  */
         /*TODO*///
         /*TODO*///    /* COLECO */
-        driver_coleco,	/* ColecoVision (Original BIOS )				  */
+        driver_coleco, /* ColecoVision (Original BIOS )				  */
         /*TODO*///#if 0						/* Please dont include these next 2 in a distribution, they are Hacks	*/
         /*TODO*///	DRIVER( colecofb )	/* ColecoVision (Fast BIOS load)				  */
         /*TODO*///	DRIVER( coleconb )	/* ColecoVision (No BIOS load)					  */
         /*TODO*///#endif
         /*TODO*///	/* NINTENDO */
-        /*TODO*///	DRIVER( nes )		/* Nintendo Entertainment System				  */
-        /*TODO*///	DRIVER( nespal )	/* Nintendo Entertainment System				  */
-        /*TODO*///	DRIVER( famicom )
+        driver_nes, /* Nintendo Entertainment System				  */
+        driver_nespal,/* Nintendo Entertainment System				  */
+        driver_famicom,
         /*TODO*///	DRIVER( gameboy )	/* Nintendo GameBoy Handheld					  */
         /*TODO*///    DRIVER (snes)		/* Nintendo Super Nintendo                        */
         /*TODO*////*	DRIVER (vboy)	*/	/* Nintendo Virtual Boy                           */
@@ -40,8 +42,8 @@ public class system {
         /*TODO*///	DRIVER( pce )		/* PC/Engine - Turbo Graphics-16  NEC 1989-1993   */
         /*TODO*///
         /*TODO*///	/* SEGA */
-        driver_gamegear,	/* Sega Game Gear Handheld						  */
-        driver_sms,		/* Sega Sega Master System						  */
+        driver_gamegear, /* Sega Game Gear Handheld						  */
+        driver_sms, /* Sega Sega Master System						  */
         /*TODO*///	DRIVER( genesis )	/* Sega Genesis/MegaDrive						  */
         /*TODO*///
         /*TODO*///	/* GCE */
