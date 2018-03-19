@@ -19,10 +19,15 @@ import static WIP.mame.osdependH.*;
 import static mame.commonH.*;
 import static old.mame.common.*;
 import static WIP.arcadeflex.libc.memcpy.*;
+import static WIP.mame.memoryH.*;
 import static old.arcadeflex.libc_old.SEEK_SET;
 import static old.arcadeflex.libc_old.printf;
+import static WIP.arcadeflex.libc.memcpy.*;
 import static old.arcadeflex.libc_old.strcmp;
 import static mess.includes.nesH.*;
+import static mess.systems.nes.*;
+import static WIP.mame.memory.*;
+import static mess.machine.nes_mmc.*;
 
 public class nes {
 
@@ -36,23 +41,23 @@ public class nes {
 /*TODO*///	/* Uncomment this to generate prg chunk files when the cart is loaded */
 /*TODO*///	//#define SPLIT_PRG
 /*TODO*///	
-/*TODO*///	#define BATTERY_SIZE 0x2000
-/*TODO*///	char battery_name[1024];
-/*TODO*///	UINT8 battery_data[BATTERY_SIZE];
+    public static final int BATTERY_SIZE =0x2000;
+    static String battery_name = "";
+    public static char[] battery_data=new char[BATTERY_SIZE];
 /*TODO*///	
 /*TODO*///	void nes_vh_renderscanline (int scanline);
 /*TODO*///	
 /*TODO*///	struct ppu_struct ppu;
-/*TODO*///	struct nes_struct nes;
-/*TODO*///	struct fds_struct nes_fds;
+    public static nes_struct _nes = new nes_struct();
+    /*TODO*///	struct fds_struct nes_fds;
 /*TODO*///	
     static int ppu_scanlines_per_frame;
     /*TODO*///	
 /*TODO*///	UINT8 *ppu_page[4];
 /*TODO*///	
 /*TODO*///	int current_scanline;
-/*TODO*///	char use_vram[512];
-/*TODO*///	
+    static char[] use_vram = new char[512];
+    /*TODO*///	
 /*TODO*///	/* PPU Variables */
 /*TODO*///	int PPU_Control0;		// $2000
 /*TODO*///	int PPU_Control1;		// $2001
@@ -86,15 +91,15 @@ public class nes {
 /*TODO*///	static void ppu_reset (struct ppu_struct *ppu_);
     public static InitDriverPtr init_nes_core = new InitDriverPtr() {
         public void handler() {
-            throw new UnsupportedOperationException("Not supported yet.");
-            /*TODO*///		/* We set these here in case they weren't set in the cart loader */
-/*TODO*///		nes.rom = memory_region(REGION_CPU1);
-/*TODO*///		nes.vrom = memory_region(REGION_GFX1);
-/*TODO*///		nes.vram = memory_region(REGION_GFX2);
-/*TODO*///		nes.wram = memory_region(REGION_USER1);
-/*TODO*///	
-/*TODO*///		battery_ram = nes.wram;
-/*TODO*///	
+            //throw new UnsupportedOperationException("Not supported yet.");
+            		/* We set these here in case they weren't set in the cart loader */
+		_nes.rom = memory_region(REGION_CPU1);
+		_nes.vrom = memory_region(REGION_GFX1);
+		_nes.vram = memory_region(REGION_GFX2);
+		_nes.wram = memory_region(REGION_USER1);
+	
+		battery_ram = _nes.wram;
+	
 /*TODO*///		/* Set up the memory handlers for the mapper */
 /*TODO*///		switch (nes.mapper)
 /*TODO*///		{
@@ -118,20 +123,20 @@ public class nes {
 /*TODO*///				install_mem_write_handler(0, 0x8000, 0xffff, nes_mapper_w);
 /*TODO*///				break;
 /*TODO*///			default:
-/*TODO*///				nes.slow_banking = 0;
-/*TODO*///				install_mem_read_handler(0, 0x6000, 0x7fff, MRA_BANK5);
-/*TODO*///				install_mem_read_handler(0, 0x8000, 0x9fff, MRA_BANK1);
-/*TODO*///				install_mem_read_handler(0, 0xa000, 0xbfff, MRA_BANK2);
-/*TODO*///				install_mem_read_handler(0, 0xc000, 0xdfff, MRA_BANK3);
-/*TODO*///				install_mem_read_handler(0, 0xe000, 0xffff, MRA_BANK4);
-/*TODO*///				cpu_setbankhandler_r (1, MRA_BANK1);
-/*TODO*///				cpu_setbankhandler_r (2, MRA_BANK2);
-/*TODO*///				cpu_setbankhandler_r (3, MRA_BANK3);
-/*TODO*///				cpu_setbankhandler_r (4, MRA_BANK4);
-/*TODO*///				cpu_setbankhandler_r (5, MRA_BANK5);
-/*TODO*///	
-/*TODO*///				install_mem_write_handler(0, 0x6000, 0x7fff, nes_mid_mapper_w);
-/*TODO*///				install_mem_write_handler(0, 0x8000, 0xffff, nes_mapper_w);
+				_nes.u8_slow_banking = 0;
+				install_mem_read_handler(0, 0x6000, 0x7fff, MRA_BANK5);
+				install_mem_read_handler(0, 0x8000, 0x9fff, MRA_BANK1);
+				install_mem_read_handler(0, 0xa000, 0xbfff, MRA_BANK2);
+				install_mem_read_handler(0, 0xc000, 0xdfff, MRA_BANK3);
+				install_mem_read_handler(0, 0xe000, 0xffff, MRA_BANK4);
+				cpu_setbankhandler_r (1, MRA_BANK1);
+				cpu_setbankhandler_r (2, MRA_BANK2);
+				cpu_setbankhandler_r (3, MRA_BANK3);
+				cpu_setbankhandler_r (4, MRA_BANK4);
+				cpu_setbankhandler_r (5, MRA_BANK5);
+	
+				install_mem_write_handler(0, 0x6000, 0x7fff, nes_mid_mapper_w);
+				install_mem_write_handler(0, 0x8000, 0xffff, nes_mapper_w);
 /*TODO*///				break;
 /*TODO*///		}
 /*TODO*///	
@@ -163,15 +168,15 @@ public class nes {
 /*TODO*///			}
 /*TODO*///		}
 /*TODO*///	
-/*TODO*///		/* Load a battery file, but only if there's no trainer since they share */
-/*TODO*///		/* overlapping memory. */
-/*TODO*///		if (nes.trainer) return;
-/*TODO*///	
-/*TODO*///		/* We need this because battery ram is loaded before the */
-/*TODO*///		/* memory subsystem is set up. When this routine is called */
-/*TODO*///		/* everything is ready, so we can just copy over the data */
-/*TODO*///		/* we loaded before. */
-/*TODO*///		memcpy (battery_ram, battery_data, BATTERY_SIZE);
+		/* Load a battery file, but only if there's no trainer since they share */
+		/* overlapping memory. */
+		if (_nes.u8_trainer!=0) return;
+	
+		/* We need this because battery ram is loaded before the */
+		/* memory subsystem is set up. When this routine is called */
+		/* everything is ready, so we can just copy over the data */
+		/* we loaded before. */
+		memcpy (battery_ram, battery_data, BATTERY_SIZE);
         }
     };
 
@@ -209,11 +214,11 @@ public class nes {
     };
     public static StopMachinePtr nes_stop_machine = new StopMachinePtr() {
         public void handler() {
-            throw new UnsupportedOperationException("Not supported yet.");
-            /*TODO*///		/* Write out the battery file if necessary */
-/*TODO*///		if (nes.battery)
-/*TODO*///		{
-/*TODO*///			void *f;
+
+            /* Write out the battery file if necessary */
+            if (_nes.u8_battery != 0) {
+                throw new UnsupportedOperationException("Not supported yet.");
+                /*TODO*///			void *f;
 /*TODO*///	
 /*TODO*///			f = osd_fopen(battery_name,0,OSD_FILETYPE_NVRAM,1);
 /*TODO*///			if (f != 0)
@@ -221,7 +226,7 @@ public class nes {
 /*TODO*///				osd_fwrite(f,battery_ram,BATTERY_SIZE);
 /*TODO*///				osd_fclose (f);
 /*TODO*///			}
-/*TODO*///		}
+            }
         }
     };
     /*TODO*///	
@@ -1010,55 +1015,45 @@ public class nes {
 
     public static io_initPtr nes_load_rom = new io_initPtr() {
         public int handler(int id) {
-            throw new UnsupportedOperationException("Not supported yet.");
-            /*TODO*///	
-/*TODO*///		const char *mapinfo;
-/*TODO*///		int mapint1=0,mapint2=0,mapint3=0,mapint4=0,goodcrcinfo = 0;
-/*TODO*///		FILE *romfile;
-/*TODO*///		char magic[4];
-/*TODO*///		char skank[8];
-/*TODO*///		int local_options = 0;
-/*TODO*///		char m;
-/*TODO*///		int i;
-/*TODO*///	
-/*TODO*///		if ((!device_filename(IO_CARTSLOT,id)) && (id == 0))
-/*TODO*///		{
-/*TODO*///	//		printf("NES requires cartridge!\n");
-/*TODO*///			return INIT_FAILED;
-/*TODO*///		}
-/*TODO*///		else
-/*TODO*///		{
-/*TODO*///			strcpy (battery_name, device_filename(IO_CARTSLOT,id));
-/*TODO*///	
-/*TODO*///			/* Strip off file extension if it exists */
-/*TODO*///			for (i = strlen(battery_name) - 1; i > 0; i --)
-/*TODO*///			{
-/*TODO*///				/* If we found a period, terminate the string here and jump out */
-/*TODO*///				if (battery_name[i] == '.')
-/*TODO*///				{
-/*TODO*///					battery_name[i] = 0x00;
-/*TODO*///					break;
-/*TODO*///				}
-/*TODO*///			}
-/*TODO*///	
-/*TODO*///			logerror ("battery name (minus extension): %s\n", battery_name);
-/*TODO*///		}
-/*TODO*///	
-/*TODO*///		if (!(romfile = image_fopen (IO_CARTSLOT, id, OSD_FILETYPE_IMAGE_R, 0)))
-/*TODO*///		{
-/*TODO*///			logerror("image_fopen failed in nes_load_rom.\n");
-/*TODO*///				return 1;
-/*TODO*///		}
-/*TODO*///	
-/*TODO*///		/* Verify the file is in iNES format */
-/*TODO*///		osd_fread (romfile, magic, 4);
-/*TODO*///	
-/*TODO*///		if ((magic[0] != 'N') ||
-/*TODO*///			(magic[1] != 'E') ||
-/*TODO*///			(magic[2] != 'S'))
-/*TODO*///			goto bad;
-/*TODO*///	
-/*TODO*///		mapinfo = device_extrainfo(IO_CARTSLOT,id);
+            /*TODO*///		const char *mapinfo;
+            int mapint1 = 0, mapint2 = 0, mapint3 = 0, mapint4 = 0, goodcrcinfo = 0;
+            Object romfile;
+            char[] magic = new char[4];
+            char[] skank = new char[8];
+            int local_options = 0;
+            char m[] = new char[1];
+            int i;
+
+            if ((device_filename(IO_CARTSLOT, id) == null) && (id == 0)) {
+                //		printf("NES requires cartridge!\n");
+                return INIT_FAILED;
+            } else {
+                battery_name = device_filename(IO_CARTSLOT, id);
+
+                /* Strip off file extension if it exists */
+                if (battery_name.lastIndexOf('.') != -1) {
+                    battery_name = battery_name.substring(0, battery_name.lastIndexOf('.'));
+
+                }
+                logerror("battery name (minus extension): %s\n", battery_name);
+            }
+
+            if ((romfile = image_fopen(IO_CARTSLOT, id, OSD_FILETYPE_IMAGE_R, 0)) == null) {
+                logerror("image_fopen failed in nes_load_rom.\n");
+                return 1;
+            }
+
+            /* Verify the file is in iNES format */
+            osd_fread(romfile, magic, 4);
+
+            if ((magic[0] != 'N')
+                    || (magic[1] != 'E')
+                    || (magic[2] != 'S')) {
+                logerror("BAD section hit during LOAD ROM.\n");
+                osd_fclose(romfile);
+                return 1;
+            }
+            /*TODO*///		mapinfo = device_extrainfo(IO_CARTSLOT,id);
 /*TODO*///		if (mapinfo != 0)
 /*TODO*///		{
 /*TODO*///			if (4 == sscanf(mapinfo,"%d %d %d %d",&mapint1,&mapint2,&mapint3,&mapint4))
@@ -1077,139 +1072,122 @@ public class nes {
 /*TODO*///		{
 /*TODO*///			logerror("NES: No extrainfo found\n");
 /*TODO*///		}
-/*TODO*///		if (!goodcrcinfo) 
-/*TODO*///		{
-/*TODO*///			osd_fread (romfile, &nes.prg_chunks, 1);
-/*TODO*///			osd_fread (romfile, &nes.chr_chunks, 1);
-/*TODO*///			/* Read the first ROM option byte (offset 6) */
-/*TODO*///			osd_fread (romfile, &m, 1);
-/*TODO*///	
-/*TODO*///			/* Interpret the iNES header flags */
-/*TODO*///			nes.mapper = (m & 0xf0) >> 4;
-/*TODO*///			local_options = m & 0x0f;
-/*TODO*///	
-/*TODO*///	
-/*TODO*///			/* Read the second ROM option byte (offset 7) */
-/*TODO*///			osd_fread (romfile, &m, 1);
-/*TODO*///	
-/*TODO*///			/* Check for skanky headers */
-/*TODO*///			osd_fread (romfile, &skank, 8);
-/*TODO*///	
-/*TODO*///			/* If the header has junk in the unused bytes, assume the extra mapper byte is also invalid */
-/*TODO*///			/* We only check the first 4 unused bytes for now */
-/*TODO*///			for (i = 0; i < 4; i ++)
-/*TODO*///			{
-/*TODO*///				logerror("%02x ", skank[i]);
-/*TODO*///				if (skank[i] != 0x00)
-/*TODO*///				{
-/*TODO*///					logerror("(skank: %d)", i);
-/*TODO*///	//				m = 0;
-/*TODO*///				}
-/*TODO*///			}
-/*TODO*///			logerror("\n");
-/*TODO*///	
-/*TODO*///			nes.mapper = nes.mapper | (m & 0xf0);
-/*TODO*///		}
-/*TODO*///	
-/*TODO*///		nes.hard_mirroring = local_options & 0x01;
-/*TODO*///		nes.battery = local_options & 0x02;
-/*TODO*///		nes.trainer = local_options & 0x04;
-/*TODO*///		nes.four_screen_vram = local_options & 0x08;
-/*TODO*///	
-/*TODO*///		if (nes.battery) logerror("-- Battery found\n");
-/*TODO*///		if (nes.trainer) logerror("-- Trainer found\n");
-/*TODO*///		if (nes.four_screen_vram) logerror("-- 4-screen VRAM\n");
-/*TODO*///	
-/*TODO*///		/* Free the regions that were allocated by the ROM loader */
-/*TODO*///	    free_memory_region (REGION_CPU1);
-/*TODO*///	    free_memory_region (REGION_GFX1);
-/*TODO*///	
-/*TODO*///	    /* Allocate them again with the proper size */
-/*TODO*///	    if( new_memory_region(REGION_CPU1, 0x10000 + (nes.prg_chunks+1) * 0x4000) ||
-/*TODO*///	        new_memory_region(REGION_GFX1, (nes.chr_chunks+1) * 0x2000) )
-/*TODO*///	    {
-/*TODO*///	        printf ("Memory allocation failed reading roms!\n");
-/*TODO*///	        goto bad;
-/*TODO*///	    }
-/*TODO*///	
-/*TODO*///		nes.rom = memory_region(REGION_CPU1);
-/*TODO*///		nes.vrom = memory_region(REGION_GFX1);
-/*TODO*///		nes.vram = memory_region(REGION_GFX2);
-/*TODO*///		nes.wram = memory_region(REGION_USER1);
-/*TODO*///	
-/*TODO*///		/* Position past the header */
-/*TODO*///		osd_fseek (romfile, 16, SEEK_SET);
-/*TODO*///	
-/*TODO*///		/* Load the 0x200 byte trainer at 0x7000 if it exists */
-/*TODO*///		if (nes.trainer)
-/*TODO*///		{
-/*TODO*///			osd_fread (romfile, &nes.wram[0x1000], 0x200);
-/*TODO*///		}
-/*TODO*///	
-/*TODO*///		/* Read in the program chunks */
-/*TODO*///		if (nes.prg_chunks == 1)
-/*TODO*///		{
-/*TODO*///			osd_fread (romfile, &nes.rom[0x14000], 0x4000);
-/*TODO*///			/* Mirror this bank into $8000 */
-/*TODO*///			memcpy (&nes.rom[0x10000], &nes.rom [0x14000], 0x4000);
-/*TODO*///		}
-/*TODO*///		else
-/*TODO*///			osd_fread (romfile, &nes.rom[0x10000], 0x4000 * nes.prg_chunks);
-/*TODO*///	
-/*TODO*///	#ifdef SPLIT_PRG
-/*TODO*///	{
-/*TODO*///		FILE *prgout;
-/*TODO*///		char outname[255];
-/*TODO*///	
-/*TODO*///		for (i = 0; i < nes.prg_chunks; i ++)
-/*TODO*///		{
-/*TODO*///			sprintf (outname, "%s.p%d", battery_name, i);
-/*TODO*///			prgout = fopen (outname, "wb");
-/*TODO*///			if (prgout != 0)
-/*TODO*///			{
-/*TODO*///				fwrite (&nes.rom[0x10000 + 0x4000 * i], 1, 0x4000, prgout);
-/*TODO*///				fclose (prgout);
-/*TODO*///			}
-/*TODO*///		}
-/*TODO*///	}
-/*TODO*///	#endif
-/*TODO*///	
-/*TODO*///		logerror("**\n");
-/*TODO*///		logerror("Mapper: %d\n", nes.mapper);
-/*TODO*///		logerror("PRG chunks: %02x, size: %06x\n", nes.prg_chunks, 0x4000*nes.prg_chunks);
-/*TODO*///	
-/*TODO*///		/* Read in any chr chunks */
-/*TODO*///		if (nes.chr_chunks > 0)
-/*TODO*///		{
-/*TODO*///			osd_fread (romfile, nes.vrom, 0x2000*nes.chr_chunks);
-/*TODO*///	
-/*TODO*///			/* Mark each char as not existing in VRAM */
-/*TODO*///			for (i = 0; i < 512; i ++)
-/*TODO*///				use_vram[i] = 0;
-/*TODO*///			/* Calculate the total number of characters to decode */
-/*TODO*///			nes_charlayout.total = nes.chr_chunks * 512;
-/*TODO*///			if (nes.mapper == 2)
-/*TODO*///			{
-/*TODO*///				printf ("Warning: VROM has been found in VRAM-based mapper. Either the mapper is set wrong or the ROM image is incorrect.\n");
-/*TODO*///			}
-/*TODO*///		}
-/*TODO*///	
-/*TODO*///		else
-/*TODO*///		{
-/*TODO*///			/* Mark each char as existing in VRAM */
-/*TODO*///			for (i = 0; i < 512; i ++)
-/*TODO*///				use_vram[i] = 1;
-/*TODO*///			nes_charlayout.total = 512;
-/*TODO*///		}
-/*TODO*///	
-/*TODO*///		logerror("CHR chunks: %02x, size: %06x\n", nes.chr_chunks, 0x4000*nes.chr_chunks);
-/*TODO*///		logerror("**\n");
-/*TODO*///	
-/*TODO*///		/* Attempt to load a battery file for this ROM. If successful, we */
-/*TODO*///		/* must wait until later to move it to the system memory. */
-/*TODO*///		if (nes.battery)
-/*TODO*///		{
-/*TODO*///			void *f;
+            if (goodcrcinfo == 0) {
+                osd_fread(romfile, _nes.prg_chunks, 1);
+                osd_fread(romfile, _nes.chr_chunks, 1);
+                /* Read the first ROM option byte (offset 6) */
+                osd_fread(romfile, m, 1);
+
+                /* Interpret the iNES header flags */
+                _nes.mapper = (char) ((m[0] & 0xf0) >> 4);
+                local_options = m[0] & 0x0f;
+
+                /* Read the second ROM option byte (offset 7) */
+                osd_fread(romfile, m, 1);
+
+                /* Check for skanky headers */
+                osd_fread(romfile, skank, 8);
+
+                /* If the header has junk in the unused bytes, assume the extra mapper byte is also invalid */
+ /* We only check the first 4 unused bytes for now */
+                for (i = 0; i < 4; i++) {
+                    logerror("%02x ", skank[i]);
+                    if (skank[i] != 0x00) {
+                        logerror("(skank: %d)", i);
+                        //				m = 0;
+                    }
+                }
+                logerror("\n");
+
+                _nes.mapper = (char) (_nes.mapper | (m[0] & 0xf0));
+            }
+
+            _nes.u8_hard_mirroring = local_options & 0x01;
+            _nes.u8_battery = local_options & 0x02;
+            _nes.u8_trainer = local_options & 0x04;
+            _nes.u8_four_screen_vram = local_options & 0x08;
+
+            if (_nes.u8_battery != 0) {
+                logerror("-- Battery found\n");
+            }
+            if (_nes.u8_trainer != 0) {
+                logerror("-- Trainer found\n");
+            }
+            if (_nes.u8_four_screen_vram != 0) {
+                logerror("-- 4-screen VRAM\n");
+            }
+
+            /* Free the regions that were allocated by the ROM loader */
+            free_memory_region(REGION_CPU1);
+            free_memory_region(REGION_GFX1);
+
+            /* Allocate them again with the proper size */
+            if (new_memory_region(REGION_CPU1, 0x10000 + (_nes.prg_chunks[0] + 1) * 0x4000) != 0
+                    || new_memory_region(REGION_GFX1, (_nes.chr_chunks[0] + 1) * 0x2000) != 0) {
+                printf("Memory allocation failed reading roms!\n");
+                logerror("BAD section hit during LOAD ROM.\n");
+                osd_fclose(romfile);
+                return 1;
+            }
+
+            _nes.rom = memory_region(REGION_CPU1);
+            _nes.vrom = memory_region(REGION_GFX1);
+            _nes.vram = memory_region(REGION_GFX2);
+            _nes.wram = memory_region(REGION_USER1);
+
+            /* Position past the header */
+            osd_fseek(romfile, 16, SEEK_SET);
+
+            /* Load the 0x200 byte trainer at 0x7000 if it exists */
+            if (_nes.u8_trainer != 0) {
+                /*TODO*///			osd_fread (romfile, &_nes.wram[0x1000], 0x200);
+                throw new UnsupportedOperationException("Not supported yet.");
+
+            }
+
+            /* Read in the program chunks */
+            if (_nes.prg_chunks[0] == 1) {
+                osd_fread(romfile, _nes.rom, 0x14000, 0x4000);
+                /* Mirror this bank into $8000 */
+                memcpy(_nes.rom, 0x10000, _nes.rom, 0x14000, 0x4000);
+            } else {
+                throw new UnsupportedOperationException("Not supported yet.");
+                /*TODO*///			osd_fread (romfile, &_nes.rom[0x10000], 0x4000 * _nes.prg_chunks);
+            }
+
+            logerror("**\n");
+            logerror("Mapper: %d\n", _nes.mapper);
+            logerror("PRG chunks: %02x, size: %06x\n", _nes.prg_chunks[0], 0x4000 * _nes.prg_chunks[0]);
+
+            /* Read in any chr chunks */
+            if (_nes.chr_chunks[0] > 0) {
+                osd_fread(romfile, _nes.vrom, 0x2000 * _nes.chr_chunks[0]);
+
+                /* Mark each char as not existing in VRAM */
+                for (i = 0; i < 512; i++) {
+                    use_vram[i] = 0;
+                }
+                /* Calculate the total number of characters to decode */
+                nes_charlayout.total = _nes.chr_chunks[0] * 512;
+                if (_nes.mapper == 2) {
+                    printf("Warning: VROM has been found in VRAM-based mapper. Either the mapper is set wrong or the ROM image is incorrect.\n");
+                }
+            } else {
+                /* Mark each char as existing in VRAM */
+                for (i = 0; i < 512; i++) {
+                    use_vram[i] = 1;
+                }
+                nes_charlayout.total = 512;
+            }
+
+            logerror("CHR chunks: %02x, size: %06x\n", _nes.chr_chunks, 0x4000 * _nes.chr_chunks[0]);
+            logerror("**\n");
+
+            /* Attempt to load a battery file for this ROM. If successful, we */
+ /* must wait until later to move it to the system memory. */
+            if (_nes.u8_battery != 0) {
+                throw new UnsupportedOperationException("Not supported yet.");
+                /*TODO*///			void *f;
 /*TODO*///	
 /*TODO*///			f = osd_fopen (battery_name, 0, OSD_FILETYPE_NVRAM, 0);
 /*TODO*///			if (f != 0)
@@ -1219,15 +1197,11 @@ public class nes {
 /*TODO*///			}
 /*TODO*///			else
 /*TODO*///				memset (battery_data, 0, BATTERY_SIZE);
-/*TODO*///		}
-/*TODO*///	
-/*TODO*///		osd_fclose (romfile);
-/*TODO*///		return 0;
-/*TODO*///	
-/*TODO*///	bad:
-/*TODO*///		logerror("BAD section hit during LOAD ROM.\n");
-/*TODO*///		osd_fclose (romfile);
-/*TODO*///		return 1;
+            }
+
+            osd_fclose(romfile);
+            return 0;
+
         }
     };
 
@@ -1243,23 +1217,25 @@ public class nes {
     };
     public static io_idPtr nes_id_rom = new io_idPtr() {
         public int handler(int id) {
-            throw new UnsupportedOperationException("Not supported yet.");
-            /*TODO*///	    FILE *romfile;
-/*TODO*///		unsigned char magic[4];
-/*TODO*///		int retval;
-/*TODO*///	
-/*TODO*///		if (!(romfile = image_fopen(IO_CARTSLOT, id, OSD_FILETYPE_IMAGE_R, 0))) return 0;
-/*TODO*///	
-/*TODO*///		retval = 1;
-/*TODO*///		/* Verify the file is in iNES format */
-/*TODO*///		osd_fread (romfile, magic, 4);
-/*TODO*///		if ((magic[0] != 'N') ||
-/*TODO*///			(magic[1] != 'E') ||
-/*TODO*///			(magic[2] != 'S'))
-/*TODO*///			retval = 0;
-/*TODO*///	
-/*TODO*///		osd_fclose (romfile);
-/*TODO*///		return retval;
+            Object romfile;
+            char[] magic = new char[4];
+            int retval;
+
+            if ((romfile = image_fopen(IO_CARTSLOT, id, OSD_FILETYPE_IMAGE_R, 0)) == null) {
+                return 0;
+            }
+
+            retval = 1;
+            /* Verify the file is in iNES format */
+            osd_fread(romfile, magic, 4);
+            if ((magic[0] != 'N')
+                    || (magic[1] != 'E')
+                    || (magic[2] != 'S')) {
+                retval = 0;
+            }
+
+            osd_fclose(romfile);
+            return retval;
         }
     };
     /*TODO*///	

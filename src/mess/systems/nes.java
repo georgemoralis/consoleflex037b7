@@ -40,7 +40,7 @@ import static mess.machine.nes_mmc.*;
 
 public class nes {
 
-    public static UBytePtr battery_ram = new UBytePtr();
+    public static UBytePtr battery_ram;
     public static UBytePtr main_ram = new UBytePtr();
 
     public static ReadHandlerPtr nes_mirrorram_r = new ReadHandlerPtr() {
@@ -280,7 +280,7 @@ public class nes {
     };
 
     /* !! Warning: the charlayout is changed by nes_load_rom !! */
-    static GfxLayout nes_charlayout = new GfxLayout(
+    public static GfxLayout nes_charlayout = new GfxLayout(
             8, 8, /* 8*8 characters */
             512, /* 512 characters - changed at runtime */
             2, /* 2 bits per pixel */

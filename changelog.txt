@@ -1,6 +1,7 @@
 19/03/2018
 ==========
 -Some intial work on nes driver
+-More progress to nes driver (still very intial)
 
 17/03/2018
 ==========

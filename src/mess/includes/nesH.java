@@ -4,6 +4,8 @@
  */
 package mess.includes;
 
+import WIP.arcadeflex.libc_v2.UBytePtr;
+
 public class nesH {
 
     /* Uncomment this to see all 4 ppu vram pages at once */
@@ -55,28 +57,27 @@ public class nesH {
 /*TODO*///	UINT8 *page[4];
 /*TODO*///	UINT16 scanlines_per_frame;
 /*TODO*///};
+    public static class nes_struct {
 
-    /*TODO*///struct nes_struct {
-    /* load-time cart variables which remain constant */
- /*TODO*///	UINT8 trainer;
-/*TODO*///	UINT8 battery;
-/*TODO*///	UINT8 prg_chunks;
-/*TODO*///	UINT8 chr_chunks;
+        /* load-time cart variables which remain constant */
+        public int u8_trainer;
+        public int u8_battery;
+        public char[] prg_chunks = new char[1];
+        public char[] chr_chunks = new char[1];
 
-    /* system variables which don't change at run-time */
- /*TODO*///	UINT16 mapper;
-/*TODO*///	UINT8 four_screen_vram;
-/*TODO*///	UINT8 hard_mirroring;
-/*TODO*///	UINT8 slow_banking;
-/*TODO*///
-/*TODO*///	UINT8 *rom;
-/*TODO*///	UINT8 *vrom;
-/*TODO*///	UINT8 *vram;
-/*TODO*///	UINT8 *wram;
-/*TODO*///
-    /* Variables which can change */
- /*TODO*///	UINT8 mid_ram_enable;
-/*TODO*///};
+        /* system variables which don't change at run-time */
+        public char mapper;
+        public int u8_four_screen_vram;
+        public int u8_hard_mirroring;
+        public int u8_slow_banking;
+        public UBytePtr rom;
+        public UBytePtr vrom;
+        public UBytePtr vram;
+        public UBytePtr wram;
+
+        /* Variables which can change */
+        public int u8_mid_ram_enable;
+    };
 
     /*TODO*///extern struct nes_struct nes;
 

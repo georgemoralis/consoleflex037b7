@@ -23,6 +23,11 @@ import static old.mame.cpuintrf.*;
 import static old.mame.drawgfx.*;
 import static old.mame.palette.*;
 import static cpu.z80.z80.*;
+import static old.arcadeflex.libc_old.sizeof;
+import static WIP.arcadeflex.libc.memcpy.*;
+import static mess.machine.nes._nes;
+import static vidhrdw.generic.*;
+import static old.arcadeflex.video.osd_alloc_bitmap;
 
 public class nes {
 
@@ -34,39 +39,34 @@ public class nes {
 /*TODO*///	//#define LOG_COLOR
 /*TODO*///	//#define DIRTY_BUFFERS
 /*TODO*///	
-/*TODO*///	#define VIDEORAM_SIZE	0x4000
-/*TODO*///	#define SPRITERAM_SIZE	0x100
-/*TODO*///	#define VRAM_SIZE	0x3c0
+    public static final int VIDEORAM_SIZE = 0x4000;
+    public static final int SPRITERAM_SIZE = 0x100;
+    public static final int VRAM_SIZE = 0x3c0;
+
+    static int[] nes_vram = new int[8];
+    /* Keep track of 8 .5k vram pages to speed things up */
+    static int[] nes_vram_sprite = new int[8];
+    /* Used only by mmc5 for now */
+    static int[] dirtychar = new int[0x200];
+
+    static int gfx_bank;
+
+    static char[] nes_palette = new char[3 * 64];
+
+    /*TODO*///	unsigned char line_priority[0x100];
 /*TODO*///	
-/*TODO*///	
-/*TODO*///	int nes_vram[8]; /* Keep track of 8 .5k vram pages to speed things up */
-/*TODO*///	int nes_vram_sprite[8]; /* Used only by mmc5 for now */
-/*TODO*///	int dirtychar[0x200];
-/*TODO*///	
-/*TODO*///	static int gfx_bank;
-/*TODO*///	
-/*TODO*///	unsigned char nes_palette[3*64];
-/*TODO*///	
-/*TODO*///	#ifdef DIRTY_BUFFERS
-/*TODO*///	UBytePtr dirtybuffer2;
-/*TODO*///	UBytePtr dirtybuffer3;
-/*TODO*///	UBytePtr dirtybuffer4;
-/*TODO*///	#endif
-/*TODO*///	unsigned char line_priority[0x100];
-/*TODO*///	
-/*TODO*///	/* Changed at runtime */
-/*TODO*///	static unsigned short nes_colortable[] =
-/*TODO*///	{
-/*TODO*///		0,1,2,3,
-/*TODO*///		0,1,2,3,
-/*TODO*///		0,1,2,3,
-/*TODO*///		0,1,2,3,
-/*TODO*///		0,1,2,3,
-/*TODO*///		0,1,2,3,
-/*TODO*///		0,1,2,3,
-/*TODO*///		0,1,2,3,
-/*TODO*///	};
-/*TODO*///	
+    /* Changed at runtime */
+    static char nes_colortable[]
+            = {
+                0, 1, 2, 3,
+                0, 1, 2, 3,
+                0, 1, 2, 3,
+                0, 1, 2, 3,
+                0, 1, 2, 3,
+                0, 1, 2, 3,
+                0, 1, 2, 3,
+                0, 1, 2, 3,};
+    /*TODO*///	
 /*TODO*///	unsigned short colortable_mono[] =
 /*TODO*///	{
 /*TODO*///		0,1,2,3,
@@ -88,132 +88,102 @@ public class nes {
 /*TODO*///	
     public static VhConvertColorPromPtr nes_init_palette = new VhConvertColorPromPtr() {
         public void handler(char[] palette, char[] colortable, UBytePtr color_prom) {
-            throw new UnsupportedOperationException("Not supported yet.");
-            /*TODO*///	#ifndef M_PI
-/*TODO*///	#define M_PI 			(3.14159265358979323846L)
-/*TODO*///	#endif
-/*TODO*///	
-/*TODO*///		/* This routine builds a palette using a transformation from */
-/*TODO*///		/* the YUV (Y, B-Y, R-Y) to the RGB color space */
-/*TODO*///	
-/*TODO*///		/* The NES has a 64 color palette                        */
-/*TODO*///		/* 16 colors, with 4 luminance levels for each color     */
-/*TODO*///		/* The 16 colors circle around the YUV color space,      */
-/*TODO*///	
-/*TODO*///		/* It also returns a fake colortable, for the menus */
-/*TODO*///	
-/*TODO*///		int i,j;
-/*TODO*///	#ifdef COLOR_INTENSITY
-/*TODO*///		int x;
-/*TODO*///	#endif
-/*TODO*///	
-/*TODO*///		double R, G, B;
-/*TODO*///	
-/*TODO*///		double tint = .5;
-/*TODO*///		double hue = 332.0;
-/*TODO*///		double bright_adjust = 1.0;
-/*TODO*///	
-/*TODO*///		double brightness[3][4] =
-/*TODO*///		{
-/*TODO*///			{ 0.50, 0.75, 1.0, 1.0 },
-/*TODO*///			{ 0.29, 0.45, 0.73, 0.9 },
-/*TODO*///			{ 0, 0.24, 0.47, 0.77 }
-/*TODO*///		};
-/*TODO*///	
-/*TODO*///		double angle[16] = {0,240,210,180,150,120,90,60,30,0,330,300,270,0,0,0};
-/*TODO*///	
-/*TODO*///	#ifdef COLOR_INTENSITY
-/*TODO*///		/* Loop through the emphasis modes (8 total) */
-/*TODO*///		for (x = 0; x < 8; x ++)
-/*TODO*///		{
-/*TODO*///			double r_mod, g_mod, b_mod;
-/*TODO*///	
-/*TODO*///			switch (x)
-/*TODO*///			{
-/*TODO*///				case 0: r_mod = 1.0; g_mod = 1.0; b_mod = 1.0; break;
-/*TODO*///				case 1: r_mod = 1.24; g_mod = .915; b_mod = .743; break;
-/*TODO*///				case 2: r_mod = .794; g_mod = 1.09; b_mod = .882; break;
-/*TODO*///				case 3: r_mod = .905; g_mod = 1.03; b_mod = 1.28; break;
-/*TODO*///				case 4: r_mod = .741; g_mod = .987; b_mod = 1.0; break;
-/*TODO*///				case 5: r_mod = 1.02; g_mod = .908; b_mod = .979; break;
-/*TODO*///				case 6: r_mod = 1.02; g_mod = .98; b_mod = .653; break;
-/*TODO*///				case 7: r_mod = .75; g_mod = .75; b_mod = .75; break;
-/*TODO*///			}
-/*TODO*///	#endif
-/*TODO*///	
-/*TODO*///			/* loop through the 4 intensities */
-/*TODO*///			for (i = 0; i < 4; i++)
-/*TODO*///			{
-/*TODO*///				/* loop through the 16 colors */
-/*TODO*///				for (j = 0; j < 16; j++)
-/*TODO*///				{
-/*TODO*///					double sat;
-/*TODO*///					double y;
-/*TODO*///					double rad;
-/*TODO*///	
-/*TODO*///					switch (j)
-/*TODO*///					{
-/*TODO*///						case 0:
-/*TODO*///							sat = 0;
-/*TODO*///							y = brightness[0][i];
-/*TODO*///							break;
-/*TODO*///						case 13:
-/*TODO*///							sat = 0;
-/*TODO*///							y = brightness[2][i];
-/*TODO*///							break;
-/*TODO*///						case 14:
-/*TODO*///						case 15:
-/*TODO*///							sat = 0; y = 0;
-/*TODO*///							break;
-/*TODO*///						default:
-/*TODO*///							sat = tint;
-/*TODO*///							y = brightness[1][i];
-/*TODO*///							break;
-/*TODO*///					}
-/*TODO*///	
-/*TODO*///					rad = M_PI * ((angle[j] + hue) / 180.0);
-/*TODO*///	
-/*TODO*///					y *= bright_adjust;
-/*TODO*///	
-/*TODO*///					/* Transform to RGB */
-/*TODO*///	#ifdef COLOR_INTENSITY
-/*TODO*///					R = (y + sat * sin(rad)) * 255.0 * r_mod;
-/*TODO*///					G = (y - (27 / 53) * sat * sin(rad) + (10 / 53) * sat * cos(rad)) * 255.0 * g_mod;
-/*TODO*///					B = (y - sat * cos(rad)) * 255.0 * b_mod;
-/*TODO*///	#else
-/*TODO*///					R = (y + sat * sin(rad)) * 255.0;
-/*TODO*///					G = (y - (27 / 53) * sat * sin(rad) + (10 / 53) * sat * cos(rad)) * 255.0;
-/*TODO*///					B = (y - sat * cos(rad)) * 255.0;
-/*TODO*///	#endif
-/*TODO*///	
-/*TODO*///					/* Clipping, in case of saturation */
-/*TODO*///					if (R < 0)
-/*TODO*///						R = 0;
-/*TODO*///					if (R > 255)
-/*TODO*///						R = 255;
-/*TODO*///					if (G < 0)
-/*TODO*///						G = 0;
-/*TODO*///					if (G > 255)
-/*TODO*///						G = 255;
-/*TODO*///					if (B < 0)
-/*TODO*///						B = 0;
-/*TODO*///					if (B > 255)
-/*TODO*///						B = 255;
-/*TODO*///	
-/*TODO*///					/* Round, and set the value */
-/*TODO*///					nes_palette[(i*16+j)*3] = *palette = floor(R+.5);
-/*TODO*///					palette++;
-/*TODO*///					nes_palette[(i*16+j)*3+1] = *palette = floor(G+.5);
-/*TODO*///					palette++;
-/*TODO*///					nes_palette[(i*16+j)*3+2] = *palette = floor(B+.5);
-/*TODO*///					palette++;
-/*TODO*///				}
-/*TODO*///			}
-/*TODO*///	#ifdef COLOR_INTENSITY
-/*TODO*///		}
-/*TODO*///	#endif
-/*TODO*///	
-/*TODO*///		memcpy(colortable,nes_colortable,sizeof(nes_colortable));
+            /* This routine builds a palette using a transformation from */
+ /* the YUV (Y, B-Y, R-Y) to the RGB color space */
+
+ /* The NES has a 64 color palette                        */
+ /* 16 colors, with 4 luminance levels for each color     */
+ /* The 16 colors circle around the YUV color space,      */
+ /* It also returns a fake colortable, for the menus */
+            int i, j;
+
+            double R, G, B;
+
+            double tint = .5;
+            double hue = 332.0;
+            double bright_adjust = 1.0;
+
+            double brightness[][]
+                    = {
+                        {0.50, 0.75, 1.0, 1.0},
+                        {0.29, 0.45, 0.73, 0.9},
+                        {0, 0.24, 0.47, 0.77}
+                    };
+
+            double angle[] = {0, 240, 210, 180, 150, 120, 90, 60, 30, 0, 330, 300, 270, 0, 0, 0};
+            int p_ptr = 0;
+
+            /* loop through the 4 intensities */
+            for (i = 0; i < 4; i++) {
+                /* loop through the 16 colors */
+                for (j = 0; j < 16; j++) {
+                    double sat;
+                    double y;
+                    double rad;
+
+                    switch (j) {
+                        case 0:
+                            sat = 0;
+                            y = brightness[0][i];
+                            break;
+                        case 13:
+                            sat = 0;
+                            y = brightness[2][i];
+                            break;
+                        case 14:
+                        case 15:
+                            sat = 0;
+                            y = 0;
+                            break;
+                        default:
+                            sat = tint;
+                            y = brightness[1][i];
+                            break;
+                    }
+
+                    rad = Math.PI * ((angle[j] + hue) / 180.0);
+
+                    y *= bright_adjust;
+
+                    /* Transform to RGB */
+                    R = (y + sat * Math.sin(rad)) * 255.0;
+                    G = (y - (27 / 53) * sat * Math.sin(rad) + (10 / 53) * sat * Math.cos(rad)) * 255.0;
+                    B = (y - sat * Math.cos(rad)) * 255.0;
+
+                    /* Clipping, in case of saturation */
+                    if (R < 0) {
+                        R = 0;
+                    }
+                    if (R > 255) {
+                        R = 255;
+                    }
+                    if (G < 0) {
+                        G = 0;
+                    }
+                    if (G > 255) {
+                        G = 255;
+                    }
+                    if (B < 0) {
+                        B = 0;
+                    }
+                    if (B > 255) {
+                        B = 255;
+                    }
+
+                    /* Round, and set the value */
+                    palette[p_ptr] = (char) Math.floor(R + .5);
+                    nes_palette[(i * 16 + j) * 3] = (char) (palette[p_ptr] & 0xFF);
+                    p_ptr++;
+                    palette[p_ptr] = (char) Math.floor(G + .5);
+                    nes_palette[(i * 16 + j) * 3 + 1] = (char) (palette[p_ptr] & 0xFF);
+                    p_ptr++;
+                    palette[p_ptr] = (char) Math.floor(B + .5);
+                    nes_palette[(i * 16 + j) * 3 + 2] = (char) (palette[p_ptr] & 0xFF);
+                    p_ptr++;
+                }
+            }
+
+            memcpy(colortable, nes_colortable, sizeof(nes_colortable));
         }
     };
 
@@ -226,68 +196,38 @@ public class nes {
      */
     public static VhStartPtr nes_vh_start = new VhStartPtr() {
         public int handler() {
-            throw new UnsupportedOperationException("Not supported yet.");
-            /*TODO*///		int i;
-/*TODO*///	
-/*TODO*///		/* We must clear the videoram on startup */
-/*TODO*///		if ((videoram = calloc (VIDEORAM_SIZE, 1)) == 0)
-/*TODO*///			return 1;
-/*TODO*///	
-/*TODO*///		/* We use an offscreen bitmap that's 4 times as large as the visible one */
-/*TODO*///		if ((tmpbitmap = osd_alloc_bitmap(2 * 32*8, 2 * 30*8,Machine.scrbitmap.depth)) == 0)
-/*TODO*///		{
-/*TODO*///			free (videoram);
-/*TODO*///			osd_free_bitmap (tmpbitmap);
-/*TODO*///			return 1;
-/*TODO*///		}
-/*TODO*///	
-/*TODO*///		/* sprite RAM must be clear on startup */
-/*TODO*///		if ((spriteram = calloc (SPRITERAM_SIZE,1)) == 0)
-/*TODO*///		{
-/*TODO*///			free (videoram);
-/*TODO*///			osd_free_bitmap (tmpbitmap);
-/*TODO*///			return 1;
-/*TODO*///		}
-/*TODO*///	
-/*TODO*///	#ifdef DIRTY_BUFFERS
-/*TODO*///		dirtybuffer  = malloc (VRAM_SIZE);
-/*TODO*///		dirtybuffer2 = malloc (VRAM_SIZE);
-/*TODO*///		dirtybuffer3 = malloc (VRAM_SIZE);
-/*TODO*///		dirtybuffer4 = malloc (VRAM_SIZE);
-/*TODO*///	
-/*TODO*///		if ((!dirtybuffer) || (!dirtybuffer2) || (!dirtybuffer3) || (!dirtybuffer4))
-/*TODO*///		{
-/*TODO*///			free (videoram);
-/*TODO*///			osd_free_bitmap (tmpbitmap);
-/*TODO*///			free (spriteram);
-/*TODO*///			if (dirtybuffer != 0)  free (dirtybuffer);
-/*TODO*///			if (dirtybuffer2 != 0) free (dirtybuffer2);
-/*TODO*///			if (dirtybuffer3 != 0) free (dirtybuffer3);
-/*TODO*///			if (dirtybuffer4 != 0) free (dirtybuffer4);
-/*TODO*///			return 1;
-/*TODO*///		}
-/*TODO*///	
-/*TODO*///		memset (dirtybuffer,  1, VRAM_SIZE);
-/*TODO*///		memset (dirtybuffer2, 1, VRAM_SIZE);
-/*TODO*///		memset (dirtybuffer3, 1, VRAM_SIZE);
-/*TODO*///		memset (dirtybuffer4, 1, VRAM_SIZE);
-/*TODO*///	#endif
-/*TODO*///	
-/*TODO*///		/* Mark all chars as 'clean' */
-/*TODO*///		for (i = 0; i < 0x200; i ++)
-/*TODO*///			dirtychar[i] = 0;
-/*TODO*///	
-/*TODO*///		if (nes.chr_chunks == 0) gfx_bank = 1;
-/*TODO*///		else gfx_bank = 0;
-/*TODO*///	
-/*TODO*///	#ifdef LOG_VIDEO
-/*TODO*///		videolog = fopen ("video.log", "w");
-/*TODO*///	#endif
-/*TODO*///	#ifdef LOG_COLOR
-/*TODO*///		colorlog = fopen ("color.log", "w");
-/*TODO*///	#endif
-/*TODO*///	
-/*TODO*///		return 0;
+            int i;
+
+            /* We must clear the videoram on startup */
+            if ((videoram = new UBytePtr(VIDEORAM_SIZE)) == null) {
+                return 1;
+            }
+
+            /* We use an offscreen bitmap that's 4 times as large as the visible one */
+            if ((tmpbitmap = osd_alloc_bitmap(2 * 32 * 8, 2 * 30 * 8, Machine.scrbitmap.depth)) == null) {
+                videoram = null;
+                osd_free_bitmap(tmpbitmap);
+                return 1;
+            }
+
+            /* sprite RAM must be clear on startup */
+            if ((spriteram = new UBytePtr(SPRITERAM_SIZE)) == null) {
+                videoram = null;
+                osd_free_bitmap(tmpbitmap);
+                return 1;
+            }
+            /* Mark all chars as 'clean' */
+            for (i = 0; i < 0x200; i++) {
+                dirtychar[i] = 0;
+            }
+
+            if (_nes.chr_chunks[0] == 0) {
+                gfx_bank = 1;
+            } else {
+                gfx_bank = 0;
+            }
+
+            return 0;
         }
     };
 
@@ -300,23 +240,10 @@ public class nes {
      */
     public static VhStopPtr nes_vh_stop = new VhStopPtr() {
         public void handler() {
-            throw new UnsupportedOperationException("Not supported yet.");
-            /*TODO*///		free (videoram);
-/*TODO*///		free (spriteram);
-/*TODO*///	#ifdef DIRTY_BUFFERS
-/*TODO*///		free (dirtybuffer);
-/*TODO*///		free (dirtybuffer2);
-/*TODO*///		free (dirtybuffer3);
-/*TODO*///		free (dirtybuffer4);
-/*TODO*///	#endif
-/*TODO*///		osd_free_bitmap (tmpbitmap);
-/*TODO*///	
-/*TODO*///	#ifdef LOG_VIDEO
-/*TODO*///		if (videolog != 0) fclose (videolog);
-/*TODO*///	#endif
-/*TODO*///	#ifdef LOG_COLOR
-/*TODO*///		if (colorlog != 0) fclose (colorlog);
-/*TODO*///	#endif
+            videoram = null;
+            spriteram = null;
+            osd_free_bitmap(tmpbitmap);
+
         }
     };
 

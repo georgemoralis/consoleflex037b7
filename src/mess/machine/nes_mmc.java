@@ -110,10 +110,10 @@ public class nes_mmc {
 /*TODO*///		return 0;
         }
     };
-    /*TODO*///	
-/*TODO*///	WRITE_HANDLER ( nes_mid_mapper_w )
-/*TODO*///	{
-/*TODO*///		if (*mmc_write_mid) (*mmc_write_mid)(offset, data);
+    public static WriteHandlerPtr nes_mid_mapper_w = new WriteHandlerPtr() {
+        public void handler(int offset, int data) {
+            throw new UnsupportedOperationException("Not supported yet.");
+            /*TODO*///		if (*mmc_write_mid) (*mmc_write_mid)(offset, data);
 /*TODO*///		else if (nes.mid_ram_enable)
 /*TODO*///			battery_ram[offset] = data;
 /*TODO*///	//	else
@@ -127,8 +127,9 @@ public class nes_mmc {
 /*TODO*///			}
 /*TODO*///	#endif
 /*TODO*///		}
-/*TODO*///	}
-/*TODO*///	
+        }
+    };
+    /*TODO*///	
 /*TODO*///	int nes_mid_mapper_r (int offset)
 /*TODO*///	{
 /*TODO*///		if ((nes.mid_ram_enable) || (nes.mapper == 5))
@@ -136,10 +137,11 @@ public class nes_mmc {
 /*TODO*///		else
 /*TODO*///			return 0;
 /*TODO*///	}
-/*TODO*///	
-/*TODO*///	WRITE_HANDLER ( nes_mapper_w )
-/*TODO*///	{
-/*TODO*///		if (*mmc_write) (*mmc_write)(offset, data);
+/*TODO*///
+    public static WriteHandlerPtr nes_mapper_w = new WriteHandlerPtr() {
+        public void handler(int offset, int data) {
+            throw new UnsupportedOperationException("Not supported yet.");
+            /*TODO*///		if (*mmc_write) (*mmc_write)(offset, data);
 /*TODO*///		else
 /*TODO*///		{
 /*TODO*///			logerror("Unimplemented mapper write, offset: %04x, data: %02x\n", offset, data);
@@ -162,8 +164,9 @@ public class nes_mmc {
 /*TODO*///			}
 /*TODO*///	#endif
 /*TODO*///		}
-/*TODO*///	}
-/*TODO*///	
+        }
+    };
+    /*TODO*///	
 /*TODO*///	/*
 /*TODO*///	 * Some helpful routines used by the mappers
 /*TODO*///	 */
