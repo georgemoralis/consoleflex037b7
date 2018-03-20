@@ -37,14 +37,13 @@ public class nesH {
     public static final int PPU_status_sprite0_hit = 0x40;
     public static final int PPU_status_vblank = 0x80;
 
-
-    /*TODO*///struct ppu_struct {
-/*TODO*///	UINT8 control_0;		/* $2000 */
+    public static class ppu_struct {
+        /*TODO*///	UINT8 control_0;		/* $2000 */
 /*TODO*///	UINT8 control_1;		/* $2001 */
 /*TODO*///	UINT8 status;			/* $2002 */
 /*TODO*///	UINT16 sprite_address;	/* $2003 */
 
-    /*TODO*///	UINT16 refresh_data;	/* $2005 */
+        /*TODO*///	UINT16 refresh_data;	/* $2005 */
 /*TODO*///	UINT16 refresh_latch;
 /*TODO*///	UINT8 x_fine;
 /*TODO*///
@@ -56,7 +55,8 @@ public class nesH {
 /*TODO*///	UINT16 current_scanline;
 /*TODO*///	UINT8 *page[4];
 /*TODO*///	UINT16 scanlines_per_frame;
-/*TODO*///};
+    };
+
     public static class nes_struct {
 
         /* load-time cart variables which remain constant */

@@ -28,6 +28,11 @@ import static mess.includes.nesH.*;
 import static mess.systems.nes.*;
 import static WIP.mame.memory.*;
 import static mess.machine.nes_mmc.*;
+import static vidhrdw.generic.*;
+import static mess.vidhrdw.nes.*;
+import static WIP.cpu.m6502.m6502H.*;
+import static old.arcadeflex.video.*;
+import static WIP.mame.drawgfx.*;
 
 public class nes {
 
@@ -41,66 +46,61 @@ public class nes {
 /*TODO*///	/* Uncomment this to generate prg chunk files when the cart is loaded */
 /*TODO*///	//#define SPLIT_PRG
 /*TODO*///	
-    public static final int BATTERY_SIZE =0x2000;
+    public static final int BATTERY_SIZE = 0x2000;
     static String battery_name = "";
-    public static char[] battery_data=new char[BATTERY_SIZE];
-/*TODO*///	
+    public static char[] battery_data = new char[BATTERY_SIZE];
+    /*TODO*///	
 /*TODO*///	void nes_vh_renderscanline (int scanline);
 /*TODO*///	
-/*TODO*///	struct ppu_struct ppu;
+    public static ppu_struct _ppu = new ppu_struct();
     public static nes_struct _nes = new nes_struct();
     /*TODO*///	struct fds_struct nes_fds;
 /*TODO*///	
     static int ppu_scanlines_per_frame;
-    /*TODO*///	
-/*TODO*///	UINT8 *ppu_page[4];
-/*TODO*///	
-/*TODO*///	int current_scanline;
+
+    public static UBytePtr[] ppu_page = new UBytePtr[4];
+
+    public static int current_scanline;
     static char[] use_vram = new char[512];
-    /*TODO*///	
-/*TODO*///	/* PPU Variables */
-/*TODO*///	int PPU_Control0;		// $2000
-/*TODO*///	int PPU_Control1;		// $2001
-/*TODO*///	int PPU_Status;			// $2002
-/*TODO*///	int PPU_Sprite_Addr;	// $2003
-/*TODO*///	
-/*TODO*///	UINT8 PPU_X_fine;
-/*TODO*///	
-/*TODO*///	UINT16 PPU_address;		// $2006
-/*TODO*///	UINT8 PPU_address_latch;
-/*TODO*///	UINT16 PPU_refresh_data;
-/*TODO*///	UINT16 PPU_refresh_latch;
-/*TODO*///	
-/*TODO*///	int PPU_tile_page;
-/*TODO*///	int PPU_sprite_page;
-/*TODO*///	int PPU_background_color;
-/*TODO*///	int PPU_add;
-/*TODO*///	
-/*TODO*///	static UINT8 PPU_data_latch;
-/*TODO*///	
-/*TODO*///	static char	PPU_toggle;
-/*TODO*///	
+
+    /* PPU Variables */
+    public static int PPU_Control0;		// $2000
+    public static int PPU_Control1;		// $2001
+    public static int PPU_Status;			// $2002
+    public static int PPU_Sprite_Addr;	// $2003
+
+    public static int u8_PPU_X_fine;
+
+    public static int u16_PPU_address;		// $2006
+    public static int u8_PPU_address_latch;
+    public static int u16_PPU_refresh_data;
+    public static int u16_PPU_refresh_latch;
+
+    public static int PPU_tile_page;
+    public static int PPU_sprite_page;
+    public static int PPU_background_color;
+    public static int PPU_add;
+
+    public static int u8_PPU_data_latch;
+    public static int u8_PPU_toggle;
+
     static int[]/*UINT32*/ in_0 = new int[3];
     static int[]/*UINT32*/ in_1 = new int[3];
     static int/*UINT32*/ in_0_shift;
     static int/*UINT32*/ in_1_shift;
 
-    /*TODO*///	void nes_ppu_w (int offset, int data);
-/*TODO*///	
-/*TODO*///	/* local prototypes */
-/*TODO*///	static void ppu_reset (struct ppu_struct *ppu_);
     public static InitDriverPtr init_nes_core = new InitDriverPtr() {
         public void handler() {
             //throw new UnsupportedOperationException("Not supported yet.");
-            		/* We set these here in case they weren't set in the cart loader */
-		_nes.rom = memory_region(REGION_CPU1);
-		_nes.vrom = memory_region(REGION_GFX1);
-		_nes.vram = memory_region(REGION_GFX2);
-		_nes.wram = memory_region(REGION_USER1);
-	
-		battery_ram = _nes.wram;
-	
-/*TODO*///		/* Set up the memory handlers for the mapper */
+            /* We set these here in case they weren't set in the cart loader */
+            _nes.rom = memory_region(REGION_CPU1);
+            _nes.vrom = memory_region(REGION_GFX1);
+            _nes.vram = memory_region(REGION_GFX2);
+            _nes.wram = memory_region(REGION_USER1);
+
+            battery_ram = _nes.wram;
+
+            /*TODO*///		/* Set up the memory handlers for the mapper */
 /*TODO*///		switch (nes.mapper)
 /*TODO*///		{
 /*TODO*///			case 20:
@@ -123,21 +123,21 @@ public class nes {
 /*TODO*///				install_mem_write_handler(0, 0x8000, 0xffff, nes_mapper_w);
 /*TODO*///				break;
 /*TODO*///			default:
-				_nes.u8_slow_banking = 0;
-				install_mem_read_handler(0, 0x6000, 0x7fff, MRA_BANK5);
-				install_mem_read_handler(0, 0x8000, 0x9fff, MRA_BANK1);
-				install_mem_read_handler(0, 0xa000, 0xbfff, MRA_BANK2);
-				install_mem_read_handler(0, 0xc000, 0xdfff, MRA_BANK3);
-				install_mem_read_handler(0, 0xe000, 0xffff, MRA_BANK4);
-				cpu_setbankhandler_r (1, MRA_BANK1);
-				cpu_setbankhandler_r (2, MRA_BANK2);
-				cpu_setbankhandler_r (3, MRA_BANK3);
-				cpu_setbankhandler_r (4, MRA_BANK4);
-				cpu_setbankhandler_r (5, MRA_BANK5);
-	
-				install_mem_write_handler(0, 0x6000, 0x7fff, nes_mid_mapper_w);
-				install_mem_write_handler(0, 0x8000, 0xffff, nes_mapper_w);
-/*TODO*///				break;
+            _nes.u8_slow_banking = 0;
+            install_mem_read_handler(0, 0x6000, 0x7fff, MRA_BANK5);
+            install_mem_read_handler(0, 0x8000, 0x9fff, MRA_BANK1);
+            install_mem_read_handler(0, 0xa000, 0xbfff, MRA_BANK2);
+            install_mem_read_handler(0, 0xc000, 0xdfff, MRA_BANK3);
+            install_mem_read_handler(0, 0xe000, 0xffff, MRA_BANK4);
+            cpu_setbankhandler_r(1, MRA_BANK1);
+            cpu_setbankhandler_r(2, MRA_BANK2);
+            cpu_setbankhandler_r(3, MRA_BANK3);
+            cpu_setbankhandler_r(4, MRA_BANK4);
+            cpu_setbankhandler_r(5, MRA_BANK5);
+
+            install_mem_write_handler(0, 0x6000, 0x7fff, nes_mid_mapper_w);
+            install_mem_write_handler(0, 0x8000, 0xffff, nes_mapper_w);
+            /*TODO*///				break;
 /*TODO*///		}
 /*TODO*///	
 /*TODO*///		/* Set up the mapper callbacks */
@@ -168,15 +168,17 @@ public class nes {
 /*TODO*///			}
 /*TODO*///		}
 /*TODO*///	
-		/* Load a battery file, but only if there's no trainer since they share */
-		/* overlapping memory. */
-		if (_nes.u8_trainer!=0) return;
-	
-		/* We need this because battery ram is loaded before the */
-		/* memory subsystem is set up. When this routine is called */
-		/* everything is ready, so we can just copy over the data */
-		/* we loaded before. */
-		memcpy (battery_ram, battery_data, BATTERY_SIZE);
+            /* Load a battery file, but only if there's no trainer since they share */
+ /* overlapping memory. */
+            if (_nes.u8_trainer != 0) {
+                return;
+            }
+
+            /* We need this because battery ram is loaded before the */
+ /* memory subsystem is set up. When this routine is called */
+ /* everything is ready, so we can just copy over the data */
+ /* we loaded before. */
+            memcpy(battery_ram, battery_data, BATTERY_SIZE);
         }
     };
 
@@ -196,20 +198,19 @@ public class nes {
 
     public static InitMachinePtr nes_init_machine = new InitMachinePtr() {
         public void handler() {
-            throw new UnsupportedOperationException("Not supported yet.");
-            /*TODO*///		current_scanline = 0;
-/*TODO*///	
-/*TODO*///		ppu_reset (&ppu);
-/*TODO*///	
-/*TODO*///		/* Some carts have extra RAM and require it on at startup, e.g. Metroid */
-/*TODO*///		nes.mid_ram_enable = 1;
-/*TODO*///	
-/*TODO*///		/* Reset the mapper variables. Will also mark the char-gen ram as dirty */
-/*TODO*///		mapper_reset (nes.mapper);
-/*TODO*///	
-/*TODO*///		/* Reset the serial input ports */
-/*TODO*///		in_0_shift = 0;
-/*TODO*///		in_1_shift = 0;
+            current_scanline = 0;
+
+            ppu_reset(_ppu);
+
+            /* Some carts have extra RAM and require it on at startup, e.g. Metroid */
+            _nes.u8_mid_ram_enable = 1;
+
+            /* Reset the mapper variables. Will also mark the char-gen ram as dirty */
+            mapper_reset(_nes.mapper);
+
+            /* Reset the serial input ports */
+            in_0_shift = 0;
+            in_1_shift = 0;
         }
     };
     public static StopMachinePtr nes_stop_machine = new StopMachinePtr() {
@@ -229,39 +230,35 @@ public class nes {
             }
         }
     };
-    /*TODO*///	
-/*TODO*///	void ppu_reset (struct ppu_struct *_ppu)
-/*TODO*///	{
-/*TODO*///		/* Reset PPU variables */
-/*TODO*///		PPU_Control0 = PPU_Control1 = PPU_Status = 0;
-/*TODO*///		PPU_address_latch = 0;
-/*TODO*///		PPU_data_latch = 0;
-/*TODO*///		PPU_address = PPU_Sprite_Addr = 0;
-/*TODO*///		PPU_tile_page = PPU_sprite_page = PPU_background_color = 0;
-/*TODO*///	
-/*TODO*///		PPU_add = 1;
-/*TODO*///		PPU_background_color = 0;
-/*TODO*///		PPU_toggle = 0;
-/*TODO*///	
-/*TODO*///		/* Reset mirroring */
-/*TODO*///	#ifdef NO_MIRRORING
-/*TODO*///		if (1 != 0)
-/*TODO*///	#else
-/*TODO*///		if (nes.four_screen_vram)
-/*TODO*///	#endif
-/*TODO*///		{
-/*TODO*///			ppu_page[0] = &(videoram.read(0x2000));
-/*TODO*///			ppu_page[1] = &(videoram.read(0x2400));
-/*TODO*///			ppu_page[2] = &(videoram.read(0x2800));
-/*TODO*///			ppu_page[3] = &(videoram.read(0x2c00));
-/*TODO*///		}
-/*TODO*///		else switch (nes.hard_mirroring)
+
+    public static void ppu_reset(ppu_struct _ppu) {
+        /* Reset PPU variables */
+        PPU_Control0 = PPU_Control1 = PPU_Status = 0;
+        u8_PPU_address_latch = 0;
+        u8_PPU_data_latch = 0;
+        u16_PPU_address = PPU_Sprite_Addr = 0;
+        PPU_tile_page = PPU_sprite_page = PPU_background_color = 0;
+
+        PPU_add = 1;
+        PPU_background_color = 0;
+        u8_PPU_toggle = 0;
+
+        /* Reset mirroring */
+        if (1 != 0) {
+            ppu_page[0] = new UBytePtr(videoram, 0x2000);
+            ppu_page[1] = new UBytePtr(videoram, 0x2400);
+            ppu_page[2] = new UBytePtr(videoram, 0x2800);
+            ppu_page[3] = new UBytePtr(videoram, 0x2c00);
+        } else {
+            throw new UnsupportedOperationException("Not supported yet.");
+            /*TODO*///                        switch (nes.hard_mirroring)
 /*TODO*///		{
 /*TODO*///			case 0: ppu_mirror_h(); break;
 /*TODO*///			case 1: ppu_mirror_v(); break;
 /*TODO*///		}
-/*TODO*///	}
-/*TODO*///	
+        }
+    }
+
     public static ReadHandlerPtr nes_IN0_r = new ReadHandlerPtr() {
         public int handler(int offset) {
             int dip;
@@ -447,391 +444,300 @@ public class nes {
         }
     };
 
+    static int vblank_started = 0;
     public static InterruptPtr nes_interrupt = new InterruptPtr() {
         public int handler() {
-            throw new UnsupportedOperationException("Not supported yet.");
-            /*TODO*///		static int vblank_started = 0;
-/*TODO*///		int ret;
-/*TODO*///	
-/*TODO*///		ret = M6502_INT_NONE;
-/*TODO*///	
-/*TODO*///		/* See if a mapper generated an irq */
-/*TODO*///	    if (*mmc_irq != NULL) ret = (*mmc_irq)(current_scanline);
-/*TODO*///	
-/*TODO*///		if (current_scanline <= BOTTOM_VISIBLE_SCANLINE)
-/*TODO*///		{
-/*TODO*///			/* If background or sprites are enabled, copy the ppu address latch */
-/*TODO*///			if ((PPU_Control1 & 0x18) != 0)
-/*TODO*///			{
-/*TODO*///				/* Copy only the scroll x-coarse and the x-overflow bit */
-/*TODO*///				PPU_refresh_data &= ~0x041f;
-/*TODO*///				PPU_refresh_data |= (PPU_refresh_latch & 0x041f);
-/*TODO*///			}
-/*TODO*///	
-/*TODO*///	#ifdef NEW_SPRITE_HIT
-/*TODO*///			/* If we're not rendering this frame, fake the sprite hit */
-/*TODO*///			if (osd_skip_this_frame())
-/*TODO*///	#endif
-/*TODO*///				if ((current_scanline == spriteram.read(0)+ 7) && (PPU_Control1 & 0x10))
-/*TODO*///				{
-/*TODO*///					PPU_Status |= PPU_status_sprite0_hit;
-/*TODO*///	#ifdef LOG_PPU
-/*TODO*///					logerror ("Sprite 0 hit, scanline: %d\n", current_scanline);
-/*TODO*///	#endif
-/*TODO*///				}
-/*TODO*///	
-/*TODO*///			/* Render this scanline if appropriate */
-/*TODO*///			if ((PPU_Control1 & 0x18) /*&& !osd_skip_this_frame()*/)
-/*TODO*///			{
-/*TODO*///				nes_vh_renderscanline (current_scanline);
-/*TODO*///			}
-/*TODO*///		}
-/*TODO*///	
-/*TODO*///		/* Has the vblank started? */
-/*TODO*///		else if (current_scanline == BOTTOM_VISIBLE_SCANLINE+1)
-/*TODO*///		{
-/*TODO*///	   		logerror("** Vblank started\n");
-/*TODO*///	
-/*TODO*///			/* Note: never reset the toggle to the scroll/address latches on vblank */
-/*TODO*///	
-/*TODO*///			/* VBlank in progress, set flag */
-/*TODO*///			PPU_Status |= PPU_status_vblank;
-/*TODO*///		}
-/*TODO*///	
-/*TODO*///		else if (current_scanline == NMI_SCANLINE)
-/*TODO*///		{
-/*TODO*///			/* Check if NMIs are enabled on vblank */
-/*TODO*///			if ((PPU_Control0 & PPU_c0_NMI) != 0) ret = M6502_INT_NMI;
-/*TODO*///		}
-/*TODO*///	
-/*TODO*///		/* Increment the scanline pointer & check to see if it's rolled */
-/*TODO*///		if ( ++ current_scanline == ppu_scanlines_per_frame)
-/*TODO*///		{
-/*TODO*///			/* vblank is over, start at top of screen again */
-/*TODO*///			current_scanline = 0;
-/*TODO*///			vblank_started = 0;
-/*TODO*///	
-/*TODO*///			/* Clear the vblank & sprite hit flag */
-/*TODO*///			PPU_Status &= ~(PPU_status_vblank | PPU_status_sprite0_hit);
-/*TODO*///	
-/*TODO*///			/* If background or sprites are enabled, copy the ppu address latch */
-/*TODO*///			if ((PPU_Control1 & 0x18) != 0)
-/*TODO*///				PPU_refresh_data = PPU_refresh_latch;
-/*TODO*///	
-/*TODO*///	//if ((PPU_refresh_data & 0x400) != 0) Debugger ();
-/*TODO*///	
-/*TODO*///	   		logerror("** New frame\n");
-/*TODO*///	
-/*TODO*///			/* TODO: verify - this code assumes games with chr chunks won't generate chars on the fly */
-/*TODO*///			/* Pinbot seems to use both VROM and VRAM */
-/*TODO*///			if ((nes.chr_chunks == 0) || (nes.mapper == 119))
-/*TODO*///			{
-/*TODO*///				int i;
-/*TODO*///	
-/*TODO*///				/* Decode any dirty characters */
-/*TODO*///				for (i = 0; i < 0x200; i ++)
-/*TODO*///					if (dirtychar[i])
-/*TODO*///					{
-/*TODO*///						decodechar(Machine.gfx[1], i, nes.vram, Machine.drv.gfxdecodeinfo[1].gfxlayout);
-/*TODO*///						dirtychar[i] = 0;
-/*TODO*///						use_vram[i] = 1;
-/*TODO*///					}
-/*TODO*///			}
-/*TODO*///		}
-/*TODO*///	
-/*TODO*///		if ((ret != M6502_INT_NONE))
-/*TODO*///		{
-/*TODO*///	    	logerror("--- scanline %d", current_scanline);
-/*TODO*///	    	if (ret == M6502_INT_IRQ)
-/*TODO*///	    		logerror(" IRQ\n");
-/*TODO*///	    	else logerror(" NMI\n");
-/*TODO*///	    }
-/*TODO*///	
-/*TODO*///		return ret;
+            int ret;
+
+            ret = M6502_INT_NONE;
+
+            /* See if a mapper generated an irq */
+ /*TODO*///	    if (*mmc_irq != NULL) ret = (*mmc_irq)(current_scanline);
+            if (current_scanline <= BOTTOM_VISIBLE_SCANLINE) {
+                /* If background or sprites are enabled, copy the ppu address latch */
+                if ((PPU_Control1 & 0x18) != 0) {
+                    /* Copy only the scroll x-coarse and the x-overflow bit */
+                    u16_PPU_refresh_data = (u16_PPU_refresh_data & ~0x041f) & 0xFFFF;
+                    u16_PPU_refresh_data = (u16_PPU_refresh_data | (u16_PPU_refresh_latch & 0x041f)) & 0xFFFF;
+                }
+                /* If we're not rendering this frame, fake the sprite hit */
+                if (osd_skip_this_frame() != 0) {
+                    if ((current_scanline == spriteram.read(0) + 7) && (PPU_Control1 & 0x10) != 0) {
+                        PPU_Status |= PPU_status_sprite0_hit;
+                    }
+                }
+
+                /* Render this scanline if appropriate */
+                if ((PPU_Control1 & 0x18) != 0 /*&& !osd_skip_this_frame()*/) {
+                    nes_vh_renderscanline(current_scanline);
+                }
+            } /* Has the vblank started? */ else if (current_scanline == BOTTOM_VISIBLE_SCANLINE + 1) {
+                logerror("** Vblank started\n");
+
+                /* Note: never reset the toggle to the scroll/address latches on vblank */
+ /* VBlank in progress, set flag */
+                PPU_Status |= PPU_status_vblank;
+            } else if (current_scanline == NMI_SCANLINE) {
+                /* Check if NMIs are enabled on vblank */
+                if ((PPU_Control0 & PPU_c0_NMI) != 0) {
+                    ret = M6502_INT_NMI;
+                }
+            }
+
+            /* Increment the scanline pointer & check to see if it's rolled */
+            if (++current_scanline == ppu_scanlines_per_frame) {
+                /* vblank is over, start at top of screen again */
+                current_scanline = 0;
+                vblank_started = 0;
+
+                /* Clear the vblank & sprite hit flag */
+                PPU_Status &= ~(PPU_status_vblank | PPU_status_sprite0_hit);
+
+                /* If background or sprites are enabled, copy the ppu address latch */
+                if ((PPU_Control1 & 0x18) != 0) {
+                    u16_PPU_refresh_data = u16_PPU_refresh_latch & 0xFFFF;
+                }
+
+                //if ((PPU_refresh_data & 0x400) != 0) Debugger ();
+                logerror("** New frame\n");
+
+                /* TODO: verify - this code assumes games with chr chunks won't generate chars on the fly */
+ /* Pinbot seems to use both VROM and VRAM */
+                if ((_nes.chr_chunks[0] == 0) || (_nes.mapper == 119)) {
+                    int i;
+
+                    /* Decode any dirty characters */
+                    for (i = 0; i < 0x200; i++) {
+                        if (dirtychar[i] != 0) {
+                            decodechar(Machine.gfx[1], i, _nes.vram, Machine.drv.gfxdecodeinfo[1].gfxlayout);
+                            dirtychar[i] = 0;
+                            use_vram[i] = 1;
+                        }
+                    }
+                }
+            }
+
+            if ((ret != M6502_INT_NONE)) {
+                logerror("--- scanline %d", current_scanline);
+                if (ret == M6502_INT_IRQ) {
+                    logerror(" IRQ\n");
+                } else {
+                    logerror(" NMI\n");
+                }
+            }
+
+            return ret;
         }
     };
 
     public static ReadHandlerPtr nes_ppu_r = new ReadHandlerPtr() {
         public int handler(int offset) {
-            throw new UnsupportedOperationException("Not supported yet.");
-            /*TODO*///		UINT8 retVal=0;
-/*TODO*///	/*
-/*TODO*///	    |  $2002  | PPU Status Register (R)                                  |
-/*TODO*///	    |         |   %vhs-----                                              |
-/*TODO*///	    |         |               v = VBlank Occurance                       |
-/*TODO*///	    |         |                      1 = In VBlank                       |
-/*TODO*///	    |         |               h = Sprite #0 Occurance                    |
-/*TODO*///	    |         |                      1 = VBlank has hit Sprite #0        |
-/*TODO*///	    |         |               s = Scanline Sprite Count                  |
-/*TODO*///	    |         |                      0 = 8 or less sprites on the        |
-/*TODO*///	    |         |                          current scanline                |
-/*TODO*///	    |         |                      1 = More than 8 sprites on the      |
-/*TODO*///	    |         |                          current scanline                |
-/*TODO*///	*/
-/*TODO*///		switch (offset & 0x07)
-/*TODO*///		{
-/*TODO*///			case 0: case 1: case 3: case 5: case 6:
-/*TODO*///				retVal = 0x00;
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///			case 2:
-/*TODO*///				retVal = PPU_Status;
-/*TODO*///	
-/*TODO*///				/* This is necessary: see W&W1, Gi Joe Atlantis */
-/*TODO*///				PPU_toggle = 0;
-/*TODO*///	
-/*TODO*///				/* Note that we don't clear the vblank flag - this is correct. */
-/*TODO*///				/* Many games would break if we did: Dragon Warrior 3, GI Joe Atlantis */
-/*TODO*///				/* are two. */
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///			case 4:
-/*TODO*///				retVal = spriteram.read(PPU_Sprite_Addr);
-/*TODO*///	#ifdef LOG_PPU
-/*TODO*///	//	logerror("PPU read (%02x), data: %02x, pc: %04x\n", offset, retVal, cpu_get_pc ());
-/*TODO*///	#endif
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///			case 7:
-/*TODO*///				retVal = PPU_data_latch;
-/*TODO*///	
-/*TODO*///	            if (*ppu_latch != NULL) (*ppu_latch)(PPU_address & 0x3fff);
-/*TODO*///	
-/*TODO*///				if ((PPU_address >= 0x2000) && (PPU_address <= 0x3fef))
-/*TODO*///					PPU_data_latch = ppu_page[(PPU_address & 0xc00) >> 10][PPU_address & 0x3ff];
-/*TODO*///				else
-/*TODO*///					PPU_data_latch = videoram.read(PPU_address & 0x3fff);
-/*TODO*///	
-/*TODO*///				/* TODO: this is a bit of a hack, needed to get Argus, ASO, etc to work */
-/*TODO*///				/* but, B-Wings, submath (j) seem to use this location differently... */
-/*TODO*///				if (nes.chr_chunks && (PPU_address & 0x3fff) < 0x2000)
-/*TODO*///				{
-/*TODO*///					int vrom_loc;
-/*TODO*///	
-/*TODO*///					vrom_loc = (nes_vram[(PPU_address & 0x1fff) >> 10] * 16) + (PPU_address & 0x3ff);
-/*TODO*///					PPU_data_latch = nes.vrom [vrom_loc];
-/*TODO*///				}
-/*TODO*///	
-/*TODO*///	#ifdef LOG_PPU
-/*TODO*///		logerror("PPU read (%02x), data: %02x, ppu_addr: %04x, pc: %04x\n", offset, retVal, PPU_address, cpu_get_pc ());
-/*TODO*///	#endif
-/*TODO*///				PPU_address += PPU_add;
-/*TODO*///				break;
-/*TODO*///		}
-/*TODO*///	
-/*TODO*///		return retVal;
+            int u8_retVal = 0;
+            /*
+	    |  $2002  | PPU Status Register (R)                                  |
+	    |         |   %vhs-----                                              |
+	    |         |               v = VBlank Occurance                       |
+	    |         |                      1 = In VBlank                       |
+	    |         |               h = Sprite #0 Occurance                    |
+	    |         |                      1 = VBlank has hit Sprite #0        |
+	    |         |               s = Scanline Sprite Count                  |
+	    |         |                      0 = 8 or less sprites on the        |
+	    |         |                          current scanline                |
+	    |         |                      1 = More than 8 sprites on the      |
+	    |         |                          current scanline                |
+             */
+            switch (offset & 0x07) {
+                case 0:
+                case 1:
+                case 3:
+                case 5:
+                case 6:
+                    u8_retVal = 0x00;
+                    break;
+
+                case 2:
+                    u8_retVal = PPU_Status & 0xFF;
+
+                    /* This is necessary: see W&W1, Gi Joe Atlantis */
+                    u8_PPU_toggle = 0;
+
+                    /* Note that we don't clear the vblank flag - this is correct. */
+ /* Many games would break if we did: Dragon Warrior 3, GI Joe Atlantis */
+ /* are two. */
+                    break;
+
+                case 4:
+                    u8_retVal = spriteram.read(PPU_Sprite_Addr);
+                    break;
+
+                case 7:
+                    u8_retVal = u8_PPU_data_latch & 0xFF;
+
+                    /*TODO*///	            if (*ppu_latch != NULL) (*ppu_latch)(PPU_address & 0x3fff);
+                    if ((u16_PPU_address >= 0x2000) && (u16_PPU_address <= 0x3fef)) {
+                        u8_PPU_data_latch = ppu_page[(u16_PPU_address & 0xc00) >> 10].read(u16_PPU_address & 0x3ff);
+                    } else {
+                        u8_PPU_data_latch = videoram.read(u16_PPU_address & 0x3fff);
+                    }
+
+                    /* TODO: this is a bit of a hack, needed to get Argus, ASO, etc to work */
+ /* but, B-Wings, submath (j) seem to use this location differently... */
+                    if (_nes.chr_chunks[0] != 0 && (u16_PPU_address & 0x3fff) < 0x2000) {
+                        int vrom_loc;
+
+                        vrom_loc = (nes_vram[(u16_PPU_address & 0x1fff) >> 10] * 16) + (u16_PPU_address & 0x3ff);
+                        u8_PPU_data_latch = _nes.vrom.read(vrom_loc);
+                    }
+                    u16_PPU_address = (u16_PPU_address + PPU_add) & 0xFFFF;
+                    break;
+            }
+
+            return u8_retVal & 0xFF;
         }
     };
 
     public static WriteHandlerPtr nes_ppu_w = new WriteHandlerPtr() {
         public void handler(int offset, int data) {
-            throw new UnsupportedOperationException("Not supported yet.");
-            /*TODO*///	
-/*TODO*///		switch (offset & 0x07)
-/*TODO*///		{
-/*TODO*///	/*
-/*TODO*///	    |  $2000  | PPU Control Register #1 (W)                              |
-/*TODO*///	    |         |   %vMsbpiNN                                              |
-/*TODO*///	    |         |               v = Execute NMI on VBlank                  |
-/*TODO*///	    |         |                      1 = Enabled                         |
-/*TODO*///	    |         |               M = PPU Selection (unused)                 |
-/*TODO*///	    |         |                      0 = Master                          |
-/*TODO*///	    |         |                      1 = Slave                           |
-/*TODO*///	    |         |               s = Sprite Size                            |
-/*TODO*///	    |         |                      0 = 8x8                             |
-/*TODO*///	    |         |                      1 = 8x16                            |
-/*TODO*///	    |         |               b = Background Pattern Table Address       |
-/*TODO*///	    |         |                      0 = $0000 (VRAM)                    |
-/*TODO*///	    |         |                      1 = $1000 (VRAM)                    |
-/*TODO*///	    |         |               p = Sprite Pattern Table Address           |
-/*TODO*///	    |         |                      0 = $0000 (VRAM)                    |
-/*TODO*///	    |         |                      1 = $1000 (VRAM)                    |
-/*TODO*///	    |         |               i = PPU Address Increment                  |
-/*TODO*///	    |         |                      0 = Increment by 1                  |
-/*TODO*///	    |         |                      1 = Increment by 32                 |
-/*TODO*///	    |         |              NN = Name Table Address                     |
-/*TODO*///	    |         |                     00 = $2000 (VRAM)                    |
-/*TODO*///	    |         |                     01 = $2400 (VRAM)                    |
-/*TODO*///	    |         |                     10 = $2800 (VRAM)                    |
-/*TODO*///	    |         |                     11 = $2C00 (VRAM)                    |
-/*TODO*///	    |         |                                                          |
-/*TODO*///	    |         | NOTE: Bit #6 (M) has no use, as there is only one (1)    |
-/*TODO*///	    |         |       PPU installed in all forms of the NES and Famicom. |
-/*TODO*///	*/
-/*TODO*///			case 0: /* PPU Control 0 */
-/*TODO*///				PPU_Control0 = data;
-/*TODO*///	
-/*TODO*///				PPU_refresh_latch &= ~0x0c00;
-/*TODO*///				PPU_refresh_latch |= (data & 0x03) << 10;
-/*TODO*///	
-/*TODO*///				/* The char ram bank points either 0x0000 or 0x1000 (page 0 or page 4) */
-/*TODO*///				PPU_tile_page = (PPU_Control0 & PPU_c0_chr_select) >> 2;
-/*TODO*///				PPU_sprite_page = (PPU_Control0 & PPU_c0_spr_select) >> 1;
-/*TODO*///	
-/*TODO*///				if ((PPU_Control0 & PPU_c0_inc) != 0)
-/*TODO*///					PPU_add = 32;
-/*TODO*///				else
-/*TODO*///					PPU_add = 1;
-/*TODO*///	#ifdef LOG_PPU
-/*TODO*///	#if 0
-/*TODO*///				logerror("------ scanline: %d -------\n", current_scanline);
-/*TODO*///				logerror("PPU_w Name table: %04x\n", (PPU_refresh_latch & 0xc00) | 0x2000);
-/*TODO*///				logerror("PPU_w tile page: %04x\n", PPU_tile_page);
-/*TODO*///				logerror("PPU_w sprite page: %04x\n", PPU_sprite_page);
-/*TODO*///				logerror("---------------------------\n");
-/*TODO*///	#endif
-/*TODO*///				logerror("W PPU_Control0: %02x\n", PPU_Control0);
-/*TODO*///	#endif
-/*TODO*///				break;
-/*TODO*///	/*
-/*TODO*///	    |  $2001  | PPU Control Register #2 (W)                              |
-/*TODO*///	    |         |   %fffpcsit                                              |
-/*TODO*///	    |         |             fff = Full Background Colour                 |
-/*TODO*///	    |         |                    000 = Black                           |
-/*TODO*///	    |         |                    001 = Red                             |
-/*TODO*///	    |         |                    010 = Blue                            |
-/*TODO*///	    |         |                    100 = Green                           |
-/*TODO*///	    |         |               p = Sprite Visibility                      |
-/*TODO*///	    |         |                      1 = Display                         |
-/*TODO*///	    |         |               c = Background Visibility                  |
-/*TODO*///	    |         |                      1 = Display                         |
-/*TODO*///	    |         |               s = Sprite Clipping                        |
-/*TODO*///	    |         |                      0 = Sprites not displayed in left   |
-/*TODO*///	    |         |                          8-pixel column                  |
-/*TODO*///	    |         |                      1 = No clipping                     |
-/*TODO*///	    |         |               i = Background Clipping                    |
-/*TODO*///	    |         |                      0 = Background not displayed in     |
-/*TODO*///	    |         |                          left 8-pixel column             |
-/*TODO*///	    |         |                      1 = No clipping                     |
-/*TODO*///	    |         |               t = Display Type                           |
-/*TODO*///	    |         |                      0 = Colour display                  |
-/*TODO*///	    |         |                      1 = Mono-type (B&W) display         |
-/*TODO*///	*/
-/*TODO*///			case 1: /* PPU Control 1 */
-/*TODO*///				/* If color intensity has changed, change all the pens */
-/*TODO*///				if ((data & 0xe0) != (PPU_Control1 & 0xe0))
-/*TODO*///				{
-/*TODO*///	#ifdef COLOR_INTENSITY
-/*TODO*///					int i;
-/*TODO*///	
-/*TODO*///					for (i = 0; i <= 0x1f; i ++)
-/*TODO*///					{
-/*TODO*///						UINT8 oldColor = videoram.read(i+0x3f00);
-/*TODO*///	
-/*TODO*///						Machine.gfx[0].colortable[i] = Machine.pens[oldColor + (data & 0xe0)*2];
-/*TODO*///					}
-/*TODO*///	#else
-/*TODO*///	#if 0
-/*TODO*///					int i;
-/*TODO*///					double r_mod, g_mod, b_mod;
-/*TODO*///	
-/*TODO*///					switch ((data & 0xe0) >> 5)
-/*TODO*///					{
-/*TODO*///						case 0: r_mod = 1.0; g_mod = 1.0; b_mod = 1.0; break;
-/*TODO*///						case 1: r_mod = 1.24; g_mod = .915; b_mod = .743; break;
-/*TODO*///						case 2: r_mod = .794; g_mod = 1.09; b_mod = .882; break;
-/*TODO*///						case 3: r_mod = .905; g_mod = 1.03; b_mod = 1.28; break;
-/*TODO*///						case 4: r_mod = .741; g_mod = .987; b_mod = 1.0; break;
-/*TODO*///						case 5: r_mod = 1.02; g_mod = .908; b_mod = .979; break;
-/*TODO*///						case 6: r_mod = 1.02; g_mod = .98; b_mod = .653; break;
-/*TODO*///						case 7: r_mod = .75; g_mod = .75; b_mod = .75; break;
-/*TODO*///					}
-/*TODO*///					for (i = 0; i < 64; i ++)
-/*TODO*///						palette_change_color (i,
-/*TODO*///							(double) nes_palette[3*i] * r_mod,
-/*TODO*///							(double) nes_palette[3*i+1] * g_mod,
-/*TODO*///							(double) nes_palette[3*i+2] * b_mod);
-/*TODO*///	#endif
-/*TODO*///	#endif
-/*TODO*///				}
-/*TODO*///				PPU_Control1 = data;
-/*TODO*///	#ifdef LOG_PPU
-/*TODO*///				logerror("W PPU_Control1: %02x\n", PPU_Control1);
-/*TODO*///	#endif
-/*TODO*///				break;
-/*TODO*///			case 2: /* PPU Status */
-/*TODO*///	#ifdef LOG_PPU
-/*TODO*///				logerror("W PPU_Status: %02x\n", data);
-/*TODO*///	#endif
-/*TODO*///				break;
-/*TODO*///			case 3: /* PPU Sprite Memory Address */
-/*TODO*///				PPU_Sprite_Addr = data;
-/*TODO*///				break;
-/*TODO*///			case 4: /* PPU Sprite Data */
-/*TODO*///				spriteram.write(PPU_Sprite_Addr,data);
-/*TODO*///				PPU_Sprite_Addr ++;
-/*TODO*///				PPU_Sprite_Addr &= 0xff;
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///			case 5:
-/*TODO*///				if (PPU_toggle != 0)
-/*TODO*///				/* (second write) */
-/*TODO*///				{
-/*TODO*///					PPU_refresh_latch &= ~0x03e0;
-/*TODO*///					PPU_refresh_latch |= (data & 0xf8) << 2;
-/*TODO*///	
-/*TODO*///					PPU_refresh_latch &= ~0x7000;
-/*TODO*///					PPU_refresh_latch |= (data & 0x07) << 12;
-/*TODO*///	#ifdef LOG_PPU
-/*TODO*///	logerror ("write ppu scroll latch (Y): %02x (scanline: %d) refresh_latch: %04x\n", data, current_scanline, PPU_refresh_latch);
-/*TODO*///	#endif
-/*TODO*///				}
-/*TODO*///				/* (first write) */
-/*TODO*///				else
-/*TODO*///				{
-/*TODO*///					PPU_refresh_latch &= ~0x1f;
-/*TODO*///					PPU_refresh_latch |= (data & 0xf8) >> 3;
-/*TODO*///	
-/*TODO*///					PPU_X_fine = data & 0x07;
-/*TODO*///	#ifdef LOG_PPU
-/*TODO*///	logerror ("write ppu scroll latch (X): %02x (scanline: %d) refresh_latch: %04x\n", data, current_scanline, PPU_refresh_latch);
-/*TODO*///	#endif
-/*TODO*///				}
-/*TODO*///				PPU_toggle = !PPU_toggle;
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///			case 6: /* PPU Address Register */
-/*TODO*///				/* PPU Memory Adress */
-/*TODO*///				if (PPU_toggle != 0)
-/*TODO*///				{
-/*TODO*///	#ifdef LOG_PPU
-/*TODO*///	//if (current_scanline <= BOTTOM_VISIBLE_SCANLINE)
-/*TODO*///		logerror ("write ppu address (low): %02x (%d)\n", data, current_scanline);
-/*TODO*///	#endif
-/*TODO*///					PPU_address = (PPU_address_latch << 8) | data;
-/*TODO*///	
-/*TODO*///					PPU_refresh_latch &= ~0x00ff;
-/*TODO*///					PPU_refresh_latch |= data;
-/*TODO*///					PPU_refresh_data = PPU_refresh_latch;
-/*TODO*///				}
-/*TODO*///				else
-/*TODO*///				{
-/*TODO*///	#ifdef LOG_PPU
-/*TODO*///	//if (current_scanline <= BOTTOM_VISIBLE_SCANLINE)
-/*TODO*///		logerror ("write ppu address (high): %02x (%d)\n", data, current_scanline);
-/*TODO*///	#endif
-/*TODO*///					PPU_address_latch = data;
-/*TODO*///	
-/*TODO*///					if (data != 0x3f) /* TODO: remove this hack! */
-/*TODO*///					{
-/*TODO*///						PPU_refresh_latch &= ~0xff00;
-/*TODO*///						PPU_refresh_latch |= (data & 0x3f) << 8;
-/*TODO*///					}
-/*TODO*///				}
-/*TODO*///				PPU_toggle = !PPU_toggle;
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///			case 7: /* PPU I/O Register */
-/*TODO*///	
-/*TODO*///				if ((current_scanline <= BOTTOM_VISIBLE_SCANLINE) /*&& (PPU_Control1 & 0x18)*/)
-/*TODO*///				{
-/*TODO*///	//				logerror("*** PPU write during hblank (%d) ",  current_scanline);
-/*TODO*///				}
-/*TODO*///				Write_PPU (data);
-/*TODO*///				break;
-/*TODO*///			}
+            switch (offset & 0x07) {
+                /*
+	    |  $2000  | PPU Control Register #1 (W)                              |
+	    |         |   %vMsbpiNN                                              |
+	    |         |               v = Execute NMI on VBlank                  |
+	    |         |                      1 = Enabled                         |
+	    |         |               M = PPU Selection (unused)                 |
+	    |         |                      0 = Master                          |
+	    |         |                      1 = Slave                           |
+	    |         |               s = Sprite Size                            |
+	    |         |                      0 = 8x8                             |
+	    |         |                      1 = 8x16                            |
+	    |         |               b = Background Pattern Table Address       |
+	    |         |                      0 = $0000 (VRAM)                    |
+	    |         |                      1 = $1000 (VRAM)                    |
+	    |         |               p = Sprite Pattern Table Address           |
+	    |         |                      0 = $0000 (VRAM)                    |
+	    |         |                      1 = $1000 (VRAM)                    |
+	    |         |               i = PPU Address Increment                  |
+	    |         |                      0 = Increment by 1                  |
+	    |         |                      1 = Increment by 32                 |
+	    |         |              NN = Name Table Address                     |
+	    |         |                     00 = $2000 (VRAM)                    |
+	    |         |                     01 = $2400 (VRAM)                    |
+	    |         |                     10 = $2800 (VRAM)                    |
+	    |         |                     11 = $2C00 (VRAM)                    |
+	    |         |                                                          |
+	    |         | NOTE: Bit #6 (M) has no use, as there is only one (1)    |
+	    |         |       PPU installed in all forms of the NES and Famicom. |
+                 */
+                case 0:
+                    /* PPU Control 0 */
+                    PPU_Control0 = data;
+
+                    u16_PPU_refresh_latch = (u16_PPU_refresh_latch & ~0x0c00) & 0xFFFF;
+                    u16_PPU_refresh_latch = (u16_PPU_refresh_latch | (data & 0x03) << 10) & 0xFFFF;
+
+                    /* The char ram bank points either 0x0000 or 0x1000 (page 0 or page 4) */
+                    PPU_tile_page = (PPU_Control0 & PPU_c0_chr_select) >> 2;
+                    PPU_sprite_page = (PPU_Control0 & PPU_c0_spr_select) >> 1;
+
+                    if ((PPU_Control0 & PPU_c0_inc) != 0) {
+                        PPU_add = 32;
+                    } else {
+                        PPU_add = 1;
+                    }
+                    break;
+                /*
+	    |  $2001  | PPU Control Register #2 (W)                              |
+	    |         |   %fffpcsit                                              |
+	    |         |             fff = Full Background Colour                 |
+	    |         |                    000 = Black                           |
+	    |         |                    001 = Red                             |
+	    |         |                    010 = Blue                            |
+	    |         |                    100 = Green                           |
+	    |         |               p = Sprite Visibility                      |
+	    |         |                      1 = Display                         |
+	    |         |               c = Background Visibility                  |
+	    |         |                      1 = Display                         |
+	    |         |               s = Sprite Clipping                        |
+	    |         |                      0 = Sprites not displayed in left   |
+	    |         |                          8-pixel column                  |
+	    |         |                      1 = No clipping                     |
+	    |         |               i = Background Clipping                    |
+	    |         |                      0 = Background not displayed in     |
+	    |         |                          left 8-pixel column             |
+	    |         |                      1 = No clipping                     |
+	    |         |               t = Display Type                           |
+	    |         |                      0 = Colour display                  |
+	    |         |                      1 = Mono-type (B&W) display         |
+                 */
+                case 1:
+                    /* PPU Control 1 */
+ /* If color intensity has changed, change all the pens */
+                    if ((data & 0xe0) != (PPU_Control1 & 0xe0)) {
+                    }
+                    PPU_Control1 = data;
+                    break;
+                case 2:
+                    /* PPU Status */
+                    break;
+                case 3:
+                    /* PPU Sprite Memory Address */
+                    PPU_Sprite_Addr = data;
+                    break;
+                case 4:
+                    /* PPU Sprite Data */
+                    spriteram.write(PPU_Sprite_Addr, data);
+                    PPU_Sprite_Addr++;
+                    PPU_Sprite_Addr &= 0xff;
+                    break;
+
+                case 5:
+                    if (u8_PPU_toggle != 0) /* (second write) */ {
+                        u16_PPU_refresh_latch = (u16_PPU_refresh_latch & ~0x03e0) & 0xFFFF;
+                        u16_PPU_refresh_latch = (u16_PPU_refresh_latch | (data & 0xf8) << 2) & 0xFFFF;
+
+                        u16_PPU_refresh_latch = (u16_PPU_refresh_latch & ~0x7000) & 0xFFFF;
+                        u16_PPU_refresh_latch = (u16_PPU_refresh_latch | (data & 0x07) << 12) & 0xFFFF;
+                    } /* (first write) */ else {
+                        u16_PPU_refresh_latch = (u16_PPU_refresh_latch & ~0x1f) & 0xFFFF;
+                        u16_PPU_refresh_latch = (u16_PPU_refresh_latch | (data & 0xf8) >> 3) & 0xFFFF;
+
+                        u8_PPU_X_fine = data & 0x07;
+                    }
+                    u8_PPU_toggle = NOT(u8_PPU_toggle);
+                    break;
+
+                case 6:
+                    /* PPU Address Register */
+ /* PPU Memory Adress */
+                    if (u8_PPU_toggle != 0) {
+                        u16_PPU_address = ((u8_PPU_address_latch << 8) | data) & 0xFFFF;
+
+                        u16_PPU_refresh_latch = (u16_PPU_refresh_latch & ~0x00ff) & 0xFFFF;
+                        u16_PPU_refresh_latch = (u16_PPU_refresh_latch | data) & 0xFFFF;
+                        u16_PPU_refresh_data = u16_PPU_refresh_latch;
+                    } else {
+                        u8_PPU_address_latch = data & 0xFF;
+
+                        if (data != 0x3f) /* TODO: remove this hack! */ {
+                            u16_PPU_refresh_latch = (u16_PPU_refresh_latch & ~0xff00) & 0xFFFF;
+                            u16_PPU_refresh_latch = (u16_PPU_refresh_latch | (data & 0x3f) << 8) & 0xFFFF;
+                        }
+                    }
+                    u8_PPU_toggle = NOT(u8_PPU_toggle);
+                    break;
+
+                case 7:
+                    /* PPU I/O Register */
+
+                    if ((current_scanline <= BOTTOM_VISIBLE_SCANLINE) /*&& (PPU_Control1 & 0x18)*/) {
+                        //				logerror("*** PPU write during hblank (%d) ",  current_scanline);
+                    }
+                    Write_PPU(data);
+                    break;
+            }
         }
     };
+
     /*TODO*///	
 /*TODO*///	void ppu_mirror_h (void)
 /*TODO*///	{
@@ -937,81 +843,57 @@ public class nes {
 /*TODO*///		ppu_page[page] = &(nes.vrom[address]);
 /*TODO*///	}
 /*TODO*///	
-/*TODO*///	
-/*TODO*///	static void Write_PPU (int data)
-/*TODO*///	{
-/*TODO*///		int tempAddr = PPU_address & 0x3fff;
-/*TODO*///	
-/*TODO*///	    if (*ppu_latch != NULL) (*ppu_latch)(tempAddr);
-/*TODO*///	
-/*TODO*///	#ifdef LOG_PPU
-/*TODO*///		logerror ("   Write_PPU %04x: %02x\n", tempAddr, data);
-/*TODO*///	#endif
-/*TODO*///		if (tempAddr < 0x2000)
-/*TODO*///		{
-/*TODO*///			/* This ROM writes to the character gen portion of VRAM */
-/*TODO*///			dirtychar[tempAddr >> 4] = 1;
-/*TODO*///			nes.vram[tempAddr] = data;
-/*TODO*///			videoram.write(tempAddr,data);
-/*TODO*///	
-/*TODO*///			if (nes.chr_chunks != 0)
-/*TODO*///				logerror("****** PPU write to vram with CHR_ROM - %04x:%02x!\n", tempAddr, data);
-/*TODO*///			goto end;
-/*TODO*///		}
-/*TODO*///	
-/*TODO*///		/* The only valid background colors are writes to 0x3f00 and 0x3f10 */
-/*TODO*///		/* and even then, they are mirrors of each other. */
-/*TODO*///		/* As usual, some games attempt to write values > the number of colors so we must mask the data. */
-/*TODO*///		if (tempAddr >= 0x3f00)
-/*TODO*///		{
-/*TODO*///			videoram.write(tempAddr,data);
-/*TODO*///			data &= 0x3f;
-/*TODO*///	
-/*TODO*///			if ((tempAddr & 0x03) != 0)
-/*TODO*///			{
-/*TODO*///	#ifdef COLOR_INTENSITY
-/*TODO*///				Machine.gfx[0].colortable[tempAddr & 0x1f] = Machine.pens[data + (PPU_Control1 & 0xe0)*2];
-/*TODO*///				colortable_mono[tempAddr & 0x1f] = Machine.pens[(data & 0xf0) + (PPU_Control1 & 0xe0)*2];
-/*TODO*///	#else
-/*TODO*///				Machine.gfx[0].colortable[tempAddr & 0x1f] = Machine.pens[data];
-/*TODO*///				colortable_mono[tempAddr & 0x1f] = Machine.pens[data & 0xf0];
-/*TODO*///	#endif
-/*TODO*///			}
-/*TODO*///	
-/*TODO*///			if ((tempAddr & 0x0f) == 0)
-/*TODO*///			{
-/*TODO*///				int i;
-/*TODO*///	
-/*TODO*///				PPU_background_color = data;
-/*TODO*///				for (i = 0; i < 0x20; i += 0x04)
-/*TODO*///				{
-/*TODO*///	#ifdef COLOR_INTENSITY
-/*TODO*///					Machine.gfx[0].colortable[i] = Machine.pens[data + (PPU_Control1 & 0xe0)*2];
-/*TODO*///					colortable_mono[i] = Machine.pens[(data & 0xf0) + (PPU_Control1 & 0xe0)*2];
-/*TODO*///	#else
-/*TODO*///					Machine.gfx[0].colortable[i] = Machine.pens[data];
-/*TODO*///					colortable_mono[i] = Machine.pens[data & 0xf0];
-/*TODO*///	#endif
-/*TODO*///				}
-/*TODO*///			}
-/*TODO*///			goto end;
-/*TODO*///		}
-/*TODO*///	
-/*TODO*///		/* everything else */
-/*TODO*///		else
-/*TODO*///		{
-/*TODO*///			/* Writes to $3000-$3eff are mirrors of $2000-$2eff, used by e.g. Trojan */
-/*TODO*///			int page = (PPU_address & 0x0c00) >> 10;
-/*TODO*///			int address = PPU_address & 0x3ff;
-/*TODO*///	
-/*TODO*///			ppu_page[page][address] = data;
-/*TODO*///		}
-/*TODO*///	
-/*TODO*///	end:
-/*TODO*///		PPU_address += PPU_add;
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	extern struct GfxLayout nes_charlayout;
+    static void Write_PPU(int data) {
+        int tempAddr = u16_PPU_address & 0x3fff;
+
+        /*TODO*///	    if (*ppu_latch != NULL) (*ppu_latch)(tempAddr);
+        if (tempAddr < 0x2000) {
+            /* This ROM writes to the character gen portion of VRAM */
+            dirtychar[tempAddr >> 4] = 1;
+            _nes.vram.write(tempAddr, data);
+            videoram.write(tempAddr, data);
+
+            if (_nes.chr_chunks[0] != 0) {
+                logerror("****** PPU write to vram with CHR_ROM - %04x:%02x!\n", tempAddr, data);
+            }
+            u16_PPU_address = (u16_PPU_address + PPU_add) & 0xFFFF;
+            return;
+        }
+
+        /* The only valid background colors are writes to 0x3f00 and 0x3f10 */
+ /* and even then, they are mirrors of each other. */
+ /* As usual, some games attempt to write values > the number of colors so we must mask the data. */
+        if (tempAddr >= 0x3f00) {
+            videoram.write(tempAddr, data);
+            data &= 0x3f;
+
+            if ((tempAddr & 0x03) != 0) {
+                Machine.gfx[0].colortable.write(tempAddr & 0x1f, Machine.pens[data]);
+                colortable_mono[tempAddr & 0x1f] = Machine.pens[data & 0xf0];
+            }
+
+            if ((tempAddr & 0x0f) == 0) {
+                int i;
+
+                PPU_background_color = data;
+                for (i = 0; i < 0x20; i += 0x04) {
+                    Machine.gfx[0].colortable.write(i, Machine.pens[data]);
+                    colortable_mono[i] = Machine.pens[data & 0xf0];
+                }
+            }
+            u16_PPU_address = (u16_PPU_address + PPU_add) & 0xFFFF;
+            return;
+        } /* everything else */ else {
+            /* Writes to $3000-$3eff are mirrors of $2000-$2eff, used by e.g. Trojan */
+            int page = (u16_PPU_address & 0x0c00) >> 10;
+            int address = u16_PPU_address & 0x3ff;
+
+            ppu_page[page].write(address, data);
+        }
+
+        //end:
+        u16_PPU_address = (u16_PPU_address + PPU_add) & 0xFFFF;
+    }
 
     public static io_initPtr nes_load_rom = new io_initPtr() {
         public int handler(int id) {
@@ -1151,8 +1033,7 @@ public class nes {
                 /* Mirror this bank into $8000 */
                 memcpy(_nes.rom, 0x10000, _nes.rom, 0x14000, 0x4000);
             } else {
-                throw new UnsupportedOperationException("Not supported yet.");
-                /*TODO*///			osd_fread (romfile, &_nes.rom[0x10000], 0x4000 * _nes.prg_chunks);
+                osd_fread(romfile, _nes.rom, 0x10000, 0x4000 * _nes.prg_chunks[0]);
             }
 
             logerror("**\n");

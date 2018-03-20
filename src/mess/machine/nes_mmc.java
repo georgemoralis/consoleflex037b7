@@ -19,10 +19,16 @@ import static WIP.mame.osdependH.*;
 import static mame.commonH.*;
 import static old.mame.common.*;
 import static WIP.arcadeflex.libc.memcpy.*;
+import static WIP.mame.memoryH.cpu_setbank;
 import static old.arcadeflex.libc_old.SEEK_SET;
 import static old.arcadeflex.libc_old.printf;
 import static old.arcadeflex.libc_old.strcmp;
 import static mess.includes.nesH.*;
+
+import static mess.machine.nes.*;
+import static mess.vidhrdw.nes.*;
+import static mess.includes.nesH.*;
+import static vidhrdw.generic.videoram;
 
 public class nes_mmc {
 
@@ -31,9 +37,9 @@ public class nes_mmc {
 /*TODO*///	#define LOG_MMC
 /*TODO*///	#define LOG_FDS
 /*TODO*///	
-/*TODO*///	/* Global variables */
-/*TODO*///	int prg_mask;
-/*TODO*///	
+    /* Global variables */
+    public static int prg_mask;
+    /*TODO*///	
 /*TODO*///	int IRQ_enable, IRQ_enable_latch;
 /*TODO*///	UINT16 IRQ_count, IRQ_count_latch;
 /*TODO*///	UINT8 IRQ_status;
@@ -74,12 +80,11 @@ public class nes_mmc {
 /*TODO*///	static int MMC5_vram_protect;
 /*TODO*///	static int MMC5_scanline;
 /*TODO*///	UINT8 MMC5_vram[0x400];
-/*TODO*///	int MMC5_vram_control;
-/*TODO*///	
+    public static int MMC5_vram_control;
+    /*TODO*///	
 /*TODO*///	static int mapper41_chr, mapper41_reg2;
-/*TODO*///	
-/*TODO*///	static int mapper_warning;
-/*TODO*///	
+    static int mapper_warning;
+
     public static WriteHandlerPtr nes_low_mapper_w = new WriteHandlerPtr() {
         public void handler(int offset, int data) {
             throw new UnsupportedOperationException("Not supported yet.");
@@ -166,6 +171,7 @@ public class nes_mmc {
 /*TODO*///		}
         }
     };
+
     /*TODO*///	
 /*TODO*///	/*
 /*TODO*///	 * Some helpful routines used by the mappers
@@ -236,22 +242,20 @@ public class nes_mmc {
 /*TODO*///			cpu_setbank (4, &nes.rom[bank * 0x4000 + 0x12000]);
 /*TODO*///		}
 /*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void prg32 (int bank)
-/*TODO*///	{
-/*TODO*///		/* assumes that bank references a 32k chunk */
-/*TODO*///		bank &= ((nes.prg_chunks >> 1) - 1);
-/*TODO*///		if (nes.slow_banking)
-/*TODO*///			memcpy (&nes.rom[0x8000], &nes.rom[bank * 0x8000 + 0x10000], 0x8000);
-/*TODO*///		else
-/*TODO*///		{
-/*TODO*///			cpu_setbank (1, &nes.rom[bank * 0x8000 + 0x10000]);
-/*TODO*///			cpu_setbank (2, &nes.rom[bank * 0x8000 + 0x12000]);
-/*TODO*///			cpu_setbank (3, &nes.rom[bank * 0x8000 + 0x14000]);
-/*TODO*///			cpu_setbank (4, &nes.rom[bank * 0x8000 + 0x16000]);
-/*TODO*///		}
-/*TODO*///	}
-/*TODO*///	
+    static void prg32(int bank) {
+        /* assumes that bank references a 32k chunk */
+        bank &= ((_nes.prg_chunks[0] >> 1) - 1);
+        if (_nes.u8_slow_banking != 0) {
+            memcpy(_nes.rom, 0x8000, _nes.rom, bank * 0x8000 + 0x10000, 0x8000);
+        } else {
+            cpu_setbank(1, new UBytePtr(_nes.rom, bank * 0x8000 + 0x10000));
+            cpu_setbank(2, new UBytePtr(_nes.rom, bank * 0x8000 + 0x12000));
+            cpu_setbank(3, new UBytePtr(_nes.rom, bank * 0x8000 + 0x14000));
+            cpu_setbank(4, new UBytePtr(_nes.rom, bank * 0x8000 + 0x16000));
+        }
+    }
+
+    /*TODO*///	
 /*TODO*///	static void chr8 (int bank)
 /*TODO*///	{
 /*TODO*///		int i;
@@ -4094,41 +4098,42 @@ public class nes_mmc {
 /*TODO*///		prg32 (bank);
 /*TODO*///		chr8 ((data & 0x70) >> 4);
 /*TODO*///	}
-/*TODO*///	
-/*TODO*///	/*
-/*TODO*///	// mapper_reset
-/*TODO*///	//
-/*TODO*///	// Resets the mapper bankswitch areas to their defaults. It returns a value "err"
-/*TODO*///	// that indicates if it was successful. Possible values for err are:
-/*TODO*///	//
-/*TODO*///	// 0 = success
-/*TODO*///	// 1 = no mapper found
-/*TODO*///	// 2 = mapper not supported
-/*TODO*///	*/
-/*TODO*///	int mapper_reset (int mapperNum)
-/*TODO*///	{
-/*TODO*///		int err = 0;
-/*TODO*///		int i;
-/*TODO*///	
-/*TODO*///		/* Set the vram bank-switch values to the default */
-/*TODO*///		for (i = 0; i < 8; i ++)
-/*TODO*///			nes_vram[i] = i * 64;
-/*TODO*///	
-/*TODO*///		mapper_warning = 0;
-/*TODO*///		/* 8k mask */
-/*TODO*///		prg_mask = ((nes.prg_chunks << 1) - 1);
-/*TODO*///	
-/*TODO*///		MMC5_vram_control = 0;
-/*TODO*///	
-/*TODO*///		/* Point the WRAM/battery area to the first RAM bank */
-/*TODO*///		cpu_setbank (5, &nes.wram[0x0000]);
-/*TODO*///	
+
+    /*
+	// mapper_reset
+	//
+	// Resets the mapper bankswitch areas to their defaults. It returns a value "err"
+	// that indicates if it was successful. Possible values for err are:
+	//
+	// 0 = success
+	// 1 = no mapper found
+	// 2 = mapper not supported
+     */
+    public static int mapper_reset(int mapperNum) {
+        int err = 0;
+        int i;
+
+        /* Set the vram bank-switch values to the default */
+        for (i = 0; i < 8; i++) {
+            nes_vram[i] = i * 64;
+        }
+
+        mapper_warning = 0;
+        /* 8k mask */
+        prg_mask = ((_nes.prg_chunks[0] << 1) - 1);
+
+        MMC5_vram_control = 0;
+
+        /* Point the WRAM/battery area to the first RAM bank */
+        cpu_setbank(5, new UBytePtr(_nes.wram, 0x0000));
+        /*TODO*///	
 /*TODO*///		switch (mapperNum)
 /*TODO*///		{
 /*TODO*///			case 0:
-/*TODO*///				err = 1; /* No mapper found */
-/*TODO*///				prg32(0);
-/*TODO*///				break;
+        err = 1;
+        /* No mapper found */
+        prg32(0);
+        /*TODO*///				break;
 /*TODO*///			case 1:
 /*TODO*///				/* Reset the latch */
 /*TODO*///				MMC1_reg = 0;
@@ -4376,13 +4381,14 @@ public class nes_mmc {
 /*TODO*///				err = 2;
 /*TODO*///				break;
 /*TODO*///		}
-/*TODO*///	
-/*TODO*///		if (nes.chr_chunks)
-/*TODO*///			memcpy (videoram, nes.vrom, 0x2000);
-/*TODO*///	
-/*TODO*///		return err;
-/*TODO*///	}
-/*TODO*///	
+
+        if (_nes.chr_chunks[0] != 0) {
+            memcpy(videoram, _nes.vrom, 0x2000);
+        }
+
+        return err;
+    }
+    /*TODO*///	
 /*TODO*///	mmc mmc_list[] = {
 /*TODO*///	/*	INES   DESC						LOW_W, LOW_R, MED_W, HIGH_W, PPU_latch, IRQ */
 /*TODO*///		{ 0, "No Mapper",				NULL, NULL, NULL, NULL, NULL, NULL },
