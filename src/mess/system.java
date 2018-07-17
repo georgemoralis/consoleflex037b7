@@ -7,6 +7,7 @@ import static mess.messH.*;
 import static mess.systems.coleco.*;
 import static mess.systems.sms.*;
 import static mess.systems.nes.*;
+import static mess.systems.spectrum.*;
 
 public class system {
 
@@ -283,7 +284,8 @@ public class system {
         /*TODO*///	DRIVER( pc8300 )	/* Your Computer - PC8300						  */
         /*TODO*///	DRIVER( pow3000 )	/* Creon Enterprises - Power 3000				  */
         /*TODO*///
-        /*TODO*///	DRIVER( spectrum )	/* Sinclair ZX Spectrum 48k 					  */
+        /*TODO*///	DRIVER( spectrum )	/* Sinclair ZX Spectrum 48k
+        driver_spectrum,
         /*TODO*///	DRIVER( specbusy )	/*												  */
         /*TODO*///	DRIVER( specgrot )	/*												  */
         /*TODO*///	DRIVER( specimc )	/*												  */

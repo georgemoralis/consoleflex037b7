@@ -95,6 +95,7 @@ public class drawgfx {
     }
 
     public static void decodechar(GfxElement gfx, int num, UBytePtr src, GfxLayout gl) {
+        //System.out.println("decodechar");
         int plane, x, y;
         UBytePtr dp;
         int baseoffs;
@@ -103,19 +104,23 @@ public class drawgfx {
         int[] yoffset;
 
         if ((Machine.orientation & ORIENTATION_SWAP_XY) != 0) {
+            //System.out.println("decodechar 1");
             xoffset = Arrays.copyOf(gl.yoffset,gl.yoffset.length);
             yoffset = Arrays.copyOf(gl.xoffset,gl.yoffset.length);
         } else {
+            //System.out.println("decodechar 2");
             xoffset = Arrays.copyOf(gl.xoffset,gl.xoffset.length);
             yoffset = Arrays.copyOf(gl.yoffset,gl.yoffset.length);
         }
-
+        //System.out.println("decodechar 3");
         dp = new UBytePtr(gfx.gfxdata, num * gfx.char_modulo);
+        //System.out.println("decodechar 4");
         memset(dp, 0, gfx.height * gfx.line_modulo);
-
+        //System.out.println("decodechar 5");
         baseoffs = num * gl.charincrement;
 
         for (plane = 0; plane < gl.planes; plane++) {
+            //System.out.println("decodechar 6");
             int shiftedbit = 1 << (gl.planes - 1 - plane);
             int offs = baseoffs + gl.planeoffset[plane];
 
