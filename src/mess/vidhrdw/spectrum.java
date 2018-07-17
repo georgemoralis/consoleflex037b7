@@ -108,15 +108,20 @@ public class spectrum
                     spectrum_characterram.offset=offset;
                     spectrum_characterram.write(data);
 
-                    charsdirty.offset = 0;
-                    charsdirty.write(((offset & 0x0f800)>>3) + (offset & 0x0ff), 1);
+                    //charsdirty.offset = 0;
+                    if ((((offset & 0x0f800)>>3) + (offset & 0x0ff) + charsdirty.offset) < 0x300)
+                        
+                        //charsdirty.write(((offset & 0x0f800)>>3) + (offset & 0x0ff), 1);
+                        charsdirty.offset=((offset & 0x0f800)>>3) + (offset & 0x0ff);
+                        charsdirty.write(1);
             }
         };
 	
 	//READ_HANDLER (spectrum_characterram_r)
         public static ReadHandlerPtr spectrum_characterram_r = new ReadHandlerPtr() {
             public int handler(int offset) {
-                return(spectrum_characterram.read(offset));
+                spectrum_characterram.offset = offset;
+                return(spectrum_characterram.read());
             }
         };
 		
@@ -144,7 +149,8 @@ public class spectrum
         public static ReadHandlerPtr spectrum_colorram_r = new ReadHandlerPtr() {
             public int handler(int offset) {
                 //return(spectrum_colorram[offset]);
-                return(spectrum_colorram.read(offset));
+                spectrum_colorram.offset=offset;
+                return(spectrum_colorram.read());
             }
         };
 	
@@ -264,39 +270,57 @@ public class spectrum
 	                /* Update all flashing characters when necessary */
 	                if (last_invert != flash_invert) {
 	                        for (count=0;count<0x300;count++)
-                                        spectrum_colorram.offset=count;
-	                                if ((spectrum_colorram.read() & 0x80) != 0) {
-	                                        //charsdirty[count] = 1;
-                                                charsdirty.write(1);
+                                        //spectrum_colorram.offset=count;
+                                        if ((count+spectrum_colorram.offset)<0x300){
+                                            if ((spectrum_colorram.read(count) & 0x80) != 0) {
+                                                    //charsdirty[count] = 1;
+                                                    charsdirty.offset=count;
+                                                    charsdirty.write(1);
+                                            }
                                         }
+                                
 	                        last_invert = flash_invert;
 	                }
 	        }
 	
 	        for (count=0;count<32*8;count++)
 	        {
-			charsdirty.offset=count;
-                        if (charsdirty.read() != 0) {
-                                //System.out.println("bsize: " + spectrum_characterram.bsize);
-                                //System.out.println("LONGO: " + spectrum_characterram.memory.length);
-                                //System.out.println("Count: " + count);
-				decodechar( Machine.gfx[0],count,spectrum_characterram,
-					    Machine.drv.gfxdecodeinfo[0].gfxlayout );
-			}
+			//charsdirty.offset=count;
+                        try {
+                        if ((count+charsdirty.offset)<0x300){    
+                            if (charsdirty.read(count) != 0) {
+                                    //System.out.println("bsize: " + spectrum_characterram.bsize);
+                                    //System.out.println("LONGO: " + spectrum_characterram.memory.length);
+                                    //System.out.println("Count: " + count);
+                                    spectrum_characterram.offset=0;
+                                    decodechar( Machine.gfx[0],count,spectrum_characterram,
+                                                Machine.drv.gfxdecodeinfo[0].gfxlayout );
+                            }
+                        }
+                        } catch (Exception e) {
+                            System.out.println("ERROR!!!!: "+charsdirty.memory.length);
+                            System.out.println("ERROR!!!!: "+count);
+                            System.out.println("ERROR!!!!: "+spectrum_characterram.memory.length);
+                            e.printStackTrace(System.out);
+                        }
 	
-			charsdirty.offset=count+256;
-                        if (charsdirty.read() !=0) {
-                                spectrum_characterram.offset=(0x800);
-				decodechar( Machine.gfx[1],count,spectrum_characterram,
-					    Machine.drv.gfxdecodeinfo[0].gfxlayout );
-			}
+			//charsdirty.offset=count+256;
+                        if ((count+256+charsdirty.offset)<0x300){
+                            if (charsdirty.read(count+256) !=0) {
+                                    spectrum_characterram.offset=(0x800);
+                                    decodechar( Machine.gfx[1],count,spectrum_characterram,
+                                                Machine.drv.gfxdecodeinfo[0].gfxlayout );
+                            }
+                        }
 	
-			charsdirty.offset=count+512;
-                        if (charsdirty.read() !=0) {
-				spectrum_characterram.offset=(0x1000);
-                                decodechar( Machine.gfx[2],count,spectrum_characterram,
-					    Machine.drv.gfxdecodeinfo[0].gfxlayout );
-			}
+			//charsdirty.offset=count+512;
+                        if ((count+512+charsdirty.offset)<0x300){
+                            if (charsdirty.read(count+512) !=0) {
+                                    spectrum_characterram.offset=(0x1000);
+                                    decodechar( Machine.gfx[2],count,spectrum_characterram,
+                                                Machine.drv.gfxdecodeinfo[0].gfxlayout );
+                            }
+                        }
 		}
 	
 	        for (count=0;count<32*8;count++)
@@ -306,52 +330,58 @@ public class spectrum
 			//unsigned char color;
                         char color;
 	
-	                charsdirty.offset = count;
-                        if (charsdirty.read() !=0) {
-	                        color=get_display_color(spectrum_colorram.read(),
-	                                                flash_invert);
-				drawgfx(bitmap,Machine.gfx[0],
-					count,
-					color,
-					0,0,
-	                                (sx*8)+SPEC_LEFT_BORDER,(sy*8)+SPEC_TOP_BORDER,
-					null,TRANSPARENCY_NONE,0);
-				
-                                charsdirty.write(0);
-			}
+	                //charsdirty.offset = count;
+                        if ((count+charsdirty.offset)<0x300){
+                            if (charsdirty.read(count) !=0) {
+                                    color=get_display_color(spectrum_colorram.read(),
+                                                            flash_invert);
+                                    drawgfx(bitmap,Machine.gfx[0],
+                                            count,
+                                            color,
+                                            0,0,
+                                            (sx*8)+SPEC_LEFT_BORDER,(sy*8)+SPEC_TOP_BORDER,
+                                            null,TRANSPARENCY_NONE,0);
+
+                                    charsdirty.write(0);
+                            }
+                        }
 	
-			charsdirty.offset=count+256;
-                        if (charsdirty.read() !=0) {
-                                spectrum_colorram.offset=count+0x100;
-	                        color=get_display_color(spectrum_colorram.read(),
-	                                                flash_invert);
-				
-                                
-                                drawgfx(bitmap,Machine.gfx[1],
-					count,
-					color,
-					0,0,
-	                                (sx*8)+SPEC_LEFT_BORDER,((sy+8)*8)+SPEC_TOP_BORDER,
-					null,TRANSPARENCY_NONE,0);
-				
-                                charsdirty.offset=count+256;
-                                charsdirty.write(0);
-			}
+			//charsdirty.offset=count+256;
+                        if ((count+256+charsdirty.offset)<0x300){
+                            if (charsdirty.read(count+256) !=0) {
+                                    spectrum_colorram.offset=count+0x100;
+                                    color=get_display_color(spectrum_colorram.read(),
+                                                            flash_invert);
+
+
+                                    drawgfx(bitmap,Machine.gfx[1],
+                                            count,
+                                            color,
+                                            0,0,
+                                            (sx*8)+SPEC_LEFT_BORDER,((sy+8)*8)+SPEC_TOP_BORDER,
+                                            null,TRANSPARENCY_NONE,0);
+
+                                    charsdirty.offset=count+256;
+                                    charsdirty.write(0);
+                            }
+                        }
 	
-			charsdirty.offset=count+512;
-                        if (charsdirty.read() !=0) {
-                                spectrum_colorram.offset=count+0x200;
-	                        color=get_display_color(spectrum_colorram.read(),
-	                                                flash_invert);
-				drawgfx(bitmap,Machine.gfx[2],
-					count,
-					color,
-					0,0,
-	                                (sx*8)+SPEC_LEFT_BORDER,((sy+16)*8)+SPEC_TOP_BORDER,
-					null,TRANSPARENCY_NONE,0);
-				charsdirty.offset=count+512;
-                                charsdirty.write(0);
-			}
+			//charsdirty.offset=count+512;
+                        if ((count+512+charsdirty.offset)<0x300){
+                            if (charsdirty.read(count+512) !=0) {
+                                    spectrum_colorram.offset=count+0x200;
+                                    color=get_display_color(spectrum_colorram.read(),
+                                                            flash_invert);
+                                    drawgfx(bitmap,Machine.gfx[2],
+                                            count,
+                                            color,
+                                            0,0,
+                                            (sx*8)+SPEC_LEFT_BORDER,((sy+16)*8)+SPEC_TOP_BORDER,
+                                            null,TRANSPARENCY_NONE,0);
+                                    charsdirty.offset=count+512;
+                                    charsdirty.write(0);
+                            }
+                        }
 		}
 	
 	        /* When screen refresh is called there is only one blank line

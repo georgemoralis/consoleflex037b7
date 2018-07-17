@@ -202,14 +202,16 @@ public class libc_v2 {
             //System.out.println("libc_v2 offset: "+offset);
             //System.out.println("libc_v2 offset: "+index);
             //System.out.println("libc_v2 memory: "+memory.length);
-            //try {
+            
+            try {
             return (char) (memory[offset + index] & 0xFF); //return only the first 8bits
-            /*} catch (Exception e){
+            } catch (Exception e){
                 System.out.println("libc_v2 offset: "+offset);
                 System.out.println("libc_v2 index: "+index);
                 System.out.println("libc_v2 memory: "+memory.length);
+                e.printStackTrace(System.out);
             }
-            return memory[0];*/
+            return memory[0];
         }
 
         public char readinc() {
