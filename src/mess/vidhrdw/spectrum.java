@@ -285,10 +285,10 @@ public class spectrum
 	
 	        for (count=0;count<32*8;count++)
 	        {
-			//charsdirty.offset=count;
+			charsdirty.offset=count;
                         try {
-                        if ((count+charsdirty.offset)<0x300){    
-                            if (charsdirty.read(count) != 0) {
+                        //if ((count+charsdirty.offset)<0x300){    
+                            if (charsdirty.read() != 0) {
                                     //System.out.println("bsize: " + spectrum_characterram.bsize);
                                     //System.out.println("LONGO: " + spectrum_characterram.memory.length);
                                     //System.out.println("Count: " + count);
@@ -296,7 +296,7 @@ public class spectrum
                                     decodechar( Machine.gfx[0],count,spectrum_characterram,
                                                 Machine.drv.gfxdecodeinfo[0].gfxlayout );
                             }
-                        }
+                        //}
                         } catch (Exception e) {
                             System.out.println("ERROR!!!!: "+charsdirty.memory.length);
                             System.out.println("ERROR!!!!: "+count);
@@ -304,23 +304,23 @@ public class spectrum
                             e.printStackTrace(System.out);
                         }
 	
-			//charsdirty.offset=count+256;
-                        if ((count+256+charsdirty.offset)<0x300){
-                            if (charsdirty.read(count+256) !=0) {
+			charsdirty.offset=count+256;
+                        //if ((count+256+charsdirty.offset)<0x300){
+                            if (charsdirty.read() !=0) {
                                     spectrum_characterram.offset=(0x800);
                                     decodechar( Machine.gfx[1],count,spectrum_characterram,
                                                 Machine.drv.gfxdecodeinfo[0].gfxlayout );
                             }
-                        }
+                        //}
 	
-			//charsdirty.offset=count+512;
-                        if ((count+512+charsdirty.offset)<0x300){
-                            if (charsdirty.read(count+512) !=0) {
+			charsdirty.offset=count+512;
+                        //if ((count+512+charsdirty.offset)<0x300){
+                            if (charsdirty.read() !=0) {
                                     spectrum_characterram.offset=(0x1000);
                                     decodechar( Machine.gfx[2],count,spectrum_characterram,
                                                 Machine.drv.gfxdecodeinfo[0].gfxlayout );
                             }
-                        }
+                        //}
 		}
 	
 	        for (count=0;count<32*8;count++)
@@ -330,9 +330,9 @@ public class spectrum
 			//unsigned char color;
                         char color;
 	
-	                //charsdirty.offset = count;
-                        if ((count+charsdirty.offset)<0x300){
-                            if (charsdirty.read(count) !=0) {
+	                charsdirty.offset = count;
+                        //if ((count+charsdirty.offset)<0x300){
+                            if (charsdirty.read() !=0) {
                                     color=get_display_color(spectrum_colorram.read(),
                                                             flash_invert);
                                     drawgfx(bitmap,Machine.gfx[0],
@@ -344,11 +344,11 @@ public class spectrum
 
                                     charsdirty.write(0);
                             }
-                        }
+                        //}
 	
-			//charsdirty.offset=count+256;
-                        if ((count+256+charsdirty.offset)<0x300){
-                            if (charsdirty.read(count+256) !=0) {
+			charsdirty.offset=count+256;
+                        //if ((count+256+charsdirty.offset)<0x300){
+                            if (charsdirty.read() !=0) {
                                     spectrum_colorram.offset=count+0x100;
                                     color=get_display_color(spectrum_colorram.read(),
                                                             flash_invert);
@@ -364,11 +364,11 @@ public class spectrum
                                     charsdirty.offset=count+256;
                                     charsdirty.write(0);
                             }
-                        }
+                        //}
 	
-			//charsdirty.offset=count+512;
-                        if ((count+512+charsdirty.offset)<0x300){
-                            if (charsdirty.read(count+512) !=0) {
+			charsdirty.offset=count+512;
+                        //if ((count+512+charsdirty.offset)<0x300){
+                            if (charsdirty.read() !=0) {
                                     spectrum_colorram.offset=count+0x200;
                                     color=get_display_color(spectrum_colorram.read(),
                                                             flash_invert);
@@ -381,7 +381,7 @@ public class spectrum
                                     charsdirty.offset=count+512;
                                     charsdirty.write(0);
                             }
-                        }
+                        //}
 		}
 	
 	        /* When screen refresh is called there is only one blank line
