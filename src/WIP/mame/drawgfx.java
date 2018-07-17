@@ -105,12 +105,13 @@ public class drawgfx {
 
         if ((Machine.orientation & ORIENTATION_SWAP_XY) != 0) {
             //System.out.println("decodechar 1");
-            xoffset = Arrays.copyOf(gl.yoffset,gl.yoffset.length);
-            yoffset = Arrays.copyOf(gl.xoffset,gl.yoffset.length);
+            //xoffset = Arrays.copyOf(gl.yoffset,gl.yoffset.length);
+            xoffset = gl.yoffset;
+            yoffset = gl.xoffset;
         } else {
             //System.out.println("decodechar 2");
-            xoffset = Arrays.copyOf(gl.xoffset,gl.xoffset.length);
-            yoffset = Arrays.copyOf(gl.yoffset,gl.yoffset.length);
+            xoffset = gl.xoffset;
+            yoffset = gl.yoffset;
         }
         //System.out.println("decodechar 3");
         dp = new UBytePtr(gfx.gfxdata, num * gfx.char_modulo);

@@ -275,8 +275,8 @@ public class spectrum
 	
 	        for (count=0;count<32*8;count++)
 	        {
-			//charsdirty.offset=count;
-                        if (charsdirty.read(count) != 0) {
+			charsdirty.offset=count;
+                        if (charsdirty.read() != 0) {
                                 //System.out.println("bsize: " + spectrum_characterram.bsize);
                                 //System.out.println("LONGO: " + spectrum_characterram.memory.length);
                                 //System.out.println("Count: " + count);
