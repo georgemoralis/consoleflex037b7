@@ -1,3 +1,7 @@
+22/07/2018
+==========
+-First pleliminary version of the 128k model. WIP, doesn't works (several memory banks issues)
+
 20/07/2018
 ==========
 -Full SNA and Z80 file formats support
