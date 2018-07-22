@@ -1,3 +1,13 @@
+20/07/2018
+==========
+-Full SNA and Z80 file formats support
+
+19/07/2018
+==========
+-Initial zx spectrum 48k driver but doesn't seem to work properly
+-Added border class and preliminary border emulation
+-Added first version of eventlst
+
 20/03/2018
 ==========
 -More nes driver progress but doesn't seem to work properly
