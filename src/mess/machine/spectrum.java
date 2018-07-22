@@ -34,6 +34,8 @@ import static WIP.arcadeflex.fucPtr.*;
 import static WIP.mame.mame.Machine;
 import static WIP.mame.osdependH.*;
 import static WIP.mame.memory.*;
+import static WIP.mame.memoryH.*;
+
 import static old.arcadeflex.osdepend.logerror;
 import static old.mame.cpuintrf.*;
 import static mess.messH.*;
@@ -41,12 +43,20 @@ import static mess.mess.*;
 import static mess.osdepend.fileio.*;
 import static cpu.z80.z80H.*;
 
+import static old.arcadeflex.libc_old.*;
+
 import static arcadeflex.libc.cstring.*;
 import consoleflex.funcPtr.*;
+import cpu.z80.z80;
 
 import static mess.systems.spectrum.*;
 import static mess.includes.spectrumH.*;
 import static old.arcadeflex.osdepend.logerror;
+
+import static mame.eventlst.*;
+import static mame.eventlstH.*;
+
+import static vidhrdw.border.*;
 
 public class spectrum
 {
@@ -55,9 +65,10 @@ public class spectrum
 	#define MIN(x,y) ((x)<(y)?(x):(y))
 	#endif*/
 	
-	static UBytePtr pSnapshotData = null;
-	static long SnapshotDataSize = 0;
-	static  long TapePosition = 0;
+	public static UBytePtr pSnapshotData = null;
+	public static long SnapshotDataSize = 0;
+	//static  long TapePosition = 0;
+        static  int TapePosition = 0;
 	/*static void spectrum_setup_sna(UBytePtr pSnapshot, unsigned long SnapshotSize);
 	static void spectrum_setup_z80(UBytePtr pSnapshot, unsigned long SnapshotSize);
 	static int is48k_z80snapshot(UBytePtr pSnapshot, unsigned long SnapshotSize);
@@ -85,17 +96,29 @@ public class spectrum
             {
 		if (pSnapshotData != null)
 		{
+                        //memorycontextswap(activecpu);
+                        
 			if (SPECTRUM_SNAPSHOT_TYPE == SPECTRUM_TAPEFILE_TAP)
 			{
-				/*TODO*/////logerror(".TAP file support enabled\n") ;
-				/*TODO*/////cpu_setOPbaseoverride(0, spectrum_tape_opbaseoverride);
+				//logerror(".TAP file support enabled\n") ;
+				//cpu_setOPbaseoverride(0, spectrum_tape_opbaseoverride);
 			}
                         else
                         {
-				/*TODO*/////cpu_setOPbaseoverride(0, spectrum_opbaseoverride);
+                            cpu_setOPbaseoverride(0, spectrum_opbaseoverride);
+                            
+                            /*if (SPECTRUM_SNAPSHOT_TYPE == SPECTRUM_SNAPSHOT_SNA)
+                                spectrum_setup_sna(pSnapshotData, SnapshotDataSize);
+                            
+                            else 
+                                spectrum_setup_z80(pSnapshotData, SnapshotDataSize);
+                            */
                         }
+                        
+                        //SPECTRUM_SNAPSHOT_TYPE = SPECTRUM_SNAPSHOT_NONE;
 		}
             } 
+            
         };
 	
 	static void spectrum_shutdown_machine()
@@ -123,10 +146,8 @@ public class spectrum
                 Object file=null;
 	
 		//file = image_fopen(IO_SNAPSHOT, id, OSD_FILETYPE_IMAGE_RW, OSD_FOPEN_READ);
+                file = image_fopen(IO_SNAPSHOT, id, OSD_FILETYPE_IMAGE_R, 0);
                 
-                System.out.println("No LOAD");
-                //file = image_fopen(IO_SNAPSHOT, id, OSD_FILETYPE_IMAGE_RW, 0);
-	
 		//if (file != 0)
                 if (file != null)
 		{
@@ -152,24 +173,26 @@ public class spectrum
 					osd_fread(file, data, datasize);
 					osd_fclose(file);
                                         
-                                        System.out.println("KK ELIMINAR!!!!");
                                         System.out.println(device_filename(IO_SNAPSHOT, id));
                                         System.out.println(strlen(device_filename(IO_SNAPSHOT, id) ));
+                                        System.out.println(device_filename(IO_SNAPSHOT, id).substring(device_filename(IO_SNAPSHOT, id).length()-4));
 	
 					//if (!stricmp(device_filename(IO_SNAPSHOT, id) + strlen(device_filename(IO_SNAPSHOT, id) ) - 4, ".sna"))
-                                        if (true)
-					{
+                                        if (stricmp(device_filename(IO_SNAPSHOT, id).substring(device_filename(IO_SNAPSHOT, id).length()-4), ".sna")==0)
+                                        {
 						if ((SnapshotDataSize != 49179) && (SnapshotDataSize != 131103) && (SnapshotDataSize != 14787))
 						{
 							logerror("Invalid .SNA file size\n");
 							return 1;
 						}
 						SPECTRUM_SNAPSHOT_TYPE = SPECTRUM_SNAPSHOT_SNA;
-					}
-					else
+                                                System.out.println("SNA!!!!");
+					} else {
 						SPECTRUM_SNAPSHOT_TYPE = SPECTRUM_SNAPSHOT_Z80;
+                                                System.out.println("Z80!!!!");
+                                        }
 	
-					logerror("File loaded!\n");
+					logerror("File loaded!\n");                                        
 					return 0;
 				}
 				osd_fclose(file);
@@ -182,14 +205,15 @@ public class spectrum
 	
 	static void spectrum_rom_exit(int id)
 	{
-		if (pSnapshotData != null)
+		System.out.println("ROM EXIT");
+                if (pSnapshotData != null)
 		{
 			/* free snapshot/tape data */
 			//free(pSnapshotData);
 			pSnapshotData = null;
 	
 			/* ensure op base is cleared */
-			/*TODO*/////cpu_setOPbaseoverride(0, 0);
+			cpu_setOPbaseoverride(0, null);
 		}
 	
 		/* reset type to none */
@@ -197,40 +221,50 @@ public class spectrum
 	}
 	
 	
-	/*TODO*/////static OPBASE_HANDLER(spectrum_opbaseoverride)
-	/*TODO*/////{
+	//static OPBASE_HANDLER(spectrum_opbaseoverride)
+        public static opbase_handlerPtr spectrum_opbaseoverride=new opbase_handlerPtr() {
+            
+            public int handler (int address){
+                
 		/* clear op base override */
-	/*TODO*/////	cpu_setOPbaseoverride(0, 0);
+		cpu_setOPbaseoverride(0, null);
 	
-	/*TODO*/////	if (pSnapshotData != 0)
-	/*TODO*/////	{
+		if (pSnapshotData != null)
+		{
 			/* snapshot loaded setup */
 	
-	/*TODO*/////		switch (SPECTRUM_SNAPSHOT_TYPE)
-	/*TODO*/////		{
-	/*TODO*/////		case SPECTRUM_SNAPSHOT_SNA:
-	/*TODO*/////			{
+			switch (SPECTRUM_SNAPSHOT_TYPE)
+			{
+                                case SPECTRUM_SNAPSHOT_SNA:
+				{
 					/* .SNA */
-	/*TODO*/////				spectrum_setup_sna(pSnapshotData, SnapshotDataSize);
-	/*TODO*/////			}
-	/*TODO*/////			break;
+                                        System.out.println("HANDLE SNA!!!!!");
+                                        //memorycontextswap(activecpu);
+					spectrum_setup_sna(pSnapshotData, SnapshotDataSize);
+                                        SPECTRUM_SNAPSHOT_TYPE=SPECTRUM_SNAPSHOT_NONE;
+				}
+				break;
 	
-	/*TODO*/////		case SPECTRUM_SNAPSHOT_Z80:
-	/*TODO*/////			{
+                		case SPECTRUM_SNAPSHOT_Z80:
+                        	{
 					/* .Z80 */
-	/*TODO*/////				spectrum_setup_z80(pSnapshotData, SnapshotDataSize);
-	/*TODO*/////			}
-	/*TODO*/////			break;
+                                        System.out.println("HANDLE Z80!!!!!");
+                                        //memorycontextswap(activecpu);
+					spectrum_setup_z80(pSnapshotData, SnapshotDataSize);
+                                        SPECTRUM_SNAPSHOT_TYPE=SPECTRUM_SNAPSHOT_NONE;
+                                }
+                                break;
 	
-	/*TODO*/////		default:
+                		default:
 				/* SPECTRUM_TAPEFILE_TAP is handled by spectrum_tape_opbaseoverride */
-	/*TODO*/////			break;
-	/*TODO*/////		}
-	/*TODO*/////	}
-	/*TODO*/////	logerror("Snapshot loaded - new PC = %04x\n", cpu_get_reg(Z80_PC) & 0x0ffff);
-	
-	/*TODO*/////	return (cpu_get_reg(Z80_PC) & 0x0ffff);
-	/*TODO*/////}
+				break;
+                		}
+                        logerror("Snapshot loaded - new PC = %04x\n", cpu_get_reg(Z80_PC) & 0x0ffff);
+                }
+			
+		return (cpu_get_reg(Z80_PC) & 0x0ffff);
+            }
+        };
 	
 	/*******************************************************************
 	 *
@@ -253,12 +287,13 @@ public class spectrum
 	 *      load routine so things get rather messy!
 	 *
 	 *******************************************************************/
-	/*TODO*/////static OPBASE_HANDLER(spectrum_tape_opbaseoverride)
-	/*TODO*/////{
+        //static OPBASE_HANDLER(spectrum_tape_opbaseoverride)
+        /*TODO*/////public static opbase_handlerPtr spectrum_tape_opbaseoverride=new opbase_handlerPtr() {
+        /*TODO*/////    public int handler (int address){
 	/*TODO*/////	int i, tap_block_length, load_length;
 	/*TODO*/////	char lo, hi, a_reg;
 	/*TODO*/////	short load_addr, return_addr, af_reg, de_reg, sp_reg;
-	/*TODO*/////	static int data_loaded = 0;			/* Whether any data files (not headers) were loaded */
+	/*TODO*/////	//static int data_loaded = 0;			/* Whether any data files (not headers) were loaded */
 	
 	/*        logerror("PC=%02x\n", address); */
 	
@@ -270,16 +305,16 @@ public class spectrum
 	/*TODO*/////	{
 	/*TODO*/////		if ((address < 0x05e3) || (address > 0x0604))
 	/*TODO*/////			return address;
-	
+	/*TODO*/////
 			/* For Spectrum 128/+2/+3 check which rom is paged */
 	/*TODO*/////		if ((spectrum_128_port_7ffd_data != -1) || (spectrum_plus3_port_1ffd_data != -1))
 	/*TODO*/////		{
 	/*TODO*/////			if (spectrum_plus3_port_1ffd_data != -1)
 	/*TODO*/////			{
-	/*TODO*/////				if (!spectrum_plus3_port_1ffd_data & 0x04)
+	/*TODO*/////				if ((spectrum_plus3_port_1ffd_data & 0x04) != 0)
 	/*TODO*/////					return address;
 	/*TODO*/////			}
-	/*TODO*/////			if (!spectrum_128_port_7ffd_data & 0x10)
+	/*TODO*/////			if ((spectrum_128_port_7ffd_data & 0x10) !=0)
 	/*TODO*/////				return address;
 	/*TODO*/////		}
 	/*TODO*/////	}
@@ -288,13 +323,15 @@ public class spectrum
 			/* For TS2068 also check that EXROM is paged into bottom 8K.
 			 * Code is not relocatable so don't need to check EXROM in other pages.
 			 */
-	/*TODO*/////		if ((!ts2068_port_f4_data & 0x01) || (!ts2068_port_ff_data & 0x80))
+	/*TODO*/////		if (((ts2068_port_f4_data & 0x01)!=0) || ((ts2068_port_ff_data & 0x80)!=0))
 	/*TODO*/////			return address;
 	/*TODO*/////		if ((address < 0x018d) || (address > 0x01aa))
 	/*TODO*/////			return address;
 	/*TODO*/////	}
 	
-	/*TODO*/////	lo = pSnapshotData[TapePosition] & 0x0ff;
+	/*TODO*/////	//lo = pSnapshotData[TapePosition] & 0x0ff;
+        /*TODO*/////        pSnapshotData.offset=TapePosition & 0x0ff;
+                
 	/*TODO*/////	hi = pSnapshotData[TapePosition + 1] & 0x0ff;
 	/*TODO*/////	tap_block_length = (hi << 8) | lo;
 	
@@ -337,7 +374,7 @@ public class spectrum
 	/*TODO*/////	}
 	/*TODO*/////	else
 	/*TODO*/////	{
-	/*TODO*/////		/* Wrong flag byte or verify selected so reset carry flag to indicate failure */
+			/* Wrong flag byte or verify selected so reset carry flag to indicate failure */
 	/*TODO*/////		cpu_set_reg(Z80_AF, af_reg & 0xfffe);
 	/*TODO*/////		if ((af_reg & 0x0001) != 0)
 	/*TODO*/////			logerror("Failed to load tape block at offset %ld - type wanted %02x, got type %02x\n", TapePosition, a_reg,
@@ -410,7 +447,7 @@ public class spectrum
 		if (spectrum_128_port_7ffd_data == -1)
 			return;
 		if (spectrum_plus3_port_1ffd_data == -1){
-			/*TODO*/////spectrum_128_update_memory();
+			spectrum_128_update_memory();
                 }else
 		{
 			if ((spectrum_128_port_7ffd_data & 0x10) != 0)
@@ -426,10 +463,15 @@ public class spectrum
 	/* Page in the 48K Basic ROM. Used when running 48K snapshots on a 128K machine. */
 	static void spectrum_page_basicrom()
 	{
-		if (spectrum_128_port_7ffd_data == -1)
+		System.out.println("spectrum_page_basicrom");
+                
+                if (spectrum_128_port_7ffd_data == -1)
 			return;
 		spectrum_128_port_7ffd_data |= 0x10;
 		spectrum_update_paging();
+                
+                
+                
 	}
 	
 	/* Dump the state of registers after loading a snapshot to the log file for debugging */
@@ -487,7 +529,7 @@ public class spectrum
 	 *      in which case it is included twice.
 	 *
 	 *******************************************************************/
-	void spectrum_setup_sna(UBytePtr pSnapshot, long SnapshotSize)
+	public static void spectrum_setup_sna(UBytePtr pSnapshot, long SnapshotSize)
 	{
 		int i, j=0;
                 int[] usedbanks=new int[8];
@@ -496,6 +538,8 @@ public class spectrum
 		//char lo, hi, data;
                 int lo, hi, data;
 		int addr;
+                
+                pSnapshot.offset=0;
 	
 		if ((SnapshotDataSize != 49179) && (spectrum_128_port_7ffd_data == -1))
 		{
@@ -503,62 +547,93 @@ public class spectrum
 			return;
 		}
 	
-		cpu_set_reg(Z80_I, (pSnapshot.read(0) & 0x0ff));
-		//lo = pSnapshot[1] & 0x0ff;
+		//z80.Z80_Regs regs = (z80.Z80_Regs) cpu.get(0).intf.get_context();
+                                
+                cpu_set_reg(Z80_I, (pSnapshot.read(0) & 0x0ff));
+                //regs.I = (pSnapshot.read(0) & 0x0ff);
+		
+                //lo = pSnapshot[1] & 0x0ff;
                 lo = pSnapshot.read(1) & 0x0ff;
 		//hi = pSnapshot[2] & 0x0ff;
                 hi = pSnapshot.read(2) & 0x0ff;
 		cpu_set_reg(Z80_HL2, (hi << 8) | lo);
+                //regs.H2=hi;
+                //regs.L2=lo;
 		//lo = pSnapshot[3] & 0x0ff;
                 lo = pSnapshot.read(3) & 0x0ff;
 		//hi = pSnapshot[4] & 0x0ff;
                 hi = pSnapshot.read(4) & 0x0ff;
 		cpu_set_reg(Z80_DE2, (hi << 8) | lo);
+                //regs.D2=hi;
+                //regs.E2=lo;
 		lo = pSnapshot.read(5) & 0x0ff;
 		hi = pSnapshot.read(6) & 0x0ff;
 		cpu_set_reg(Z80_BC2, (hi << 8) | lo);
+                //regs.B2=hi;
+                //regs.C2=lo;
 		lo = pSnapshot.read(7) & 0x0ff;
 		hi = pSnapshot.read(8) & 0x0ff;
 		cpu_set_reg(Z80_AF2, (hi << 8) | lo);
+                //regs.A2=hi;
+                //regs.F2=lo;
 		lo = pSnapshot.read(9) & 0x0ff;
 		hi = pSnapshot.read(10) & 0x0ff;
 		cpu_set_reg(Z80_HL, (hi << 8) | lo);
+                //regs.H=hi;
+                //regs.L=lo;
 		lo = pSnapshot.read(11) & 0x0ff;
 		hi = pSnapshot.read(12) & 0x0ff;
 		cpu_set_reg(Z80_DE, (hi << 8) | lo);
+                //regs.D=hi;
+                //regs.E=lo;
 		lo = pSnapshot.read(13) & 0x0ff;
 		hi = pSnapshot.read(14) & 0x0ff;
 		cpu_set_reg(Z80_BC, (hi << 8) | lo);
+                //regs.B=hi;
+                //regs.C=lo;
 		lo = pSnapshot.read(15) & 0x0ff;
 		hi = pSnapshot.read(16) & 0x0ff;
 		cpu_set_reg(Z80_IY, (hi << 8) | lo);
+                //regs.IY=(hi << 8) | lo;
+                
 		lo = pSnapshot.read(17) & 0x0ff;
 		hi = pSnapshot.read(18) & 0x0ff;
 		cpu_set_reg(Z80_IX, (hi << 8) | lo);
+                //regs.IX=(hi << 8) | lo;
 		data = (pSnapshot.read(19) & 0x04) >> 2;
 		cpu_set_reg(Z80_IFF2, data);
+                //regs.IFF2=data;
 		cpu_set_reg(Z80_IFF1, data);
+                //regs.IFF1=data;
 		data = (pSnapshot.read(20) & 0x0ff);
 		cpu_set_reg(Z80_R, data);
+                //regs.R=data;
 		lo = pSnapshot.read(21) & 0x0ff;
 		hi = pSnapshot.read(22) & 0x0ff;
 		cpu_set_reg(Z80_AF, (hi << 8) | lo);
+                //regs.A=hi;
+                //regs.F=lo;
 		lo = pSnapshot.read(23) & 0x0ff;
 		hi = pSnapshot.read(24) & 0x0ff;
 		cpu_set_reg(Z80_SP, (hi << 8) | lo);
+                //regs.SP=(hi << 8) | lo;
 		//cpu_set_sp((hi << 8) | lo);
 		data = (pSnapshot.read(25) & 0x0ff);
 		cpu_set_reg(Z80_IM, data);
+                //regs.IM=data;
 	
 		/* Set border colour */
 		PreviousFE = (PreviousFE & 0xf8) | (pSnapshot.read(26) & 0x07);
-		/*TODO*/////EventList_Reset();
-		/*TODO*/////set_last_border_color(pSnapshot.read(26) & 0x07);
-		/*TODO*/////force_border_redraw();
+		EventList_Reset();
+		set_last_border_color(pSnapshot.read(26) & 0x07);
+		force_border_redraw();
 	
 		cpu_set_reg(Z80_NMI_STATE, 0);
+                //regs.nmi_state=0;
 		cpu_set_reg(Z80_IRQ_STATE, 0);
+                //regs.irq_state=0;
 		cpu_set_reg(Z80_HALT, 0);
+                //regs.HALT=0;
 	
 		if (SnapshotDataSize == 49179)
 			/* 48K Snapshot */
@@ -578,15 +653,8 @@ public class spectrum
 	
 		if (SnapshotDataSize == 49179)
 		{
-			/* get pc from stack */
-			//addr = cpu_geturnpc();
-                        addr = cpu_get_reg(Z80_PC);
-			cpu_set_reg(Z80_PC, (addr & 0x0ffff));
-	
-			addr = cpu_get_reg(Z80_SP);
-			addr += 2;
-			cpu_set_reg(Z80_SP, (addr & 0x0ffff));
-			//cpu_set_sp((addr & 0x0ffff));
+			
+                        z80.RETN();
 		}
 		else
 		{
@@ -622,8 +690,13 @@ public class spectrum
 			lo = pSnapshot.read(49179) & 0x0ff;
 			hi = pSnapshot.read(49180) & 0x0ff;
 			cpu_set_reg(Z80_PC, (hi << 8) | lo);
+                        //regs.PC=(hi << 8) | lo;
+                        
+                        
 		}
+                //cpu.get(0).intf.set_context( regs );
 		dump_registers();
+                
 	}
 	
 	
@@ -658,7 +731,7 @@ public class spectrum
 					data = (pSource.read(3) & 0x0ff);
 	
 					//pSource += 4;
-                                        pSource.offset=(4);
+                                        pSource.offset+=4;
 	
 					if (count > size)
 						count = size;
@@ -688,7 +761,7 @@ public class spectrum
 				cpu_writemem16(Dest, ch);
 				Dest++;
 				//pSource++;
-                                pSource.inc();
+                                pSource.offset++;
 				size--;
 			}
 	
@@ -697,32 +770,46 @@ public class spectrum
 	}
 	
 	/* now supports 48k & 128k .Z80 files */
-	void spectrum_setup_z80(UBytePtr pSnapshot, long SnapshotSize)
+	public static void spectrum_setup_z80(UBytePtr pSnapshot, long SnapshotSize)
 	{
-		int i, is48ksnap;
+		System.out.println("spectrum_setup_z80!!!!");
+                int i, is48ksnap;
 		//char lo, hi, data;
                 int lo, hi, data;
+                
+                pSnapshotData.offset=0;
 	
 		is48ksnap = is48k_z80snapshot(pSnapshotData, SnapshotDataSize);
+                System.out.println(is48ksnap);
+                pSnapshotData.offset=0;
+                
 		//if ((spectrum_128_port_7ffd_data == -1) && !is48ksnap)
-                if ((spectrum_128_port_7ffd_data == -1) && (is48ksnap !=1))
+                if ((spectrum_128_port_7ffd_data == -1) && (is48ksnap !=0))
 		{
 			logerror("Not a 48K .Z80 file\n");
 			return;
 		}
 	
+                //z80.Z80_Regs regs = (z80.Z80_Regs) cpu.get(0).intf.get_context();
+                System.out.println("go spectrum_setup_z80!!!!");
 		/* AF */
 		hi = pSnapshot.read(0) & 0x0ff;
 		lo = pSnapshot.read(1) & 0x0ff;
 		cpu_set_reg(Z80_AF, (hi << 8) | lo);
+                //regs.A=hi;
+                //regs.F=lo;
 		/* BC */
 		lo = pSnapshot.read(2) & 0x0ff;
 		hi = pSnapshot.read(3) & 0x0ff;
 		cpu_set_reg(Z80_BC, (hi << 8) | lo);
+                //regs.B=hi;
+                //regs.C=lo;
 		/* HL */
 		lo = pSnapshot.read(4) & 0x0ff;
 		hi = pSnapshot.read(5) & 0x0ff;
 		cpu_set_reg(Z80_HL, (hi << 8) | lo);
+                //regs.H=hi;
+                //regs.L=lo;
 	
 		/* program counter - 0 if not version 1.45 */
 	
@@ -730,64 +817,84 @@ public class spectrum
 		lo = pSnapshot.read(8) & 0x0ff;
 		hi = pSnapshot.read(9) & 0x0ff;
 		cpu_set_reg(Z80_SP, (hi << 8) | lo);
+                //regs.SP=(hi << 8) | lo;
 		//cpu_set_sp((hi << 8) | lo);
 	
 		/* I */
 		cpu_set_reg(Z80_I, (pSnapshot.read(10) & 0x0ff));
+                //regs.I=(pSnapshot.read(10) & 0x0ff);
 	
 		/* R */
 		data = (pSnapshot.read(11) & 0x07f) | ((pSnapshot.read(12) & 0x01) << 7);
 		cpu_set_reg(Z80_R, data);
+                //regs.R=data;
 	
 		/* Set border colour */
 		PreviousFE = (PreviousFE & 0xf8) | ((pSnapshot.read(12) & 0x0e) >> 1);
-		/*TODO*/////EventList_Reset();
-		/*TODO*/////set_last_border_color((pSnapshot.read(12) & 0x0e) >> 1);
-		/*TODO*/////force_border_redraw();
+		EventList_Reset();
+		set_last_border_color((pSnapshot.read(12) & 0x0e) >> 1);
+		force_border_redraw();
 	
 		lo = pSnapshot.read(13) & 0x0ff;
 		hi = pSnapshot.read(14) & 0x0ff;
 		cpu_set_reg(Z80_DE, (hi << 8) | lo);
+                //regs.D=hi;
+                //regs.E=lo;
 	
 		lo = pSnapshot.read(15) & 0x0ff;
 		hi = pSnapshot.read(16) & 0x0ff;
 		cpu_set_reg(Z80_BC2, (hi << 8) | lo);
+                //regs.B2=hi;
+                //regs.C2=lo;
 	
 		lo = pSnapshot.read(17) & 0x0ff;
 		hi = pSnapshot.read(18) & 0x0ff;
 		cpu_set_reg(Z80_DE2, (hi << 8) | lo);
+                //regs.D2=hi;
+                //regs.E2=lo;
 	
 		lo = pSnapshot.read(19) & 0x0ff;
 		hi = pSnapshot.read(20) & 0x0ff;
 		cpu_set_reg(Z80_HL2, (hi << 8) | lo);
+                //regs.H2=hi;
+                //regs.L2=lo;
 	
 		hi = pSnapshot.read(21) & 0x0ff;
 		lo = pSnapshot.read(22) & 0x0ff;
 		cpu_set_reg(Z80_AF2, (hi << 8) | lo);
+                //regs.A2=hi;
+                //regs.F2=lo;
 	
 		lo = pSnapshot.read(23) & 0x0ff;
 		hi = pSnapshot.read(24) & 0x0ff;
 		cpu_set_reg(Z80_IY, (hi << 8) | lo);
+                //regs.IY=(hi << 8) | lo;
 	
 		lo = pSnapshot.read(25) & 0x0ff;
 		hi = pSnapshot.read(26) & 0x0ff;
 		cpu_set_reg(Z80_IX, (hi << 8) | lo);
+                //regs.IX=(hi << 8) | lo;
 	
 		/* Interrupt Flip/Flop */
 		if (pSnapshot.read(27) == 0)
 		{
 			cpu_set_reg(Z80_IFF1, 0);
-			//cpu_set_reg(Z80_IRQ_STATE, 0);
+			//regs.IFF1=0;
+                        //cpu_set_reg(Z80_IRQ_STATE, 0);
 		}
 		else
 		{
 			cpu_set_reg(Z80_IFF1, 1);
-			//cpu_set_reg(Z80_IRQ_STATE, 1);
+			//regs.IFF1=1;
+                        //cpu_set_reg(Z80_IRQ_STATE, 1);
 		}
 	
 		cpu_set_reg(Z80_NMI_STATE, 0);
+                //regs.nmi_state=0;
 		cpu_set_reg(Z80_IRQ_STATE, 0);
+                //regs.irq_state=0;
 		cpu_set_reg(Z80_HALT, 0);
+                //regs.HALT=0;
 	
 	
 		/* IFF2 */
@@ -800,9 +907,11 @@ public class spectrum
 			data = 0;
 		}
 		cpu_set_reg(Z80_IFF2, data);
+                //regs.IFF2=data;
 	
 		/* Interrupt Mode */
 		cpu_set_reg(Z80_IM, (pSnapshot.read(29) & 0x03));
+                //regs.IM=(pSnapshot.read(29) & 0x03);
 	
 		//if ((pSnapshot.read(6) | pSnapshot.read(7) != 0)
                 if ((pSnapshot.read(6)!=0) | (pSnapshot.read(7) != 0))
@@ -813,6 +922,7 @@ public class spectrum
 			lo = pSnapshot.read(6) & 0x0ff;
 			hi = pSnapshot.read(7) & 0x0ff;
 			cpu_set_reg(Z80_PC, (hi << 8) | lo);
+                        //regs.PC=(hi << 8) | lo;
 	
 			spectrum_page_basicrom();
 	
@@ -848,6 +958,7 @@ public class spectrum
 			lo = pSnapshot.read(32) & 0x0ff;
 			hi = pSnapshot.read(33) & 0x0ff;
 			cpu_set_reg(Z80_PC, (hi << 8) | lo);
+                        //regs.PC=(hi << 8) | lo;
 	
 			/*TODO*/////if (spectrum_128_port_7ffd_data != -1)
 			/*TODO*/////{
@@ -956,7 +1067,8 @@ public class spectrum
 				spectrum_update_paging();
 			}
 		}
-		dump_registers();
+		//cpu.get(0).intf.set_context( regs );
+                dump_registers();
 	}
 	
 	/*******************************************************************
@@ -965,7 +1077,7 @@ public class spectrum
 	 *      and 0 if it is a Spectrum 128K or SamRam snapshot.
 	 *
 	 *******************************************************************/
-	int is48k_z80snapshot(UBytePtr pSnapshot, long SnapshotSize)
+	static int is48k_z80snapshot(UBytePtr pSnapshot, long SnapshotSize)
 	{
 		//unsigned char lo, hi, data;
                 int lo, hi, data;
@@ -1094,6 +1206,7 @@ public class spectrum
 	void spectrum_nmi_generate(int param)
 	{
 		cpu_cause_interrupt(0, Z80_NMI_INT);
+                
 	}
 	
 	int spec_quick_init(int id)

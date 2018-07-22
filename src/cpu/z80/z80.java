@@ -22,7 +22,7 @@ import static old.arcadeflex.osdepend.*;
 
 public class z80 extends cpu_interface {
 
-    static int[] z80_ICount = new int[1];
+    public static int[] z80_ICount = new int[1];
 
     public z80() {
         cpu_num = CPU_Z80;
@@ -41,6 +41,7 @@ public class z80 extends cpu_interface {
         abits2 = ABITS2_16;
         abitsmin = ABITS_MIN_16;
         icount = z80_ICount;
+        //pgm_memory_base=0;
         //intialize interfaces
         burn = burn_function;
     }
@@ -70,16 +71,32 @@ public class z80 extends cpu_interface {
         return ((Z80.A << 8) | Z80.F) & 0xFFFF;
     }
 
+    private static int AF2() {
+        return ((Z80.A2 << 8) | Z80.F2) & 0xFFFF;
+    }
+
     public static int BC() {
         return ((Z80.B << 8) | Z80.C) & 0xFFFF;
+    }
+
+    public static int BC2() {
+        return ((Z80.B2 << 8) | Z80.C2) & 0xFFFF;
     }
 
     public static int DE() {
         return ((Z80.D << 8) | Z80.E) & 0xFFFF;
     }
 
+    public static int DE2() {
+        return ((Z80.D2 << 8) | Z80.E2) & 0xFFFF;
+    }
+
     public static int HL() {
         return ((Z80.H << 8) | Z80.L) & 0xFFFF;
+    }
+
+    public static int HL2() {
+        return ((Z80.H2 << 8) | Z80.L2) & 0xFFFF;
     }
 
     private static void AF(int nn) {
@@ -87,9 +104,19 @@ public class z80 extends cpu_interface {
         Z80.F = nn & 0xff;
     }
 
+    private static void AF2(int nn) {
+        Z80.A2 = (nn >> 8) & 0xff;
+        Z80.F2 = nn & 0xff;
+    }
+
     private static void BC(int nn) {
         Z80.B = (nn >> 8) & 0xff;
         Z80.C = nn & 0xff;
+    }
+
+    private static void BC2(int nn) {
+        Z80.B2 = (nn >> 8) & 0xff;
+        Z80.C2 = nn & 0xff;
     }
 
     private static void DE(int nn) {
@@ -97,9 +124,19 @@ public class z80 extends cpu_interface {
         Z80.E = nn & 0xff;
     }
 
+    private static void DE2(int nn) {
+        Z80.D2 = (nn >> 8) & 0xff;
+        Z80.E2 = nn & 0xff;
+    }
+
     private static void HL(int nn) {
         Z80.H = (nn >> 8) & 0xff;
         Z80.L = nn & 0xff;
+    }
+
+    private static void HL2(int nn) {
+        Z80.H2 = (nn >> 8) & 0xff;
+        Z80.L2 = nn & 0xff;
     }
 
     public static final int CF = 0x01;
@@ -1662,7 +1699,7 @@ public class z80 extends cpu_interface {
      * Burn 'cycles' T-states. Adjust R register for the lost time
      * **************************************************************************
      */
-        public burnPtr burn_function = new burnPtr() {
+    public burnPtr burn_function = new burnPtr() {
         public void handler(int cycles) {
             if (cycles > 0) {
                 /* NOP takes 4 cycles per instruction */
@@ -1858,43 +1895,66 @@ public class z80 extends cpu_interface {
      */
     @Override
     public int get_reg(int regnum) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-/*TODO*///	switch( regnum )
-/*TODO*///	{
-/*TODO*///		case Z80_PC: return Z80.PC.w.l;
-/*TODO*///		case Z80_SP: return Z80.SP.w.l;
-/*TODO*///		case Z80_AF: return Z80.AF.w.l;
-/*TODO*///		case Z80_BC: return Z80.BC.w.l;
-/*TODO*///		case Z80_DE: return Z80.DE.w.l;
-/*TODO*///		case Z80_HL: return Z80.HL.w.l;
-/*TODO*///		case Z80_IX: return Z80.IX.w.l;
-/*TODO*///		case Z80_IY: return Z80.IY.w.l;
-/*TODO*///        case Z80_R: return (Z80.R & 0x7f) | (Z80.R2 & 0x80);
-/*TODO*///		case Z80_I: return Z80.I;
-/*TODO*///		case Z80_AF2: return Z80.AF2.w.l;
-/*TODO*///		case Z80_BC2: return Z80.BC2.w.l;
-/*TODO*///		case Z80_DE2: return Z80.DE2.w.l;
-/*TODO*///		case Z80_HL2: return Z80.HL2.w.l;
-/*TODO*///		case Z80_IM: return Z80.IM;
-/*TODO*///		case Z80_IFF1: return Z80.IFF1;
-/*TODO*///		case Z80_IFF2: return Z80.IFF2;
-/*TODO*///		case Z80_HALT: return Z80.HALT;
-/*TODO*///		case Z80_NMI_STATE: return Z80.nmi_state;
-/*TODO*///		case Z80_IRQ_STATE: return Z80.irq_state;
-/*TODO*///		case Z80_DC0: return Z80.int_state[0];
-/*TODO*///		case Z80_DC1: return Z80.int_state[1];
-/*TODO*///		case Z80_DC2: return Z80.int_state[2];
-/*TODO*///		case Z80_DC3: return Z80.int_state[3];
-/*TODO*///        case REG_PREVIOUSPC: return Z80.PREPC.w.l;
-/*TODO*///		default:
-/*TODO*///			if( regnum <= REG_SP_CONTENTS )
-/*TODO*///			{
-/*TODO*///				unsigned offset = _SPD + 2 * (REG_SP_CONTENTS - regnum);
-/*TODO*///				if( offset < 0xffff )
-/*TODO*///					return RM( offset ) | ( RM( offset + 1) << 8 );
-/*TODO*///			}
-/*TODO*///	}
-/*TODO*///    return 0;
+        switch (regnum) {
+            case Z80_PC:
+                return Z80.PC & 0xFFFF;
+            case Z80_SP:
+                return Z80.SP & 0xFFFF;
+            case Z80_AF:
+                return AF();
+            case Z80_BC:
+                return BC();
+            case Z80_DE:
+                return DE();
+            case Z80_HL:
+                return HL();
+            case Z80_IX:
+                return Z80.IX & 0xFFFF;
+            case Z80_IY:
+                return Z80.IY & 0xFFFF;
+            case Z80_R:
+                return (Z80.R & 0x7f) | (Z80.R2 & 0x80);
+            case Z80_I:
+                return Z80.I;
+            case Z80_AF2:
+                return AF2();
+            case Z80_BC2:
+                return BC2();
+            case Z80_DE2:
+                return DE2();
+            case Z80_HL2:
+                return HL2();
+            case Z80_IM:
+                return Z80.IM;
+            case Z80_IFF1:
+                return Z80.IFF1;
+            case Z80_IFF2:
+                return Z80.IFF2;
+            case Z80_HALT:
+                return Z80.HALT;
+            case Z80_NMI_STATE:
+                return Z80.nmi_state;
+            case Z80_IRQ_STATE:
+                return Z80.irq_state;
+            case Z80_DC0:
+                return Z80.int_state[0];
+            case Z80_DC1:
+                return Z80.int_state[1];
+            case Z80_DC2:
+                return Z80.int_state[2];
+            case Z80_DC3:
+                return Z80.int_state[3];
+            case REG_PREVIOUSPC:
+                return Z80.PREPC & 0xFFFF;
+            default:
+                if (regnum <= REG_SP_CONTENTS) {
+                    int offset = Z80.SP + 2 * (REG_SP_CONTENTS - regnum);
+                    if (offset < 0xffff) {
+                        return RM(offset) | (RM(offset + 1) << 8);
+                    }
+                }
+        }
+        return 0;
     }
 
     /**
@@ -1904,44 +1964,89 @@ public class z80 extends cpu_interface {
      */
     @Override
     public void set_reg(int regnum, int val) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-/*TODO*///	switch( regnum )
-/*TODO*///	{
-/*TODO*///		case Z80_PC: Z80.PC.w.l = val; break;
-/*TODO*///		case Z80_SP: Z80.SP.w.l = val; break;
-/*TODO*///		case Z80_AF: Z80.AF.w.l = val; break;
-/*TODO*///		case Z80_BC: Z80.BC.w.l = val; break;
-/*TODO*///		case Z80_DE: Z80.DE.w.l = val; break;
-/*TODO*///		case Z80_HL: Z80.HL.w.l = val; break;
-/*TODO*///		case Z80_IX: Z80.IX.w.l = val; break;
-/*TODO*///		case Z80_IY: Z80.IY.w.l = val; break;
-/*TODO*///        case Z80_R: Z80.R = val; Z80.R2 = val & 0x80; break;
-/*TODO*///		case Z80_I: Z80.I = val; break;
-/*TODO*///		case Z80_AF2: Z80.AF2.w.l = val; break;
-/*TODO*///		case Z80_BC2: Z80.BC2.w.l = val; break;
-/*TODO*///		case Z80_DE2: Z80.DE2.w.l = val; break;
-/*TODO*///		case Z80_HL2: Z80.HL2.w.l = val; break;
-/*TODO*///		case Z80_IM: Z80.IM = val; break;
-/*TODO*///		case Z80_IFF1: Z80.IFF1 = val; break;
-/*TODO*///		case Z80_IFF2: Z80.IFF2 = val; break;
-/*TODO*///		case Z80_HALT: Z80.HALT = val; break;
-/*TODO*///		case Z80_NMI_STATE: z80_set_nmi_line(val); break;
-/*TODO*///		case Z80_IRQ_STATE: z80_set_irq_line(0,val); break;
-/*TODO*///		case Z80_DC0: Z80.int_state[0] = val; break;
-/*TODO*///		case Z80_DC1: Z80.int_state[1] = val; break;
-/*TODO*///		case Z80_DC2: Z80.int_state[2] = val; break;
-/*TODO*///		case Z80_DC3: Z80.int_state[3] = val; break;
-/*TODO*///        default:
-/*TODO*///			if( regnum <= REG_SP_CONTENTS )
-/*TODO*///			{
-/*TODO*///				unsigned offset = _SPD + 2 * (REG_SP_CONTENTS - regnum);
-/*TODO*///				if( offset < 0xffff )
-/*TODO*///				{
-/*TODO*///					WM( offset, val & 0xff );
-/*TODO*///					WM( offset+1, (val >> 8) & 0xff );
-/*TODO*///				}
-/*TODO*///			}
-/*TODO*///    }
+        switch (regnum) {
+            case Z80_PC:
+                Z80.PC = val & 0xFFFF;
+                break;
+            case Z80_SP:
+                Z80.SP = val & 0xFFFF;
+                break;
+            case Z80_AF:
+                AF(val);
+                break;
+            case Z80_BC:
+                BC(val);
+                break;
+            case Z80_DE:
+                DE(val);
+                break;
+            case Z80_HL:
+                HL(val);
+                break;
+            case Z80_IX:
+                Z80.IX = val & 0xFFFF;
+                break;
+            case Z80_IY:
+                Z80.IY = val & 0xFFFF;
+                break;
+            case Z80_R:
+                Z80.R = val;
+                Z80.R2 = val & 0x80;
+                break;
+            case Z80_I:
+                Z80.I = val;
+                break;
+            case Z80_AF2:
+                AF2(val);
+                break;
+            case Z80_BC2:
+                BC2(val);
+                break;
+            case Z80_DE2:
+                DE2(val);
+                break;
+            case Z80_HL2:
+                HL2(val);
+                break;
+            case Z80_IM:
+                Z80.IM = val;
+                break;
+            case Z80_IFF1:
+                Z80.IFF1 = val;
+                break;
+            case Z80_IFF2:
+                Z80.IFF2 = val;
+                break;
+            case Z80_HALT:
+                Z80.HALT = val;
+                break;
+            case Z80_NMI_STATE:
+                set_nmi_line(val);
+                break;
+            case Z80_IRQ_STATE:
+                set_irq_line(0, val);
+                break;
+            case Z80_DC0:
+                Z80.int_state[0] = val;
+                break;
+            case Z80_DC1:
+                Z80.int_state[1] = val;
+                break;
+            case Z80_DC2:
+                Z80.int_state[2] = val;
+                break;
+            case Z80_DC3:
+                Z80.int_state[3] = val;
+                break;
+            default:
+                if (regnum <= REG_SP_CONTENTS) {
+                    int offset = Z80.SP + 2 * (REG_SP_CONTENTS - regnum);
+                    if (offset < 0xffff) {
+                        WM(offset, val & 0xff);
+                        WM(offset + 1, (val >> 8) & 0xff);
+                    }
+                }
+        }
     }
 
     /**
@@ -4145,5 +4250,14 @@ public class z80 extends cpu_interface {
     @Override
     public void internal_interrupt(int type) {
         //doesn't exist in z80 cpu
+    }
+    //@Override
+    public int internal_read(int offset) {
+        return 0; //doesn't exist in z80 cpu
+    }
+
+    //@Override
+    public void internal_write(int offset, int data) {
+        //doesesn't exist in z80 cpu
     }
 }

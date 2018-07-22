@@ -21,6 +21,7 @@ package mess.vidhrdw;
 
 import WIP.arcadeflex.libc_v2.*;
 import WIP.arcadeflex.fucPtr.*;
+import static WIP.arcadeflex.libc.memcpy.memcpy;
 import static arcadeflex.libc.cstring.memset;
 import static old.arcadeflex.osdepend.logerror;
 import static WIP.mame.osdependH.*;
@@ -30,6 +31,13 @@ import static WIP.mame.mame.*;
 import static mess.includes.spectrumH.*;
 import static mess.systems.spectrum.*;
 import static old.mame.drawgfxH.*;
+
+import static mame.eventlst.*;
+import static mame.eventlstH.*;
+
+import static old.mame.cpuintrf.*;
+
+import static vidhrdw.border.*;
 
 public class spectrum
 {
@@ -77,14 +85,14 @@ public class spectrum
 		}
 		memset(charsdirty,1,0x300);
 	
-		/*TODO*/////EventList_Initialise(30000);
+		EventList_Initialise(30000);
 	
 		return 0;
 	} };
 	
 	public static VhStopPtr spectrum_vh_stop = new VhStopPtr() { public void handler() 
 	{
-		/*TODO*/////EventList_Finish();
+		EventList_Finish();
 	
 		//free(spectrum_characterram);
                 spectrum_characterram = null;
@@ -134,7 +142,7 @@ public class spectrum
 	           doing it now as contented memory is not emulated so timings will
 	           be way off. (eg Zynaps taking 212 cycles not 224 per scanline)
 	        */
-	/*        EventList_AddItemOffset(offset+0x5800, data, cpu_getcurrentcycles()); */
+	        EventList_AddItemOffset(offset+0x5800, data, cpu_getcurrentcycles());
 	
 		//spectrum_colorram[offset] = data;
                 spectrum_colorram.offset=offset;
@@ -172,7 +180,8 @@ public class spectrum
 	   independent of frame skip etc. */
 	public static VhEofCallbackPtr spectrum_eof_callback = new VhEofCallbackPtr() { public void handler() 
 	{
-	        /*TODO*/////EVENT_LIST_ITEM *pItem;
+	        //EVENT_LIST_ITEM *pItem;
+                EVENT_LIST_ITEM pItem;
 	        int NumItems=0;
 	
 	        frame_number++;
@@ -190,22 +199,25 @@ public class spectrum
 	
 	        /* Empty event buffer for undisplayed frames noting the last border
 	           colour (in case colours are not changed in the next frame). */
-	        /*TODO*/////NumItems = EventList_NumEvents();
-	        /*TODO*/////if (NumItems != 0)
-	        /*TODO*/////{
-	        /*TODO*/////        pItem = EventList_GetFirstItem();
-	        /*TODO*/////        set_last_border_color ( pItem[NumItems-1].Event_Data );
-	        /*TODO*/////        EventList_Reset();
-	        /*TODO*/////        EventList_SetOffsetStartTime ( cpu_getcurrentcycles() );
-	        /*TODO*/////        logerror ("Event log reset in callback fn.\n");
-	        /*TODO*/////}
+	        NumItems = EventList_NumEvents();
+	        if (NumItems != 0)
+	        {
+	                pItem = EventList_GetFirstItem();
+	                //set_last_border_color ( pItem[NumItems-1].Event_Data );
+                        EVENT_LIST_ITEM last_border_item = (EVENT_LIST_ITEM) pEventListBuffer.get(NumItems-1);
+                        set_last_border_color( last_border_item.Event_Data );
+                        
+	                EventList_Reset();
+	                EventList_SetOffsetStartTime ( cpu_getcurrentcycles() );
+	                logerror ("Event log reset in callback fn.\n");
+	        }
 	} };
 	
 	
 	/* Update FLASH status for ts2068. Assumes flash update every 1/2s. */
 	public static VhEofCallbackPtr ts2068_eof_callback = new VhEofCallbackPtr() { public void handler() 
 	{
-	        /*TODO*/////EVENT_LIST_ITEM *pItem;
+	        EVENT_LIST_ITEM pItem;
 	        int NumItems=0;
 	
 	        frame_number++;
@@ -221,15 +233,19 @@ public class spectrum
 	
 	        /* Empty event buffer for undisplayed frames noting the last border
 	           colour (in case colours are not changed in the next frame). */
-	        /*TODO*/////NumItems = EventList_NumEvents();
-	        /*TODO*/////if (NumItems != 0)
-	        /*TODO*/////{
-	        /*TODO*/////        pItem = EventList_GetFirstItem();
-	        /*TODO*/////       set_last_border_color ( pItem[NumItems-1].Event_Data );
-	        /*TODO*/////        EventList_Reset();
-	        /*TODO*/////        EventList_SetOffsetStartTime ( cpu_getcurrentcycles() );
-	        /*TODO*/////        logerror ("Event log reset in callback fn.\n");
-	        /*TODO*/////}
+	        NumItems = EventList_NumEvents();
+	        if (NumItems != 0)
+	        {
+	                pItem = EventList_GetFirstItem();
+                        
+                        //set_last_border_color ( pItem[NumItems-1].Event_Data );
+                        EVENT_LIST_ITEM last_border_item = (EVENT_LIST_ITEM) pEventListBuffer.get(NumItems-1);
+                        set_last_border_color( last_border_item.Event_Data );
+                                                
+	                EventList_Reset();
+	                EventList_SetOffsetStartTime ( cpu_getcurrentcycles() );
+	                logerror ("Event log reset in callback fn.\n");
+	        }
 	} };
 	
 	/***************************************************************************
@@ -259,25 +275,30 @@ public class spectrum
 	{
 		int count;
 	        //static int last_invert = 0;
-	
+                //System.out.println("last_invert "+last_invert);
+                //System.out.println("flash_invert "+flash_invert);
+                full_refresh=1;
 	        if (full_refresh != 0)
 	        {
-			memset(charsdirty,1,0x300);
+                        charsdirty.offset=0;
+			memset(charsdirty,1,0x2FF);
 	                last_invert = flash_invert;
 	        }
 	        else
 	        {
 	                /* Update all flashing characters when necessary */
 	                if (last_invert != flash_invert) {
-	                        for (count=0;count<0x300;count++)
-                                        //spectrum_colorram.offset=count;
-                                        if ((count+spectrum_colorram.offset)<0x300){
-                                            if ((spectrum_colorram.read(count) & 0x80) != 0) {
+	                        for (count=0;count<0x300;count++){
+                                        spectrum_colorram.offset=count;
+                                        //if ((count+spectrum_colorram.offset)<0x300){
+                                        
+                                            if ((spectrum_colorram.read() & 0x80) != 0) {
                                                     //charsdirty[count] = 1;
                                                     charsdirty.offset=count;
                                                     charsdirty.write(1);
                                             }
-                                        }
+                                        //}
+                                }
                                 
 	                        last_invert = flash_invert;
 	                }
@@ -333,6 +354,7 @@ public class spectrum
 	                charsdirty.offset = count;
                         //if ((count+charsdirty.offset)<0x300){
                             if (charsdirty.read() !=0) {
+                                    spectrum_colorram.offset=count;
                                     color=get_display_color(spectrum_colorram.read(),
                                                             flash_invert);
                                     drawgfx(bitmap,Machine.gfx[0],
@@ -388,11 +410,12 @@ public class spectrum
 	           (synchronised with start of screen data) before the border lines.
 	           There should be 16 blank lines after an interrupt is called.
 	        */
-	        /*TODO*/////draw_border(bitmap, full_refresh,
-	        /*TODO*/////        SPEC_TOP_BORDER, SPEC_DISPLAY_YSIZE, SPEC_BOTTOM_BORDER,
-	        /*TODO*/////        SPEC_LEFT_BORDER, SPEC_DISPLAY_XSIZE, SPEC_RIGHT_BORDER,
-	        /*TODO*/////        SPEC_LEFT_BORDER_CYCLES, SPEC_DISPLAY_XSIZE_CYCLES,
-	        /*TODO*/////        SPEC_RIGHT_BORDER_CYCLES, SPEC_RETRACE_CYCLES, 200, 0xfe);
+	        draw_border(bitmap, full_refresh,
+	                SPEC_TOP_BORDER, SPEC_DISPLAY_YSIZE, SPEC_BOTTOM_BORDER,
+	                SPEC_LEFT_BORDER, SPEC_DISPLAY_XSIZE, SPEC_RIGHT_BORDER,
+	                SPEC_LEFT_BORDER_CYCLES, SPEC_DISPLAY_XSIZE_CYCLES,
+	                SPEC_RIGHT_BORDER_CYCLES, SPEC_RETRACE_CYCLES, 200, 0xfe);
+                
 	} };
 	
 	
@@ -402,27 +425,33 @@ public class spectrum
 	        //flash_invert = false;
                 flash_invert = 0;
 	
-		/*TODO*/////EventList_Initialise(30000);
+		EventList_Initialise(30000);
 	
 	        return 0;
 	} };
 	
 	public static VhStopPtr spectrum_128_vh_stop = new VhStopPtr() { public void handler() 
 	{
-	        /*TODO*/////EventList_Finish();
+	        EventList_Finish();
 	} };
 	
 	/* Refresh the spectrum 128 screen (code modified from COUPE.C) */
 	public static VhUpdatePtr spectrum_128_vh_screenrefresh = new VhUpdatePtr() { public void handler(osd_bitmap bitmap,int full_refresh) 
 	{
+            //System.out.println("Pinto 128");
 	        /* for now do a full-refresh */
 	        int x, y, b, scrx, scry;
 	        //unsigned short ink, pap;
                 int ink, pap;
 	        //UBytePtr attr, *scr;
                 UBytePtr attr, scr;
+                
+                spectrum_128_screen_location.offset=0;
+                
+                //memcpy(spectrum_128_screen_location, spectrum_128_ram, (7<<14), 0x4000);
 	
-	        scr=spectrum_128_screen_location;
+	        //scr=spectrum_128_screen_location;
+                scr=spectrum_128_screen_location;
 	
 	        for (y=0; y<192; y++)
 	        {
@@ -430,7 +459,7 @@ public class spectrum
 	                scry=((y&7) * 8) + ((y&0x38)>>3) + (y&0xC0);
 	                //attr=spectrum_128_screen_location + ((scry>>3)*32) + 0x1800;
                         attr=spectrum_128_screen_location;
-                        spectrum_128_screen_location.offset=(((scry>>3)*32) + 0x1800);
+                        attr.offset=(((scry>>3)*32) + 0x1800);
 	
 	                for (x=0;x<32;x++)
 	                {
@@ -453,16 +482,20 @@ public class spectrum
 	                                else
 	                                        plot_pixel.handler(bitmap,scrx++,SPEC_TOP_BORDER+scry,Machine.pens[pap]);
 				}
-	                scr.inc();
-	                attr.inc();
+	                //scr.inc();
+                        scr.offset++;
+	                //attr.inc();
+                        attr.offset++;
 	                }
 		}
 	
-	        /*TODO*/////draw_border(bitmap, full_refresh,
-	        /*TODO*/////        SPEC_TOP_BORDER, SPEC_DISPLAY_YSIZE, SPEC_BOTTOM_BORDER,
-	        /*TODO*/////        SPEC_LEFT_BORDER, SPEC_DISPLAY_XSIZE, SPEC_RIGHT_BORDER,
-	        /*TODO*/////        SPEC_LEFT_BORDER_CYCLES, SPEC_DISPLAY_XSIZE_CYCLES,
-	        /*TODO*/////        SPEC_RIGHT_BORDER_CYCLES, SPEC128_RETRACE_CYCLES, 200, 0xfe);
+	        draw_border(bitmap, full_refresh,
+	                SPEC_TOP_BORDER, SPEC_DISPLAY_YSIZE, SPEC_BOTTOM_BORDER,
+	                SPEC_LEFT_BORDER, SPEC_DISPLAY_XSIZE, SPEC_RIGHT_BORDER,
+	                SPEC_LEFT_BORDER_CYCLES, SPEC_DISPLAY_XSIZE_CYCLES,
+	                SPEC_RIGHT_BORDER_CYCLES, SPEC128_RETRACE_CYCLES, 200, 0xfe);
+                
+                spectrum_128_screen_location.offset=0;
 	} };
 	
 	/*******************************************************************
@@ -645,11 +678,11 @@ public class spectrum
 	                        ts2068_lores_scanline(bitmap, count, TS2068_TOP_BORDER, 0);
 	        }
 	
-	        /*TODO*/////draw_border(bitmap, full_refresh,
-	        /*TODO*/////        TS2068_TOP_BORDER, SPEC_DISPLAY_YSIZE, TS2068_BOTTOM_BORDER,
-	        /*TODO*/////        TS2068_LEFT_BORDER, TS2068_DISPLAY_XSIZE, TS2068_RIGHT_BORDER,
-	        /*TODO*/////        SPEC_LEFT_BORDER_CYCLES, SPEC_DISPLAY_XSIZE_CYCLES,
-	        /*TODO*/////        SPEC_RIGHT_BORDER_CYCLES, SPEC_RETRACE_CYCLES, 200, 0xfe);
+	        draw_border(bitmap, full_refresh,
+	                TS2068_TOP_BORDER, SPEC_DISPLAY_YSIZE, TS2068_BOTTOM_BORDER,
+	                TS2068_LEFT_BORDER, TS2068_DISPLAY_XSIZE, TS2068_RIGHT_BORDER,
+	                SPEC_LEFT_BORDER_CYCLES, SPEC_DISPLAY_XSIZE_CYCLES,
+	                SPEC_RIGHT_BORDER_CYCLES, SPEC_RETRACE_CYCLES, 200, 0xfe);
 	} };
 	
 	public static VhUpdatePtr tc2048_vh_screenrefresh = new VhUpdatePtr() { public void handler(osd_bitmap bitmap,int full_refresh) 
@@ -683,10 +716,10 @@ public class spectrum
 	                        ts2068_lores_scanline(bitmap, count, SPEC_TOP_BORDER, 0);
 	        }
 	
-	        /*TODO*/////draw_border(bitmap, full_refresh,
-	        /*TODO*/////        SPEC_TOP_BORDER, SPEC_DISPLAY_YSIZE, SPEC_BOTTOM_BORDER,
-	        /*TODO*/////        TS2068_LEFT_BORDER, TS2068_DISPLAY_XSIZE, TS2068_RIGHT_BORDER,
-	        /*TODO*/////        SPEC_LEFT_BORDER_CYCLES, SPEC_DISPLAY_XSIZE_CYCLES,
-	        /*TODO*/////        SPEC_RIGHT_BORDER_CYCLES, SPEC_RETRACE_CYCLES, 200, 0xfe);
+	        draw_border(bitmap, full_refresh,
+	                SPEC_TOP_BORDER, SPEC_DISPLAY_YSIZE, SPEC_BOTTOM_BORDER,
+	                TS2068_LEFT_BORDER, TS2068_DISPLAY_XSIZE, TS2068_RIGHT_BORDER,
+	                SPEC_LEFT_BORDER_CYCLES, SPEC_DISPLAY_XSIZE_CYCLES,
+	                SPEC_RIGHT_BORDER_CYCLES, SPEC_RETRACE_CYCLES, 200, 0xfe);
 	} };
 }

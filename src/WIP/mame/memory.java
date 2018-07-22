@@ -1409,6 +1409,9 @@ public class memory {
     /*TODO*////* the handlers we need to generate */
     public static void cpu_writemem16(int address, int data) {
         char u8_hw;
+        //System.out.println(address);
+        //System.out.println(data);
+        //System.out.println(u8_cur_mwhard==null);
 
         /* first-level lookup */
         u8_hw = u8_cur_mwhard[/*(UINT32)*/address >>> (ABITS2_16 + ABITS_MIN_16)];
@@ -1782,15 +1785,15 @@ public class memory {
         memorywriteoffset[bank] = offset;
         memorywritehandler[bank] = handler;
     }
-/*TODO*///
-/*TODO*////* cpu change op-code memory base */
-/*TODO*///void cpu_setOPbaseoverride (int cpu,opbase_handler function)
-/*TODO*///{
-/*TODO*///	setOPbasefunc[cpu] = function;
-/*TODO*///	if (cpu == cpu_getactivecpu())
-/*TODO*///		OPbasefunc = function;
-/*TODO*///}
-/*TODO*///
+
+    /* cpu change op-code memory base */
+    public static void cpu_setOPbaseoverride (int cpu,opbase_handlerPtr function)
+    {
+            setOPbasefunc[cpu] = function;
+            if (cpu == cpu_getactivecpu())
+                    OPbasefunc = function;
+    }
+
     public static UBytePtr install_mem_read_handler(int cpu, int start, int end, ReadHandlerPtr _handler) {
         return install_mem_read_handler(cpu, start, end, _handler, -15000);
     }

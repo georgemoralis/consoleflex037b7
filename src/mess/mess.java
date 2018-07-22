@@ -171,6 +171,7 @@ public class mess {
             
             file = osd_fopen(sysname, img.name, filetype, read_or_write);
             /* file found, break out */
+            System.out.println("file==null "+file);
             if (file != null) {
                 break;
             }
@@ -192,7 +193,10 @@ public class mess {
 		if( ext==null )
 			break;
 		p = strrchr(img.name, '.');
-                System.out.println(p);
+                System.out.println("p: "+p);
+                System.out.println("img.name: "+img.name);
+                System.out.println("ext: "+ext);
+                
 		/* does the current name already have an extension? */
 		if( p!=null )
 		{

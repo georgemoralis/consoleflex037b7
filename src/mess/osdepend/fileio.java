@@ -383,6 +383,7 @@ public class fileio {
                 pathv = new String[1];
                 pathv[0] = "software";
                 logerror("osd_fopen: using softwarepath (%d directories)\n", pathc);
+                logerror("osd_fopen: using softwarepath (%d directories)\n", pathc);
 
                 logerror("Open IMAGE_R '%s' for %s\n", filename, game);
                 for (indx = 0; indx < pathc && found == 0; ++indx) {

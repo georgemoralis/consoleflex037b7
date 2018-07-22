@@ -229,8 +229,8 @@ public class libc_v2 {
             //memory[offset + index+ 1] = (char)((value >> 8)&0xFF);
         }
 
-        public void write(int index, int value) {
-            memory[offset + index] = (char) (value & 0xFF);//store 8 bits only
+        public void write(int index, int value) {            
+               memory[offset + index] = (char) (value & 0xFF);//store 8 bits only             
         }
 
         public void write(int value) {

@@ -297,6 +297,7 @@ public class system {
         /*TODO*///	DRIVER( ts2068 )	/*												  */
         /*TODO*///
         /*TODO*///	DRIVER( spec128 )	/* Spectrum 									  */
+        driver_spec128,
         /*TODO*///	DRIVER( spec128s )	/* Spectrum 									  */
         /*TODO*///	DRIVER( specpls2 )	/* Spectrum 									  */
         /*TODO*///	DRIVER( specpl2a )	/* Spectrum 									  */
