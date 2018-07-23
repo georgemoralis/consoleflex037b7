@@ -1,3 +1,27 @@
+23/07/2018
+==========
+-Added ZX Spectrum driver
+-Added ZX Spectrum +4 driver
+-Added ZX Spectrum (BusySoft Upgrade) driver
+-Added ZX Spectrum (De Groot's Upgrade) driver
+-Added ZX Spectrum (Collier's Upgrade) driver
+-Added ZX Spectrum (LEC Upgrade) driver
+-Added Inves Spectrum 48K+ driver
+-Added TK90x Color Computer driver
+-Added TK95 Color Computer driver
+-Added TC2048 driver
+-Added TS2068 driver
+-Added ZX Spectrum 128 driver
+-Added ZX Spectrum 128 (Spain) driver
+-Added ZX Spectrum +2 driver
+-Added ZX Spectrum +2a driver
+-Added ZX Spectrum +3 driver
+-Added ZX Spectrum +2 (France) driver
+-Added ZX Spectrum +2 (Spain) driver
+-Added ZX Spectrum +3 (Spain) driver
+-Added ZX Spectrum +3e driver
+-Sound, tape and disk emulation for all ZX Spectrum models not implemented
+
 22/07/2018
 ==========
 -First preliminary version of the 128k model. WIP, doesn't works (several memory banks issues)
