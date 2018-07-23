@@ -22,6 +22,7 @@
 -Added ZX Spectrum +4 driver
 -Sound, tape and disk emulation for all ZX Spectrum models not implemented
 -Added speaker sound emulation (not tested)
+-Moved eventlst and border to mess package
 
 22/07/2018
 ==========

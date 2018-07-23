@@ -32,12 +32,12 @@ import static mess.includes.spectrumH.*;
 import static mess.systems.spectrum.*;
 import static old.mame.drawgfxH.*;
 
-import static mame.eventlst.*;
-import static mame.eventlstH.*;
+import static mess.eventlst.*;
+import static mess.eventlstH.*;
 
 import static old.mame.cpuintrf.*;
 
-import static vidhrdw.border.*;
+import static mess.vidhrdw.border.*;
 
 public class spectrum
 {

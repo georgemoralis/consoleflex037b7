@@ -53,10 +53,10 @@ import static mess.systems.spectrum.*;
 import static mess.includes.spectrumH.*;
 import static old.arcadeflex.osdepend.logerror;
 
-import static mame.eventlst.*;
-import static mame.eventlstH.*;
+import static mess.eventlst.*;
+import static mess.eventlstH.*;
 
-import static vidhrdw.border.*;
+import static mess.vidhrdw.border.*;
 
 import static sound.ay8910.*;
 import static sound.ay8910H.*;

@@ -111,8 +111,8 @@ import consoleflex.funcPtr.*;
 import static mess.includes.spectrumH.*;
 import static mess.vidhrdw.spectrum.*;
 
-import static mame.eventlst.*;
-import static mame.eventlstH.*;
+import static mess.eventlst.*;
+import static mess.eventlstH.*;
 import static sound.speaker.*;
 import sound.speakerH.Speaker_interface;
 

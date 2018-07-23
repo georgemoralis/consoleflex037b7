@@ -16,10 +16,10 @@ Changes:
  * ported to v0.37b7
  * using automatic conversion tool v0.01
  */ 
-package vidhrdw;
+package mess.vidhrdw;
 
-import static mame.eventlst.*;
-import static mame.eventlstH.*;
+import static mess.eventlst.*;
+import static mess.eventlstH.*;
 import WIP.mame.osdependH.osd_bitmap;
 
 import static WIP.mame.mame.Machine;

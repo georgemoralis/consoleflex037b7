@@ -2,9 +2,9 @@
  * ported to v0.37b7
  * using automatic conversion tool v0.01
  */ 
-package mame;
+package mess;
 
-import static mame.eventlstH.*;
+import static mess.eventlstH.*;
 import static old.mame.cpuintrf.*;
 
 import java.util.Vector;
