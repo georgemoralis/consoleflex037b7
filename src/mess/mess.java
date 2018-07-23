@@ -559,8 +559,8 @@ public class mess {
         if (dev != null) {
             while (dev[dev_ptr].count != 0) {
                 int type = dev[dev_ptr].type;
-                while (count[type] < dev[dev_ptr].count) {
-                    throw new UnsupportedOperationException("unimplemented");
+/*TODO*///                while (count[type] < dev[dev_ptr].count) {
+/*TODO*///                    throw new UnsupportedOperationException("unimplemented");
                     /*TODO*///				/* Add an empty slot name the arrays of names */
 /*TODO*///				if( images[type] )
 /*TODO*///					images[type] = realloc(images[type],(count[type]+1)*sizeof(struct image_info));
@@ -570,7 +570,7 @@ public class mess {
 /*TODO*///					return 1;
 /*TODO*///				memset(&images[type][count[type]], 0, sizeof(struct image_info));
 /*TODO*///				count[type]++;
-                }
+/*TODO*///                }
                 dev_ptr++;
             }
         }
