@@ -1,26 +1,13 @@
-/*
-This file is part of Arcadeflex.
-
-Arcadeflex is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-Arcadeflex is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with Arcadeflex.  If not, see <http://www.gnu.org/licenses/>.
- */
 /**
  * ported to 0.37b7
  */
-package WIP.mame;
+/**
+ * Changelog
+ * 23/07/2018 (shadow) - Adjustments for MESS
+ */
+package mame;
 
-import static WIP.mame.ui_textH.UI_last_entry;
-import static WIP.mame.ui_textH.lang_struct;
+import static mame.ui_textH.*;
 
 public class ui_text {
 
@@ -31,7 +18,7 @@ public class ui_text {
     /* All entries in this table must match the enum ordering in "ui_text.h" */
     public static String default_text[]
             = {
-                "MAME",
+                "MESS",
                 /* copyright stuff */
                 "Usage of emulators in conjunction with ROMs you don't own is forbidden by copyright law.",
                 "IF YOU ARE NOT LEGALLY ENTITLED TO PLAY \"%s\" ON THIS EMULATOR, PRESS ESC.",
@@ -62,7 +49,7 @@ public class ui_text {
                 "Vector Intensity",
                 "Overclock",
                 "ALL CPUS",
-                "History not available",
+                "System Info not available",
                 /* special characters */
                 "\u0011",
                 "\u0010",
@@ -71,7 +58,7 @@ public class ui_text {
                 "\u001A",
                 "\u001b",
                 /* known problems */
-                "There are known problems with this game:",
+                "There are known problems with this system",
                 "The colors aren't 100% accurate.",
                 "The colors are completely wrong.",
                 "The sound emulation isn't 100% accurate.",
@@ -81,17 +68,22 @@ public class ui_text {
                 "The game has protection which isn't fully emulated.",
                 "There are working clones of this game. They are:",
                 "Type OK to continue",
+                "The emulated system is a computer: ",
+                "The keyboard emulation may not be 100% accurate.",
                 /* main menu */
                 "Input (general)",
                 "Dip Switches",
                 "Analog Controls",
                 "Calibrate Joysticks",
                 "Bookkeeping Info",
-                "Input (this game)",
-                "Game Information",
-                "Game History",
-                "Reset Game",
-                "Return to Game",
+                "Input (this machine)",
+                "Machine Information",
+                "Machine Usage & History",
+                "Reset Machine",
+                "Return to Machine",
+                "Image Information",
+                "File Manager",
+                "Tape Control",
                 "Cheat",
                 "Memory Card",
                 /* input */

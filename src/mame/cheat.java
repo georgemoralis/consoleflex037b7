@@ -11,8 +11,8 @@ import static mame.hiscore.computer_writemem_byte;
 import java.util.ArrayList;
 
 import WIP.mame.osdependH.osd_bitmap;
-import static WIP.mame.ui_text.*;
-import static WIP.mame.ui_textH.*;
+import static mame.ui_text.*;
+import static mame.ui_textH.*;
 import static old.mame.inptportH.*;
 import static old.mame.input.*;
 import static old.mame.usrintrf.*;

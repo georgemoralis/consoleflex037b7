@@ -24,7 +24,7 @@ import static WIP.mame.artworkC.*;
 import static WIP.mame.tilemapC.*;
 import static WIP.mame.gfxobjC.*;
 import static WIP.mame.spriteC.*;
-import static WIP.mame.ui_text.*;
+import static mame.ui_text.*;
 import static WIP.mame.osdependH.*;
 import static WIP.arcadeflex.libc_v2.UShortArray;
 import static WIP.mame.memory.memory_init;
