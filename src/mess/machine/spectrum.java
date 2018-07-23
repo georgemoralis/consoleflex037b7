@@ -58,6 +58,9 @@ import static mame.eventlstH.*;
 
 import static vidhrdw.border.*;
 
+import static sound.ay8910.*;
+import static sound.ay8910H.*;
+
 public class spectrum
 {
 	
@@ -456,7 +459,7 @@ public class spectrum
                         else{
 				spectrum_plus3_port_1ffd_data = 0;
                         }
-			/*TODO*/////spectrum_plus3_update_memory();
+			spectrum_plus3_update_memory();
 		}
 	}
 	
@@ -539,7 +542,7 @@ public class spectrum
                 int lo, hi, data;
 		int addr;
                 
-                pSnapshot.offset=0;
+                //pSnapshot.offset=0;
 	
 		if ((SnapshotDataSize != 49179) && (spectrum_128_port_7ffd_data == -1))
 		{
@@ -731,7 +734,8 @@ public class spectrum
 					data = (pSource.read(3) & 0x0ff);
 	
 					//pSource += 4;
-                                        pSource.offset+=4;
+                                        //pSource.offset+=4;
+                                        pSource.inc(4);
 	
 					if (count > size)
 						count = size;
@@ -761,7 +765,8 @@ public class spectrum
 				cpu_writemem16(Dest, ch);
 				Dest++;
 				//pSource++;
-                                pSource.offset++;
+                                //pSource.offset++;
+                                pSource.inc();
 				size--;
 			}
 	
@@ -777,11 +782,11 @@ public class spectrum
 		//char lo, hi, data;
                 int lo, hi, data;
                 
-                pSnapshotData.offset=0;
+                //pSnapshotData.offset=0;
 	
 		is48ksnap = is48k_z80snapshot(pSnapshotData, SnapshotDataSize);
                 System.out.println(is48ksnap);
-                pSnapshotData.offset=0;
+                //pSnapshotData.offset=0;
                 
 		//if ((spectrum_128_port_7ffd_data == -1) && !is48ksnap)
                 if ((spectrum_128_port_7ffd_data == -1) && (is48ksnap !=0))
@@ -942,8 +947,8 @@ public class spectrum
 	
 				/* compressed */
 				//spectrum_z80_decompress_block(pSnapshot + 30, 16384, 49152);
-                                pSnapshot.offset=(30);
-                                spectrum_z80_decompress_block(pSnapshot, 16384, 49152);
+                                //pSnapshot.offset=(30);
+                                spectrum_z80_decompress_block(new UBytePtr(pSnapshot, 30), 16384, 49152);
 			}
 		}
 		else
@@ -960,20 +965,21 @@ public class spectrum
 			cpu_set_reg(Z80_PC, (hi << 8) | lo);
                         //regs.PC=(hi << 8) | lo;
 	
-			/*TODO*/////if (spectrum_128_port_7ffd_data != -1)
-			/*TODO*/////{
-			/*TODO*/////	/* Only set up sound registers for 128K machine! */
-			/*TODO*/////	for (i = 0; i < 16; i++)
-			/*TODO*/////	{
-			/*TODO*/////		AY8910_control_port_0_w(0, i);
-			/*TODO*/////		AY8910_write_port_0_w(0, pSnapshot.read(39 + i));
-			/*TODO*/////	}
-			/*TODO*/////	AY8910_control_port_0_w(0, pSnapshot.read(38);
-			/*TODO*/////}
+			if (spectrum_128_port_7ffd_data != -1)
+			{
+				/* Only set up sound registers for 128K machine! */
+				for (i = 0; i < 16; i++)
+				{
+					AY8910_control_port_0_w.handler(0, i);
+					AY8910_write_port_0_w.handler(0, pSnapshot.read(39 + i));
+				}
+				AY8910_control_port_0_w.handler(0, pSnapshot.read(38));
+			}
 	
 			//pSource = pSnapshot + header_size;
-                        pSource = pSnapshot;
-                        pSource.offset=(header_size);
+                        //pSource = pSnapshot;
+                        //pSource.offset=(header_size);
+                        pSource=new UBytePtr(pSnapshot, header_size);
 	
 			if (is48ksnap != 0)
 				/* Ensure 48K Basic ROM is used */
@@ -1047,14 +1053,15 @@ public class spectrum
 	
 						/* block is compressed */
 						//spectrum_z80_decompress_block(&pSource[3], Dest, 16384);
-                                                pSource.offset=(3);
-                                                spectrum_z80_decompress_block(pSource, Dest, 16384);
+                                                //pSource.offset=(3);
+                                                spectrum_z80_decompress_block(new UBytePtr(pSource, 3), Dest, 16384);
 					}
 				}
 	
 				/* go to next block */
 				//pSource += (3 + length);
-                                pSource.offset=(3 + length);
+                                //pSource.offset=(3 + length);
+                                pSource.inc(3 + length);
 			}
 			//while (((unsigned long) pSource - (unsigned long) pSnapshot) < SnapshotDataSize);
                         while ((pSource.memory.length - pSnapshot.memory.length) < SnapshotDataSize);

@@ -76,8 +76,8 @@ thus is not emulated.
 package mess.systems;
 
 import static WIP.mame.memoryH.*;
-//import static sound.sn76496.*;
-//import static sound.sn76496H.*;
+import static sound.ay8910.*;
+import static sound.ay8910H.*;
 import static mess.machine.spectrum.*;
 import static old.mame.inptportH.*;
 import static old.mame.inptport.*;
@@ -86,16 +86,14 @@ import static old.mame.common.*;
 import old.mame.drawgfxH.*;
 import static WIP.arcadeflex.fucPtr.*;
 import WIP.mame.sndintrfH.MachineSound;
-//import static WIP.mame.sndintrfH.SOUND_SN76496;
+
 import static mame.commonH.REGION_CPU1;
 import old.mame.drawgfxH.GfxDecodeInfo;
 import old.mame.drawgfxH.rectangle;
 import static old.mame.inputH.*;
 import static old.mame.driverH.*;
 import static mame.commonH.*;
-//import static mess.vidhrdw.coleco.*;
-//import static mess.vidhrdw.tms9928aH.*;
-//import static mess.vidhrdw.tms9928a.*;
+
 import static mess.messH.*;
 import static mess.machine.spectrum.*;
 import static arcadeflex.libc.cstring.memset;
@@ -106,7 +104,7 @@ import static WIP.arcadeflex.libc.memcpy.*;
 import static WIP.mame.memoryH.*;
 import static WIP.mame.memory.*;
 
-import static sound.ay8910.*;
+import static WIP.mame.sndintrfH.*;
 
 import consoleflex.funcPtr.*;
 
@@ -349,15 +347,16 @@ public class spectrum
                 if (ts2068_ram!=null){
                     //free(ts2068_ram);
                     ts2068_ram = null;
+                    
                 }
             }
         };
 		
 	static void spectrum_128_port_bffd_w(int offset, int data)
 	{
-			/*TODO*/////AY8910_write_port_0_w(0, data);
+			AY8910_write_port_0_w.handler(0, data);                        
 	}
-	
+    	
 	static void spectrum_plus3_port_3ffd_w(int offset, int data)
 	{
 			/*TODO*/////if (~readinputport(16) & 0x20)
@@ -387,15 +386,14 @@ public class spectrum
 	
 	static void spectrum_128_port_fffd_w(int offset, int data)
 	{
-			/*TODO*/////AY8910_control_port_0_w(0, data);
+			AY8910_control_port_0_w.handler(0, data);
 	}
 	
 	/* +3 manual is confused about this */
 	
 	static int spectrum_128_port_fffd_r(int offset)
 	{
-			/*TODO*/////return AY8910_read_port_0_r(0);
-                        return 0;
+			return AY8910_read_port_0_r.handler(0);                        
 	}
 	
 	
@@ -412,7 +410,7 @@ public class spectrum
 	
 	static void ts2068_port_f5_w(int offset, int data)
 	{
-			/*TODO*/////AY8910_write_port_0_w(0, data);
+			AY8910_write_port_0_w.handler(0, data);
 	}
 	
 	static int ts2068_port_f6_r(int offset)
@@ -423,13 +421,12 @@ public class spectrum
 			   if both bits are set then OR values
 			   Bit 0 up, 1 down, 2 left, 3 right, 7 fire active low. Other bits 1
 			*/
-			/*TODO*/////return AY8910_read_port_0_r(0);
-                        return 0;
+			return AY8910_read_port_0_r.handler(0);                        
 	}
 	
 	static void ts2068_port_f6_w(int offset, int data)
 	{
-			/*TODO*/////AY8910_control_port_0_w(0, data);
+			AY8910_control_port_0_w.handler(0, data);
 	}
 	
 	static int ts2068_port_ff_r(int offset)
@@ -511,7 +508,7 @@ public class spectrum
 	}
 	
 	
-	static void spectrum_plus3_update_memory()
+	public static void spectrum_plus3_update_memory()
 	{
 			if ((spectrum_128_port_7ffd_data & 8) != 0)
 			{
@@ -1339,16 +1336,16 @@ public class spectrum
 		new IOWritePort( -1 )
 	};
 	
-	
-	/*TODO*/////static AY8910interface spectrum_128_ay_interface = new AY8910interface
-	/*TODO*/////(
-	/*TODO*/////		1,
-	/*TODO*/////		1000000,
-	/*TODO*/////		new int[] {25,25},
-	/*TODO*/////		new ReadHandlerPtr[] {0},
-	/*TODO*/////		new ReadHandlerPtr[] {0},
-	/*TODO*/////		new WriteHandlerPtr[] {0}
-	/*TODO*/////);
+	static AY8910interface spectrum_128_ay_interface = new AY8910interface
+	(
+			1,
+			1000000,
+			new int[] {25,25},
+			new ReadHandlerPtr[]{spectrum_128_port_r},
+			new ReadHandlerPtr[]{spectrum_128_port_r},
+			new WriteHandlerPtr[]{spectrum_128_port_w},
+                        new WriteHandlerPtr[]{spectrum_128_port_w}
+	);
 	
 	
 	static GfxLayout spectrum_charlayout = new GfxLayout(
@@ -1659,12 +1656,12 @@ public class spectrum
 	
 		/* sound hardware */
 		0,0,0,0,
-			/*TODO*/////new MachineSound[] {
-			/*TODO*/////		/* +3 Ay-3-8912 sound */
-			/*TODO*/////		new MachineSound(
-			/*TODO*/////				SOUND_AY8910,
-			/*TODO*/////				spectrum_128_ay_interface,
-			/*TODO*/////		),
+			new MachineSound[] {
+					/* +3 Ay-3-8912 sound */
+					new MachineSound(
+							SOUND_AY8910,
+							spectrum_128_ay_interface
+					)
 			/*TODO*/////		/* standard spectrum buzzer sound */
 			/*TODO*/////		new MachineSound(
 			/*TODO*/////				SOUND_SPEAKER,
@@ -1677,8 +1674,9 @@ public class spectrum
 			/*TODO*/////				SOUND_WAVE,
 			/*TODO*/////				spectrum_wave_interface,
 			/*TODO*/////		)
-			/*TODO*/////}
-                        null
+                           
+			}
+                        
 	);
 	
 	static MachineDriver machine_driver_spectrum_plus3 = new MachineDriver
@@ -1714,12 +1712,12 @@ public class spectrum
 	
 		/* sound hardware */
 		0,0,0,0,
-                /*TODO*/////new MachineSound[] {
-                /*TODO*/////                /* +3 Ay-3-8912 sound */
-                /*TODO*/////                new MachineSound(
-                /*TODO*/////                                SOUND_AY8910,
-                /*TODO*/////                                spectrum_128_ay_interface,
-                /*TODO*/////                ),
+                new MachineSound[] {
+                                /* +3 Ay-3-8912 sound */
+                                new MachineSound(
+                                                SOUND_AY8910,
+                                                spectrum_128_ay_interface
+                                )
                 /*TODO*/////                /* standard spectrum buzzer sound */
                 /*TODO*/////                new MachineSound(
                 /*TODO*/////                                SOUND_SPEAKER,
@@ -1732,8 +1730,8 @@ public class spectrum
                 /*TODO*/////                                SOUND_WAVE,
                 /*TODO*/////                                spectrum_wave_interface,
                 /*TODO*/////                )
-                /*TODO*/////}
-                null
+                }
+                
 	);
 	
 	static MachineDriver machine_driver_ts2068 = new MachineDriver
@@ -2085,7 +2083,7 @@ public class spectrum
         public static GameDriver driver_spectrum = new GameDriver("1982", "spectrum", "spectrum.java", rom_spectrum, null, machine_driver_spectrum, input_ports_spectrum, null, io_spectrum, "Sinclair Research", "ZX Spectrum");
         
         // COMPX( 2000, specpls4, spectrum, spectrum,		 spectrum, 0,			 "Amstrad plc",          "ZX Spectrum +4", GAME_COMPUTER_MODIFIED );
-        public static GameDriver driver_specpls4 = new GameDriver("2000", "specpls4", "spectrum.java", rom_specpls4, null, machine_driver_spectrum_plus3, input_ports_spectrum, null, io_spectrum, "Amstrad plc", "ZX Spectrum +4");
+        public static GameDriver driver_specpls4 = new GameDriver("2000", "specpls4", "spectrum.java", rom_specpls4, null, machine_driver_spectrum_plus3, input_ports_spectrum, null, io_specpls3, "Amstrad plc", "ZX Spectrum +4");
 		
 	//COMPX( 1994, specbusy, spectrum, spectrum,		 spectrum, 0,			 "Amstrad plc",          "ZX Spectrum (BusySoft Upgrade)", GAME_COMPUTER_MODIFIED )
 	public static GameDriver driver_specbusy = new GameDriver("1994", "specbusy", "spectrum.java", rom_specbusy, null, machine_driver_spectrum, input_ports_spectrum, null, io_spectrum, "Amstrad plc", "ZX Spectrum (BusySoft Upgrade)");
@@ -2120,10 +2118,10 @@ public class spectrum
         //COMPX( 1986, specpls2, spec128,  spectrum_128,	 spectrum, 0,			 "Amstrad plc",          "ZX Spectrum +2" ,GAME_NOT_WORKING)
 	public static GameDriver driver_specpls2 = new GameDriver("1986", "specpls2", "spectrum.java", rom_specpls2, null, machine_driver_spectrum_128, input_ports_spectrum, null, io_spectrum, "Amstrad plc", "ZX Spectrum +2");
         //COMPX( 1987, specpl2a, spec128,  spectrum_plus3, spectrum, 0,			 "Amstrad plc",          "ZX Spectrum +2a" ,GAME_NOT_WORKING)
-	public static GameDriver driver_specpl2a = new GameDriver("1987", "specpl2a", "spectrum.java", rom_specpl2a, null, machine_driver_spectrum_plus3, input_ports_spectrum, null, io_spectrum, "Amstrad plc", "ZX Spectrum +2a");
+	public static GameDriver driver_specpl2a = new GameDriver("1987", "specpl2a", "spectrum.java", rom_specpl2a, null, machine_driver_spectrum_plus3, input_ports_spectrum, null, io_specpls3, "Amstrad plc", "ZX Spectrum +2a");
         
         //COMPX( 1987, specpls3, spec128,  spectrum_plus3, spectrum, 0,			 "Amstrad plc",          "ZX Spectrum +3" ,GAME_NOT_WORKING)
-	public static GameDriver driver_specpls3 = new GameDriver("1987", "specpls3", "spectrum.java", rom_specpls3, null, machine_driver_spectrum_plus3, input_ports_spectrum, null, io_spectrum, "Amstrad plc", "ZX Spectrum +3");
+	public static GameDriver driver_specpls3 = new GameDriver("1987", "specpls3", "spectrum.java", rom_specpls3, null, machine_driver_spectrum_plus3, input_ports_spectrum, null, io_specpls3, "Amstrad plc", "ZX Spectrum +3");
         
 	//COMPX( 1986, specp2fr, spec128,  spectrum_128,	 spectrum, 0,			 "Amstrad plc",          "ZX Spectrum +2 (France)" ,GAME_NOT_WORKING)
 	public static GameDriver driver_specp2fr = new GameDriver("1986", "specp2fr", "spectrum.java", rom_specp2fr, null, machine_driver_spectrum_128, input_ports_spectrum, null, io_spectrum, "Amstrad plc", "ZX Spectrum +2 (France)");
@@ -2132,8 +2130,8 @@ public class spectrum
 	public static GameDriver driver_specp2sp = new GameDriver("1986", "specp2sp", "spectrum.java", rom_specp2sp, null, machine_driver_spectrum_128, input_ports_spectrum, null, io_spectrum, "Amstrad plc", "ZX Spectrum +2 (Spain)");
         
         //COMPX( 1987, specp3sp, spec128,  spectrum_plus3, spectrum, 0,			 "Amstrad plc",          "ZX Spectrum +3 (Spain)" ,GAME_NOT_WORKING)
-	public static GameDriver driver_specp3sp = new GameDriver("1987", "specp3sp", "spectrum.java", rom_specp3sp, null, machine_driver_spectrum_plus3, input_ports_spectrum, null, io_spectrum, "Amstrad plc", "ZX Spectrum +3 (Spain)");
+	public static GameDriver driver_specp3sp = new GameDriver("1987", "specp3sp", "spectrum.java", rom_specp3sp, null, machine_driver_spectrum_plus3, input_ports_spectrum, null, io_specpls3, "Amstrad plc", "ZX Spectrum +3 (Spain)");
         
         //COMPX( 2000, specpl3e, spec128,  spectrum_plus3, spectrum, 0,			 "Amstrad plc",          "ZX Spectrum +3e" , GAME_NOT_WORKING|GAME_COMPUTER_MODIFIED )
-	public static GameDriver driver_specpl3e = new GameDriver("2000", "specpl3e", "spectrum.java", rom_specpl3e, null, machine_driver_spectrum_plus3, input_ports_spectrum, null, io_spectrum, "Amstrad plc", "ZX Spectrum +3e");
+	public static GameDriver driver_specpl3e = new GameDriver("2000", "specpl3e", "spectrum.java", rom_specpl3e, null, machine_driver_spectrum_plus3, input_ports_spectrum, null, io_specpls3, "Amstrad plc", "ZX Spectrum +3e");
 }
