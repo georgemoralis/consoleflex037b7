@@ -1,9 +1,11 @@
-/*
- * ported to v0.37b7
- * 
- */
 package mame;
 
+/**
+ * ported to 0.37b7
+ */
+/**
+ * Changelog 23/07/2018 (shadow) - Intial work for use with mess
+ */
 import static arcadeflex.libc.cstring.strlen;
 import static WIP.mame.mame.Machine;
 import static WIP.mame.osdependH.*;
@@ -20,33 +22,16 @@ import static old.mame.input.input_ui_pressed_repeat;
 import static old.mame.usrintrf.*;
 import static old.mame.usrintrfH.*;
 import static WIP.mame.mame.*;
+import static mame.cheat.cheat_menu;
 import static old.arcadeflex.video.osd_clearbitmap;
 import static old.arcadeflex.video.osd_mark_dirty;
+import static old.mame.cpuintrf.machine_reset;
 import static old.mame.drawgfx.*;
 import static old.mame.drawgfxH.TRANSPARENCY_NONE;
 
 public class usrintrf {
 
-    /*TODO*////*********************************************************************
-/*TODO*///
-/*TODO*///  usrintrf.c
-/*TODO*///
-/*TODO*///  Functions used to handle MAME's crude user interface.
-/*TODO*///
-/*TODO*///*********************************************************************/
-/*TODO*///
-/*TODO*///#include "driver.h"
-/*TODO*///#include "info.h"
-/*TODO*///#include "vidhrdw/vector.h"
-/*TODO*///#include "datafile.h"
-/*TODO*///#include <stdarg.h>
-/*TODO*///#include "ui_text.h"
-/*TODO*///
-/*TODO*///#ifdef MESS
-/*TODO*///  #include "mess/mess.h"
-/*TODO*///#endif
-/*TODO*///
-/*TODO*///extern int bitmap_dirty;	/* set by osd_clearbitmap() */
+    /*TODO*///extern int bitmap_dirty;	/* set by osd_clearbitmap() */
 /*TODO*///
 /*TODO*////* Variables for stat menu */
 /*TODO*///extern char build_version[];
@@ -54,23 +39,6 @@ public class usrintrf {
 /*TODO*///extern unsigned int coins[COIN_COUNTERS];
 /*TODO*///extern unsigned int coinlockedout[COIN_COUNTERS];
 /*TODO*///
-/*TODO*////* MARTINEZ.F 990207 Memory Card */
-/*TODO*///#ifndef MESS
-/*TODO*///#ifndef TINY_COMPILE
-/*TODO*///int 		memcard_menu(struct osd_bitmap *bitmap, int);
-/*TODO*///extern int	mcd_action;
-/*TODO*///extern int	mcd_number;
-/*TODO*///extern int	memcard_status;
-/*TODO*///extern int	memcard_number;
-/*TODO*///extern int	memcard_manager;
-/*TODO*///#endif
-/*TODO*///#endif
-/*TODO*///
-/*TODO*///extern int neogeo_memcard_load(int);
-/*TODO*///extern void neogeo_memcard_save(void);
-/*TODO*///extern void neogeo_memcard_eject(void);
-/*TODO*///extern int neogeo_memcard_create(int);
-/*TODO*////* MARTINEZ.F 990207 Memory Card End */
 /*TODO*///
 /*TODO*///
 /*TODO*///
@@ -550,6 +518,8 @@ public class usrintrf {
 /*TODO*///{
 /*TODO*///	ui_text_ex(bitmap, buf, buf + strlen(buf), x, y, UI_COLOR_NORMAL);
 /*TODO*///}
+/*TODO*///
+/*TODO*///
     public static void ui_drawbox(osd_bitmap bitmap, int leftx, int topy, int width, int height) {
         char black, white;
 
@@ -988,19 +958,6 @@ public class usrintrf {
 /*TODO*///
 /*TODO*///
 /*TODO*///
-/*TODO*///#ifndef MESS
-/*TODO*///#ifndef TINY_COMPILE
-/*TODO*///extern int no_of_tiles;
-/*TODO*///void NeoMVSDrawGfx(unsigned char **line,const struct GfxElement *gfx,
-/*TODO*///		unsigned int code,unsigned int color,int flipx,int flipy,int sx,int sy,
-/*TODO*///		int zx,int zy,const struct rectangle *clip);
-/*TODO*///void NeoMVSDrawGfx16(unsigned char **line,const struct GfxElement *gfx,
-/*TODO*///		unsigned int code,unsigned int color,int flipx,int flipy,int sx,int sy,
-/*TODO*///		int zx,int zy,const struct rectangle *clip);
-/*TODO*///extern struct GameDriver driver_neogeo;
-/*TODO*///#endif
-/*TODO*///#endif
-/*TODO*///
 /*TODO*///static void showcharset(struct osd_bitmap *bitmap)
 /*TODO*///{
 /*TODO*///	int i;
@@ -1019,15 +976,6 @@ public class usrintrf {
 /*TODO*///
 /*TODO*///		memcpy(orig_used_colors,palette_used_colors,Machine->drv->total_colors * sizeof(unsigned char));
 /*TODO*///	}
-/*TODO*///
-/*TODO*///#ifndef MESS
-/*TODO*///#ifndef TINY_COMPILE
-/*TODO*///	if (Machine->gamedrv->clone_of == &driver_neogeo ||
-/*TODO*///			(Machine->gamedrv->clone_of &&
-/*TODO*///				Machine->gamedrv->clone_of->clone_of == &driver_neogeo))
-/*TODO*///		game_is_neogeo=1;
-/*TODO*///#endif
-/*TODO*///#endif
 /*TODO*///
 /*TODO*///	bank = -1;
 /*TODO*///	color = 0;
@@ -1149,47 +1097,6 @@ public class usrintrf {
 /*TODO*///
 /*TODO*///				switch_true_orientation();
 /*TODO*///			}
-/*TODO*///#ifndef MESS
-/*TODO*///#ifndef TINY_COMPILE
-/*TODO*///			else	/* neogeo sprite tiles */
-/*TODO*///			{
-/*TODO*///				struct rectangle clip;
-/*TODO*///
-/*TODO*///				clip.min_x = Machine->uixmin;
-/*TODO*///				clip.max_x = Machine->uixmin + Machine->uiwidth - 1;
-/*TODO*///				clip.min_y = Machine->uiymin;
-/*TODO*///				clip.max_y = Machine->uiymin + Machine->uiheight - 1;
-/*TODO*///
-/*TODO*///				if (palette_used_colors)
-/*TODO*///				{
-/*TODO*///					memset(palette_used_colors,PALETTE_COLOR_TRANSPARENT,Machine->drv->total_colors * sizeof(unsigned char));
-/*TODO*///					memset(palette_used_colors+Machine->gfx[bank]->color_granularity*color,PALETTE_COLOR_USED,Machine->gfx[bank]->color_granularity * sizeof(unsigned char));
-/*TODO*///					palette_recalc();	/* do it twice in case of previous overflow */
-/*TODO*///					palette_recalc();	/*(we redraw the screen only when it changes) */
-/*TODO*///				}
-/*TODO*///
-/*TODO*///				for (i = 0; i+firstdrawn < no_of_tiles && i<cpx*cpy; i++)
-/*TODO*///				{
-/*TODO*///					if (bitmap->depth == 16)
-/*TODO*///						NeoMVSDrawGfx16(bitmap->line,Machine->gfx[bank],
-/*TODO*///							i+firstdrawn,color,  /*sprite num, color*/
-/*TODO*///							0,0,
-/*TODO*///							(i % cpx) * Machine->gfx[bank]->width + Machine->uixmin,
-/*TODO*///							Machine->uifontheight+1 + (i / cpx) * Machine->gfx[bank]->height + Machine->uiymin,
-/*TODO*///							16,16,&clip);
-/*TODO*///					else
-/*TODO*///						NeoMVSDrawGfx(bitmap->line,Machine->gfx[bank],
-/*TODO*///							i+firstdrawn,color,  /*sprite num, color*/
-/*TODO*///							0,0,
-/*TODO*///							(i % cpx) * Machine->gfx[bank]->width + Machine->uixmin,
-/*TODO*///							Machine->uifontheight+1 + (i / cpx) * Machine->gfx[bank]->height + Machine->uiymin,
-/*TODO*///							16,16,&clip);
-/*TODO*///
-/*TODO*///					lastdrawn = i+firstdrawn;
-/*TODO*///				}
-/*TODO*///			}
-/*TODO*///#endif
-/*TODO*///#endif
 /*TODO*///
 /*TODO*///			if (bank >= 0)
 /*TODO*///				sprintf(buf,"GFXSET %d COLOR %2X CODE %X-%X",bank,color,firstdrawn,lastdrawn);
@@ -2039,81 +1946,6 @@ public class usrintrf {
 /*TODO*///	return sel + 1;
 /*TODO*///}
 /*TODO*///
-/*TODO*///#ifndef MESS
-/*TODO*///static int mame_stats(struct osd_bitmap *bitmap,int selected)
-/*TODO*///{
-/*TODO*///	char temp[10];
-/*TODO*///	char buf[2048];
-/*TODO*///	int sel, i;
-/*TODO*///
-/*TODO*///
-/*TODO*///	sel = selected - 1;
-/*TODO*///
-/*TODO*///	buf[0] = 0;
-/*TODO*///
-/*TODO*///	if (dispensed_tickets)
-/*TODO*///	{
-/*TODO*///		strcat(buf, ui_getstring (UI_tickets));
-/*TODO*///		strcat(buf, ": ");
-/*TODO*///		sprintf(temp, "%d\n\n", dispensed_tickets);
-/*TODO*///		strcat(buf, temp);
-/*TODO*///	}
-/*TODO*///
-/*TODO*///	for (i=0; i<COIN_COUNTERS; i++)
-/*TODO*///	{
-/*TODO*///		strcat(buf, ui_getstring (UI_coin));
-/*TODO*///		sprintf(temp, " %c: ", i+'A');
-/*TODO*///		strcat(buf, temp);
-/*TODO*///		if (!coins[i])
-/*TODO*///			strcat (buf, ui_getstring (UI_NA));
-/*TODO*///		else
-/*TODO*///		{
-/*TODO*///			sprintf (temp, "%d", coins[i]);
-/*TODO*///			strcat (buf, temp);
-/*TODO*///		}
-/*TODO*///		if (coinlockedout[i])
-/*TODO*///		{
-/*TODO*///			strcat(buf, " ");
-/*TODO*///			strcat(buf, ui_getstring (UI_locked));
-/*TODO*///			strcat(buf, "\n");
-/*TODO*///		}
-/*TODO*///		else
-/*TODO*///		{
-/*TODO*///			strcat(buf, "\n");
-/*TODO*///		}
-/*TODO*///	}
-/*TODO*///
-/*TODO*///	{
-/*TODO*///		/* menu system, use the normal menu keys */
-/*TODO*///		strcat(buf,"\n\t");
-/*TODO*///		strcat(buf,ui_getstring (UI_lefthilight));
-/*TODO*///		strcat(buf," ");
-/*TODO*///		strcat(buf,ui_getstring (UI_returntomain));
-/*TODO*///		strcat(buf," ");
-/*TODO*///		strcat(buf,ui_getstring (UI_righthilight));
-/*TODO*///
-/*TODO*///		ui_displaymessagewindow(bitmap,buf);
-/*TODO*///
-/*TODO*///		if (input_ui_pressed(IPT_UI_SELECT))
-/*TODO*///			sel = -1;
-/*TODO*///
-/*TODO*///		if (input_ui_pressed(IPT_UI_CANCEL))
-/*TODO*///			sel = -1;
-/*TODO*///
-/*TODO*///		if (input_ui_pressed(IPT_UI_CONFIGURE))
-/*TODO*///			sel = -2;
-/*TODO*///	}
-/*TODO*///
-/*TODO*///	if (sel == -1 || sel == -2)
-/*TODO*///	{
-/*TODO*///		/* tell updatescreen() to clean after us */
-/*TODO*///		need_to_clear_bitmap = 1;
-/*TODO*///	}
-/*TODO*///
-/*TODO*///	return sel + 1;
-/*TODO*///}
-/*TODO*///#endif
-/*TODO*///
 /*TODO*///int showcopyright(struct osd_bitmap *bitmap)
 /*TODO*///{
 /*TODO*///	int done;
@@ -2336,7 +2168,6 @@ public class usrintrf {
 /*TODO*///		strcpy(buf, ui_getstring (UI_knownproblems));
 /*TODO*///		strcat(buf, "\n\n");
 /*TODO*///
-/*TODO*///#ifdef MESS
 /*TODO*///		if (Machine->gamedrv->flags & GAME_COMPUTER)
 /*TODO*///		{
 /*TODO*///			strcpy(buf, ui_getstring (UI_comp1));
@@ -2344,7 +2175,6 @@ public class usrintrf {
 /*TODO*///			strcat(buf, ui_getstring (UI_comp2));
 /*TODO*///			strcat(buf, "\n");
 /*TODO*///		}
-/*TODO*///#endif
 /*TODO*///
 /*TODO*///		if (Machine->gamedrv->flags & GAME_IMPERFECT_COLORS)
 /*TODO*///		{
@@ -2450,12 +2280,10 @@ public class usrintrf {
 /*TODO*///		update_video_and_audio();
 /*TODO*///	}
 /*TODO*///
-/*TODO*///	#ifdef MESS
 /*TODO*///	while (displayimageinfo(bitmap,0) == 1)
 /*TODO*///	{
 /*TODO*///		update_video_and_audio();
 /*TODO*///	}
-/*TODO*///	#endif
 /*TODO*///
 /*TODO*///	osd_clearbitmap(bitmap);
 /*TODO*///	/* make sure that the screen is really cleared, in case autoframeskip kicked in */
@@ -2624,7 +2452,6 @@ public class usrintrf {
 
         displaytext(bitmap, dt, 0, 0);
     }
-
     static int[] hist_scroll = new int[1];
     static String[] hist_buf = new String[1];
 
@@ -2720,157 +2547,37 @@ public class usrintrf {
         return sel + 1;
 
     }
-    /*TODO*///
-/*TODO*///
-/*TODO*///#ifndef MESS
-/*TODO*///#ifndef TINY_COMPILE
-/*TODO*///int memcard_menu(struct osd_bitmap *bitmap, int selection)
-/*TODO*///{
-/*TODO*///	int sel;
-/*TODO*///	int menutotal = 0;
-/*TODO*///	const char *menuitem[10];
-/*TODO*///	char buf[256];
-/*TODO*///	char buf2[256];
-/*TODO*///
-/*TODO*///	sel = selection - 1 ;
-/*TODO*///
-/*TODO*///	sprintf(buf, "%s %03d", ui_getstring (UI_loadcard), mcd_number);
-/*TODO*///	menuitem[menutotal++] = buf;
-/*TODO*///	menuitem[menutotal++] = ui_getstring (UI_ejectcard);
-/*TODO*///	menuitem[menutotal++] = ui_getstring (UI_createcard);
-/*TODO*///	menuitem[menutotal++] = ui_getstring (UI_resetcard);
-/*TODO*///	menuitem[menutotal++] = ui_getstring (UI_returntomain);
-/*TODO*///	menuitem[menutotal] = 0;
-/*TODO*///
-/*TODO*///	if (mcd_action!=0)
-/*TODO*///	{
-/*TODO*///		strcpy (buf2, "\n");
-/*TODO*///
-/*TODO*///		switch(mcd_action)
-/*TODO*///		{
-/*TODO*///			case 1:
-/*TODO*///				strcat (buf2, ui_getstring (UI_loadfailed));
-/*TODO*///				break;
-/*TODO*///			case 2:
-/*TODO*///				strcat (buf2, ui_getstring (UI_loadok));
-/*TODO*///				break;
-/*TODO*///			case 3:
-/*TODO*///				strcat (buf2, ui_getstring (UI_cardejected));
-/*TODO*///				break;
-/*TODO*///			case 4:
-/*TODO*///				strcat (buf2, ui_getstring (UI_cardcreated));
-/*TODO*///				break;
-/*TODO*///			case 5:
-/*TODO*///				strcat (buf2, ui_getstring (UI_cardcreatedfailed));
-/*TODO*///				strcat (buf2, "\n");
-/*TODO*///				strcat (buf2, ui_getstring (UI_cardcreatedfailed2));
-/*TODO*///				break;
-/*TODO*///			default:
-/*TODO*///				strcat (buf2, ui_getstring (UI_carderror));
-/*TODO*///				break;
-/*TODO*///		}
-/*TODO*///
-/*TODO*///		strcat (buf2, "\n\n");
-/*TODO*///		ui_displaymessagewindow(bitmap,buf2);
-/*TODO*///		if (input_ui_pressed(IPT_UI_SELECT))
-/*TODO*///			mcd_action = 0;
-/*TODO*///	}
-/*TODO*///	else
-/*TODO*///	{
-/*TODO*///		ui_displaymenu(bitmap,menuitem,0,0,sel,0);
-/*TODO*///
-/*TODO*///		if (input_ui_pressed_repeat(IPT_UI_RIGHT,8))
-/*TODO*///			mcd_number = (mcd_number + 1) % 1000;
-/*TODO*///
-/*TODO*///		if (input_ui_pressed_repeat(IPT_UI_LEFT,8))
-/*TODO*///			mcd_number = (mcd_number + 999) % 1000;
-/*TODO*///
-/*TODO*///		if (input_ui_pressed_repeat(IPT_UI_DOWN,8))
-/*TODO*///			sel = (sel + 1) % menutotal;
-/*TODO*///
-/*TODO*///		if (input_ui_pressed_repeat(IPT_UI_UP,8))
-/*TODO*///			sel = (sel + menutotal - 1) % menutotal;
-/*TODO*///
-/*TODO*///		if (input_ui_pressed(IPT_UI_SELECT))
-/*TODO*///		{
-/*TODO*///			switch(sel)
-/*TODO*///			{
-/*TODO*///			case 0:
-/*TODO*///				neogeo_memcard_eject();
-/*TODO*///				if (neogeo_memcard_load(mcd_number))
-/*TODO*///				{
-/*TODO*///					memcard_status=1;
-/*TODO*///					memcard_number=mcd_number;
-/*TODO*///					mcd_action = 2;
-/*TODO*///				}
-/*TODO*///				else
-/*TODO*///					mcd_action = 1;
-/*TODO*///				break;
-/*TODO*///			case 1:
-/*TODO*///				neogeo_memcard_eject();
-/*TODO*///				mcd_action = 3;
-/*TODO*///				break;
-/*TODO*///			case 2:
-/*TODO*///				if (neogeo_memcard_create(mcd_number))
-/*TODO*///					mcd_action = 4;
-/*TODO*///				else
-/*TODO*///					mcd_action = 5;
-/*TODO*///				break;
-/*TODO*///			case 3:
-/*TODO*///				memcard_manager=1;
-/*TODO*///				sel=-2;
-/*TODO*///				machine_reset();
-/*TODO*///				break;
-/*TODO*///			case 4:
-/*TODO*///				sel=-1;
-/*TODO*///				break;
-/*TODO*///			}
-/*TODO*///		}
-/*TODO*///
-/*TODO*///		if (input_ui_pressed(IPT_UI_CANCEL))
-/*TODO*///			sel = -1;
-/*TODO*///
-/*TODO*///		if (input_ui_pressed(IPT_UI_CONFIGURE))
-/*TODO*///			sel = -2;
-/*TODO*///
-/*TODO*///		if (sel == -1 || sel == -2)
-/*TODO*///		{
-/*TODO*///			/* tell updatescreen() to clean after us */
-/*TODO*///			need_to_clear_bitmap = 1;
-/*TODO*///		}
-/*TODO*///	}
-/*TODO*///
-/*TODO*///	return sel + 1;
-/*TODO*///}
-/*TODO*///#endif
-/*TODO*///#endif
-/*TODO*///
-/*TODO*///
-/*TODO*///#ifndef MESS
-/*TODO*///enum { UI_SWITCH = 0,UI_DEFCODE,UI_CODE,UI_ANALOG,UI_CALIBRATE,
-/*TODO*///		UI_STATS,UI_GAMEINFO, UI_HISTORY,
-/*TODO*///		UI_CHEAT,UI_RESET,UI_MEMCARD,UI_EXIT };
-/*TODO*///#else
-/*TODO*///enum { UI_SWITCH = 0,UI_DEFCODE,UI_CODE,UI_ANALOG,UI_CALIBRATE,
-/*TODO*///		UI_GAMEINFO, UI_IMAGEINFO,UI_FILEMANAGER,UI_TAPECONTROL,
-/*TODO*///		UI_HISTORY,UI_CHEAT,UI_RESET,UI_MEMCARD,UI_EXIT };
-/*TODO*///#endif
-/*TODO*///
-/*TODO*///
-/*TODO*///#define MAX_SETUPMENU_ITEMS 20
-/*TODO*///static const char *menu_item[MAX_SETUPMENU_ITEMS];
-/*TODO*///static int menu_action[MAX_SETUPMENU_ITEMS];
-/*TODO*///static int menu_total;
-/*TODO*///
-/*TODO*///
-/*TODO*///static void setup_menu_init(void)
-/*TODO*///{
-/*TODO*///	menu_total = 0;
-/*TODO*///
-/*TODO*///	menu_item[menu_total] = ui_getstring (UI_inputgeneral); menu_action[menu_total++] = UI_DEFCODE;
-/*TODO*///	menu_item[menu_total] = ui_getstring (UI_inputspecific); menu_action[menu_total++] = UI_CODE;
-/*TODO*///	menu_item[menu_total] = ui_getstring (UI_dipswitches); menu_action[menu_total++] = UI_SWITCH;
-/*TODO*///
+    public static final int UI_SWITCH = 0;
+    public static final int UI_DEFCODE = 1;
+    public static final int UI_CODE = 2;
+    public static final int UI_ANALOG = 3;
+    public static final int UI_CALIBRATE = 4;
+    public static final int UI_STATS = 5;
+    public static final int UI_GAMEINFO = 6;
+    public static final int UI_IMAGEINFO = 7;
+    public static final int UI_FILEMANAGER = 8;
+    public static final int UI_TAPECONTROL = 9;
+    public static final int UI_HISTORY = 10;
+    public static final int UI_CHEAT = 11;
+    public static final int UI_RESET = 12;
+    public static final int UI_MEMCARD = 13;
+    public static final int UI_EXIT = 14;
+
+    public static final int MAX_SETUPMENU_ITEMS = 20;
+    public static String[] menu_item = new String[MAX_SETUPMENU_ITEMS];
+    public static int[] menu_action = new int[MAX_SETUPMENU_ITEMS];
+    public static int menu_total;
+
+    public static void setup_menu_init() {
+        menu_total = 0;
+
+        menu_item[menu_total] = ui_getstring(UI_inputgeneral);
+        menu_action[menu_total++] = UI_DEFCODE;
+        menu_item[menu_total] = ui_getstring(UI_inputspecific);
+        menu_action[menu_total++] = UI_CODE;
+        menu_item[menu_total] = ui_getstring(UI_dipswitches);
+        menu_action[menu_total++] = UI_SWITCH;
+        /*TODO*///
 /*TODO*///	/* Determine if there are any analog controls */
 /*TODO*///	{
 /*TODO*///		struct InputPort *in;
@@ -2899,77 +2606,57 @@ public class usrintrf {
 /*TODO*///		menu_item[menu_total] = ui_getstring (UI_calibrate); menu_action[menu_total++] = UI_CALIBRATE;
 /*TODO*///	}
 /*TODO*///
-/*TODO*///#ifndef MESS
-/*TODO*///	menu_item[menu_total] = ui_getstring (UI_bookkeeping); menu_action[menu_total++] = UI_STATS;
-/*TODO*///	menu_item[menu_total] = ui_getstring (UI_gameinfo); menu_action[menu_total++] = UI_GAMEINFO;
-/*TODO*///	menu_item[menu_total] = ui_getstring (UI_history); menu_action[menu_total++] = UI_HISTORY;
-/*TODO*///#else
-/*TODO*///	menu_item[menu_total] = ui_getstring (UI_imageinfo); menu_action[menu_total++] = UI_IMAGEINFO;
-/*TODO*///	menu_item[menu_total] = ui_getstring (UI_filemanager); menu_action[menu_total++] = UI_FILEMANAGER;
-/*TODO*///	menu_item[menu_total] = ui_getstring (UI_tapecontrol); menu_action[menu_total++] = UI_TAPECONTROL;
-/*TODO*///	menu_item[menu_total] = ui_getstring (UI_history); menu_action[menu_total++] = UI_HISTORY;
-/*TODO*///#endif
-/*TODO*///
-/*TODO*///	if (options.cheat)
-/*TODO*///	{
-/*TODO*///		menu_item[menu_total] = ui_getstring (UI_cheat); menu_action[menu_total++] = UI_CHEAT;
-/*TODO*///	}
-/*TODO*///
-/*TODO*///#ifndef MESS
-/*TODO*///#ifndef TINY_COMPILE
-/*TODO*///	if (Machine->gamedrv->clone_of == &driver_neogeo ||
-/*TODO*///			(Machine->gamedrv->clone_of &&
-/*TODO*///				Machine->gamedrv->clone_of->clone_of == &driver_neogeo))
-/*TODO*///	{
-/*TODO*///		menu_item[menu_total] = ui_getstring (UI_memorycard); menu_action[menu_total++] = UI_MEMCARD;
-/*TODO*///	}
-/*TODO*///#endif
-/*TODO*///#endif
-/*TODO*///
-/*TODO*///	menu_item[menu_total] = ui_getstring (UI_resetgame); menu_action[menu_total++] = UI_RESET;
-/*TODO*///	menu_item[menu_total] = ui_getstring (UI_returntogame); menu_action[menu_total++] = UI_EXIT;
-/*TODO*///	menu_item[menu_total] = 0; /* terminate array */
-/*TODO*///}
-/*TODO*///
-/*TODO*///
-/*TODO*///static int setup_menu(struct osd_bitmap *bitmap, int selected)
-/*TODO*///{
-/*TODO*///	int sel,res=-1;
-/*TODO*///	static int menu_lastselected = 0;
-/*TODO*///
-/*TODO*///
-/*TODO*///	if (selected == -1)
-/*TODO*///		sel = menu_lastselected;
-/*TODO*///	else sel = selected - 1;
-/*TODO*///
-/*TODO*///	if (sel > SEL_MASK)
-/*TODO*///	{
-/*TODO*///		switch (menu_action[sel & SEL_MASK])
-/*TODO*///		{
-/*TODO*///			case UI_SWITCH:
-/*TODO*///				res = setdipswitches(bitmap, sel >> SEL_BITS);
-/*TODO*///				break;
-/*TODO*///			case UI_DEFCODE:
-/*TODO*///				res = setdefcodesettings(bitmap, sel >> SEL_BITS);
-/*TODO*///				break;
-/*TODO*///			case UI_CODE:
-/*TODO*///				res = setcodesettings(bitmap, sel >> SEL_BITS);
-/*TODO*///				break;
-/*TODO*///			case UI_ANALOG:
+
+        menu_item[menu_total] = ui_getstring(UI_imageinfo);
+        menu_action[menu_total++] = UI_IMAGEINFO;
+        menu_item[menu_total] = ui_getstring(UI_filemanager);
+        menu_action[menu_total++] = UI_FILEMANAGER;
+        menu_item[menu_total] = ui_getstring(UI_tapecontrol);
+        menu_action[menu_total++] = UI_TAPECONTROL;
+        menu_item[menu_total] = ui_getstring(UI_history);
+        menu_action[menu_total++] = UI_HISTORY;
+
+        if (options.cheat != 0) {
+            menu_item[menu_total] = ui_getstring(UI_cheat);
+            menu_action[menu_total++] = UI_CHEAT;
+        }
+
+        menu_item[menu_total] = ui_getstring(UI_resetgame);
+        menu_action[menu_total++] = UI_RESET;
+        menu_item[menu_total] = ui_getstring(UI_returntogame);
+        menu_action[menu_total++] = UI_EXIT;
+        menu_item[menu_total] = null;
+        /* terminate array */
+    }
+
+    static int menu_lastselected = 0;
+
+    public static int setup_menu(osd_bitmap bitmap, int selected) {
+        int sel, res = -1;
+
+        if (selected == -1) {
+            sel = menu_lastselected;
+        } else {
+            sel = selected - 1;
+        }
+
+        if (sel > SEL_MASK) {
+            switch (menu_action[sel & SEL_MASK]) {
+                case UI_SWITCH:
+                    res = setdipswitches(bitmap, sel >> SEL_BITS);
+                    break;
+                case UI_DEFCODE:
+                    res = setdefcodesettings(bitmap, sel >> SEL_BITS);
+                    break;
+                case UI_CODE:
+                    res = setcodesettings(bitmap, sel >> SEL_BITS);
+                    break;
+                /*TODO*///			case UI_ANALOG:
 /*TODO*///				res = settraksettings(bitmap, sel >> SEL_BITS);
 /*TODO*///				break;
 /*TODO*///			case UI_CALIBRATE:
 /*TODO*///				res = calibratejoysticks(bitmap, sel >> SEL_BITS);
 /*TODO*///				break;
-/*TODO*///#ifndef MESS
-/*TODO*///			case UI_STATS:
-/*TODO*///				res = mame_stats(bitmap, sel >> SEL_BITS);
-/*TODO*///				break;
-/*TODO*///			case UI_GAMEINFO:
-/*TODO*///				res = displaygameinfo(bitmap, sel >> SEL_BITS);
-/*TODO*///				break;
-/*TODO*///#endif
-/*TODO*///#ifdef MESS
 /*TODO*///			case UI_IMAGEINFO:
 /*TODO*///				res = displayimageinfo(bitmap, sel >> SEL_BITS);
 /*TODO*///				break;
@@ -2979,96 +2666,79 @@ public class usrintrf {
 /*TODO*///			case UI_TAPECONTROL:
 /*TODO*///				res = tapecontrol(bitmap, sel >> SEL_BITS);
 /*TODO*///				break;
-/*TODO*///#endif
-/*TODO*///			case UI_HISTORY:
-/*TODO*///				res = displayhistory(bitmap, sel >> SEL_BITS);
-/*TODO*///				break;
-/*TODO*///			case UI_CHEAT:
-/*TODO*///				res = cheat_menu(bitmap, sel >> SEL_BITS);
-/*TODO*///				break;
-/*TODO*///#ifndef MESS
-/*TODO*///#ifndef TINY_COMPILE
-/*TODO*///			case UI_MEMCARD:
-/*TODO*///				res = memcard_menu(bitmap, sel >> SEL_BITS);
-/*TODO*///				break;
-/*TODO*///#endif
-/*TODO*///#endif
-/*TODO*///		}
-/*TODO*///
-/*TODO*///		if (res == -1)
-/*TODO*///		{
-/*TODO*///			menu_lastselected = sel;
-/*TODO*///			sel = -1;
-/*TODO*///		}
-/*TODO*///		else
-/*TODO*///			sel = (sel & SEL_MASK) | (res << SEL_BITS);
-/*TODO*///
-/*TODO*///		return sel + 1;
-/*TODO*///	}
-/*TODO*///
-/*TODO*///
-/*TODO*///	ui_displaymenu(bitmap,menu_item,0,0,sel,0);
-/*TODO*///
-/*TODO*///	if (input_ui_pressed_repeat(IPT_UI_DOWN,8))
-/*TODO*///		sel = (sel + 1) % menu_total;
-/*TODO*///
-/*TODO*///	if (input_ui_pressed_repeat(IPT_UI_UP,8))
-/*TODO*///		sel = (sel + menu_total - 1) % menu_total;
-/*TODO*///
-/*TODO*///	if (input_ui_pressed(IPT_UI_SELECT))
-/*TODO*///	{
-/*TODO*///		switch (menu_action[sel])
-/*TODO*///		{
-/*TODO*///			case UI_SWITCH:
-/*TODO*///			case UI_DEFCODE:
-/*TODO*///			case UI_CODE:
-/*TODO*///			case UI_ANALOG:
-/*TODO*///			case UI_CALIBRATE:
-/*TODO*///			#ifndef MESS
-/*TODO*///			case UI_STATS:
-/*TODO*///			case UI_GAMEINFO:
-/*TODO*///			#else
-/*TODO*///			case UI_GAMEINFO:
-/*TODO*///			case UI_IMAGEINFO:
-/*TODO*///			case UI_FILEMANAGER:
-/*TODO*///			case UI_TAPECONTROL:
-/*TODO*///			#endif
-/*TODO*///			case UI_HISTORY:
-/*TODO*///			case UI_CHEAT:
-/*TODO*///			case UI_MEMCARD:
-/*TODO*///				sel |= 1 << SEL_BITS;
-/*TODO*///				/* tell updatescreen() to clean after us */
-/*TODO*///				need_to_clear_bitmap = 1;
-/*TODO*///				break;
-/*TODO*///
-/*TODO*///			case UI_RESET:
-/*TODO*///				machine_reset();
-/*TODO*///				break;
-/*TODO*///
-/*TODO*///			case UI_EXIT:
-/*TODO*///				menu_lastselected = 0;
-/*TODO*///				sel = -1;
-/*TODO*///				break;
-/*TODO*///		}
-/*TODO*///	}
-/*TODO*///
-/*TODO*///	if (input_ui_pressed(IPT_UI_CANCEL) ||
-/*TODO*///			input_ui_pressed(IPT_UI_CONFIGURE))
-/*TODO*///	{
-/*TODO*///		menu_lastselected = sel;
-/*TODO*///		sel = -1;
-/*TODO*///	}
-/*TODO*///
-/*TODO*///	if (sel == -1)
-/*TODO*///	{
-/*TODO*///		/* tell updatescreen() to clean after us */
-/*TODO*///		need_to_clear_bitmap = 1;
-/*TODO*///	}
-/*TODO*///
-/*TODO*///	return sel + 1;
-/*TODO*///}
-/*TODO*///
-/*TODO*///
+                case UI_HISTORY:
+                    res = displayhistory(bitmap, sel >> SEL_BITS);
+                    break;
+                case UI_CHEAT:
+                    res = cheat_menu(bitmap, sel >> SEL_BITS);
+                    break;
+            }
+
+            if (res == -1) {
+                menu_lastselected = sel;
+                sel = -1;
+            } else {
+                sel = (sel & SEL_MASK) | (res << SEL_BITS);
+            }
+
+            return sel + 1;
+        }
+
+        ui_displaymenu(bitmap, menu_item, null, null, sel, 0);
+
+        if ((input_ui_pressed_repeat(IPT_UI_DOWN, 8)) != 0) {
+            sel = (sel + 1) % menu_total;
+        }
+
+        if ((input_ui_pressed_repeat(IPT_UI_UP, 8)) != 0) {
+            sel = (sel + menu_total - 1) % menu_total;
+        }
+
+        if ((input_ui_pressed(IPT_UI_SELECT)) != 0) {
+            switch (menu_action[sel]) {
+                case UI_SWITCH:
+                case UI_DEFCODE:
+                case UI_CODE:
+                case UI_ANALOG:
+                case UI_CALIBRATE:
+                case UI_GAMEINFO:
+                case UI_IMAGEINFO:
+                case UI_FILEMANAGER:
+                case UI_TAPECONTROL:
+                case UI_HISTORY:
+                case UI_CHEAT:
+                case UI_MEMCARD:
+                    sel |= 1 << SEL_BITS;
+                    /* tell updatescreen() to clean after us */
+                    need_to_clear_bitmap = 1;
+                    break;
+
+                case UI_RESET:
+                    machine_reset();
+                    break;
+
+                case UI_EXIT:
+                    menu_lastselected = 0;
+                    sel = -1;
+                    break;
+            }
+        }
+
+        if ((input_ui_pressed(IPT_UI_CANCEL) != 0
+                || input_ui_pressed(IPT_UI_CONFIGURE) != 0)) {
+            menu_lastselected = sel;
+            sel = -1;
+        }
+
+        if (sel == -1) {
+            /* tell updatescreen() to clean after us */
+            need_to_clear_bitmap = 1;
+        }
+
+        return sel + 1;
+    }
+
+    /*TODO*///
 /*TODO*///
 /*TODO*////*********************************************************************
 /*TODO*///
@@ -3461,7 +3131,6 @@ public class usrintrf {
 /*TODO*///	static int show_total_colors;
 /*TODO*///#endif
 /*TODO*///
-/*TODO*///#ifdef MESS
 /*TODO*///if (Machine->gamedrv->flags & GAME_COMPUTER)
 /*TODO*///{
 /*TODO*///	static int ui_active = 0, ui_toggle_key = 0;
@@ -3520,7 +3189,6 @@ public class usrintrf {
 /*TODO*///		return 0;
 /*TODO*///	}
 /*TODO*///}
-/*TODO*///#endif
 /*TODO*///
 /*TODO*///	/* if the user pressed F12, save the screen to a file */
 /*TODO*///	if (input_ui_pressed(IPT_UI_SNAPSHOT))
@@ -3559,52 +3227,6 @@ public class usrintrf {
 /*TODO*///	if (osd_selected != 0) osd_selected = on_screen_display(bitmap, osd_selected);
 /*TODO*///
 /*TODO*///
-/*TODO*///#if 0
-/*TODO*///	if (keyboard_pressed_memory(KEYCODE_BACKSPACE))
-/*TODO*///	{
-/*TODO*///		if (jukebox_selected != -1)
-/*TODO*///		{
-/*TODO*///			jukebox_selected = -1;
-/*TODO*///			cpu_halt(0,1);
-/*TODO*///		}
-/*TODO*///		else
-/*TODO*///		{
-/*TODO*///			jukebox_selected = 0;
-/*TODO*///			cpu_halt(0,0);
-/*TODO*///		}
-/*TODO*///	}
-/*TODO*///
-/*TODO*///	if (jukebox_selected != -1)
-/*TODO*///	{
-/*TODO*///		char buf[40];
-/*TODO*///		watchdog_reset_w(0,0);
-/*TODO*///		if (keyboard_pressed_memory(KEYCODE_LCONTROL))
-/*TODO*///		{
-/*TODO*///#include "cpu/z80/z80.h"
-/*TODO*///			soundlatch_w(0,jukebox_selected);
-/*TODO*///			cpu_cause_interrupt(1,Z80_NMI_INT);
-/*TODO*///		}
-/*TODO*///		if (input_ui_pressed_repeat(IPT_UI_RIGHT,8))
-/*TODO*///		{
-/*TODO*///			jukebox_selected = (jukebox_selected + 1) & 0xff;
-/*TODO*///		}
-/*TODO*///		if (input_ui_pressed_repeat(IPT_UI_LEFT,8))
-/*TODO*///		{
-/*TODO*///			jukebox_selected = (jukebox_selected - 1) & 0xff;
-/*TODO*///		}
-/*TODO*///		if (input_ui_pressed_repeat(IPT_UI_UP,8))
-/*TODO*///		{
-/*TODO*///			jukebox_selected = (jukebox_selected + 16) & 0xff;
-/*TODO*///		}
-/*TODO*///		if (input_ui_pressed_repeat(IPT_UI_DOWN,8))
-/*TODO*///		{
-/*TODO*///			jukebox_selected = (jukebox_selected - 16) & 0xff;
-/*TODO*///		}
-/*TODO*///		sprintf(buf,"sound cmd %02x",jukebox_selected);
-/*TODO*///		displaymessage(buf);
-/*TODO*///	}
-/*TODO*///#endif
-/*TODO*///
 /*TODO*///
 /*TODO*///	/* if the user pressed F3, reset the emulation */
 /*TODO*///	if (input_ui_pressed(IPT_UI_RESET_MACHINE))
@@ -3624,9 +3246,6 @@ public class usrintrf {
 /*TODO*///
 /*TODO*///		while (!input_ui_pressed(IPT_UI_PAUSE))
 /*TODO*///		{
-/*TODO*///#ifdef MAME_NET
-/*TODO*///			osd_net_sync();
-/*TODO*///#endif /* MAME_NET */
 /*TODO*///			profiler_mark(PROFILER_VIDEO);
 /*TODO*///			if (osd_skip_this_frame() == 0)
 /*TODO*///			{
