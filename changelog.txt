@@ -1,7 +1,6 @@
 23/07/2018
 ==========
 -Added ZX Spectrum driver
--Added ZX Spectrum +4 driver
 -Added ZX Spectrum (BusySoft Upgrade) driver
 -Added ZX Spectrum (De Groot's Upgrade) driver
 -Added ZX Spectrum (Collier's Upgrade) driver
@@ -20,6 +19,7 @@
 -Added ZX Spectrum +2 (Spain) driver
 -Added ZX Spectrum +3 (Spain) driver
 -Added ZX Spectrum +3e driver
+-Added ZX Spectrum +4 driver
 -Sound, tape and disk emulation for all ZX Spectrum models not implemented
 
 22/07/2018
