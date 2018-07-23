@@ -113,7 +113,8 @@ import static mess.vidhrdw.spectrum.*;
 
 import static mame.eventlst.*;
 import static mame.eventlstH.*;
-
+import static sound.speaker.*;
+import sound.speakerH.Speaker_interface;
 
 public class spectrum
 {
@@ -146,7 +147,7 @@ public class spectrum
 		if ((Changed & (1<<4))!=0)
 		{
 			/* DAC output state */
-			/*TODO*/////speaker_level_w(0,(data>>4) & 0x01);
+			speaker_level_w(0,(data>>4) & 0x01);
 		}
 	
 		if ((Changed & (1<<3))!=0)
@@ -1560,11 +1561,11 @@ public class spectrum
                         return interrupt.handler();
 	} };
 	
-	/*TODO*/////static struct Speaker_interface spectrum_speaker_interface=
-	/*TODO*/////{
-	/*TODO*///// 1,
-	/*TODO*///// {50},
-	/*TODO*/////};
+	static  Speaker_interface spectrum_speaker_interface= new Speaker_interface
+	(
+	 1,
+	 new int[]{50}
+        );
 	
 	/*TODO*/////static struct Wave_interface spectrum_wave_interface=
 	/*TODO*/////{
@@ -1606,12 +1607,12 @@ public class spectrum
 	
 		/* sound hardware */
 		0,0,0,0,
-			/*TODO*/////new MachineSound[] {
-			/*TODO*/////		/* standard spectrum sound */
-			/*TODO*/////		new MachineSound(
-			/*TODO*/////				SOUND_SPEAKER,
-			/*TODO*/////				spectrum_speaker_interface
-			/*TODO*/////		),
+			new MachineSound[] {
+					/* standard spectrum sound */
+					new MachineSound(
+							SOUND_SPEAKER,
+							spectrum_speaker_interface
+					)
 			/*TODO*/////		/*-----------------27/02/00 10:40-------------------
 			/*TODO*/////		 cassette wave interface
 			/*TODO*/////		--------------------------------------------------*/
@@ -1619,8 +1620,8 @@ public class spectrum
 			/*TODO*/////				SOUND_WAVE,
 			/*TODO*/////				spectrum_wave_interface,
 			/*TODO*/////		)
-			/*TODO*/////}
-                        null
+			}
+                        
 	);
 	
 	static MachineDriver machine_driver_spectrum_128 = new MachineDriver
@@ -1661,12 +1662,12 @@ public class spectrum
 					new MachineSound(
 							SOUND_AY8910,
 							spectrum_128_ay_interface
+					),
+					/* standard spectrum buzzer sound */
+					new MachineSound(
+							SOUND_SPEAKER,
+							spectrum_speaker_interface
 					)
-			/*TODO*/////		/* standard spectrum buzzer sound */
-			/*TODO*/////		new MachineSound(
-			/*TODO*/////				SOUND_SPEAKER,
-			/*TODO*/////				spectrum_speaker_interface,
-			/*TODO*/////		),
 			/*TODO*/////		/*-----------------27/02/00 10:40-------------------
 			/*TODO*/////		 cassette wave interface
 			/*TODO*/////		--------------------------------------------------*/
@@ -1717,12 +1718,12 @@ public class spectrum
                                 new MachineSound(
                                                 SOUND_AY8910,
                                                 spectrum_128_ay_interface
+                                ),
+                                /* standard spectrum buzzer sound */
+                                new MachineSound(
+                                                SOUND_SPEAKER,
+                                                spectrum_speaker_interface
                                 )
-                /*TODO*/////                /* standard spectrum buzzer sound */
-                /*TODO*/////                new MachineSound(
-                /*TODO*/////                                SOUND_SPEAKER,
-                /*TODO*/////                                spectrum_speaker_interface,
-                /*TODO*/////                ),
                 /*TODO*/////                /*-----------------27/02/00 10:40-------------------
                 /*TODO*/////                 cassette wave interface
                 /*TODO*/////                --------------------------------------------------*/
@@ -1767,17 +1768,17 @@ public class spectrum
 	
 		/* sound hardware */
 		0,0,0,0,
-                /*TODO*/////new MachineSound[] {
-                /*TODO*/////                /* +3 Ay-3-8912 sound */
-                /*TODO*/////                new MachineSound(
-                /*TODO*/////                                SOUND_AY8910,
-                /*TODO*/////                                spectrum_128_ay_interface,
-                /*TODO*/////                ),
-                /*TODO*/////                /* standard spectrum sound */
-                /*TODO*/////                new MachineSound(
-                /*TODO*/////                                SOUND_SPEAKER,
-                /*TODO*/////                                spectrum_speaker_interface
-                /*TODO*/////                ),
+                new MachineSound[] {
+                                /* +3 Ay-3-8912 sound */
+                                new MachineSound(
+                                                SOUND_AY8910,
+                                                spectrum_128_ay_interface
+                                ),
+                                /* standard spectrum sound */
+                                new MachineSound(
+                                                SOUND_SPEAKER,
+                                                spectrum_speaker_interface
+                                ),
                 /*TODO*/////                /*-----------------27/02/00 10:40-------------------
                 /*TODO*/////                 cassette wave interface
                 /*TODO*/////               --------------------------------------------------*/
@@ -1785,8 +1786,7 @@ public class spectrum
                 /*TODO*/////                                SOUND_WAVE,
                 /*TODO*/////                                spectrum_wave_interface,
                 /*TODO*/////                )
-                /*TODO*/////}
-                null
+                }
 	);
 	
 	static MachineDriver machine_driver_tc2048 = new MachineDriver
@@ -1822,12 +1822,12 @@ public class spectrum
 	
 		/* sound hardware */
 		0,0,0,0,
-                /*TODO*/////new MachineSound[] {
-                /*TODO*/////                /* standard spectrum sound */
-                /*TODO*/////                new MachineSound(
-                /*TODO*/////                                SOUND_SPEAKER,
-                /*TODO*/////                                spectrum_speaker_interface
-                /*TODO*/////               ),
+                new MachineSound[] {
+                                /* standard spectrum sound */
+                                new MachineSound(
+                                                SOUND_SPEAKER,
+                                                spectrum_speaker_interface
+                               )
                                 /*-----------------27/02/00 10:40-------------------
                                  cassette wave interface
                                 --------------------------------------------------*/
@@ -1835,8 +1835,7 @@ public class spectrum
                 /*TODO*/////                               SOUND_WAVE,
                 /*TODO*/////                                spectrum_wave_interface,
                 /*TODO*/////                )
-                /*TODO*/////}
-                null
+                }
 	);
 	
 	

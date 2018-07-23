@@ -51,6 +51,7 @@ import static old.mame.timer.*;
 import static old.mame.timerH.*;
 import static old.sound.mixer.*;
 import static old.sound.streams.*;
+import sound.speaker;
 
 public class sndintrf {
 
@@ -710,6 +711,7 @@ public class sndintrf {
                 new sn76477(),
                 new sn76496(),
                 new Dummy_snd(),
+                new Dummy_snd(),//TIA
                 new nes_apu(),
                 new Dummy_snd(),//new astrocde(),
                 new Dummy_snd(),//new namco(),
@@ -730,7 +732,11 @@ public class sndintrf {
                 new Dummy_snd(),//new rf5c68(),
                 new Dummy_snd(),//cem3394
                 new Dummy_snd(),//new c140(),
-                new Dummy_snd(),//new qsound()              
+                new Dummy_snd(),//new qsound()  
+                new Dummy_snd(),
+                new speaker(),
+                new Dummy_snd(),
+                new Dummy_snd()
             };
 
     public static int sound_start() {
