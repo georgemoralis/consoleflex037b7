@@ -284,29 +284,47 @@ public class system {
         /*TODO*///	DRIVER( pc8300 )	/* Your Computer - PC8300						  */
         /*TODO*///	DRIVER( pow3000 )	/* Creon Enterprises - Power 3000				  */
         /*TODO*///
-        /*TODO*///	DRIVER( spectrum )	/* Sinclair ZX Spectrum 48k
+        //	DRIVER( spectrum )	/* Sinclair ZX Spectrum 48k
         driver_spectrum,
-        /*TODO*///	DRIVER( specbusy )	/*												  */
-        /*TODO*///	DRIVER( specgrot )	/*												  */
-        /*TODO*///	DRIVER( specimc )	/*												  */
-        /*TODO*///	DRIVER( speclec )	/*												  */
-        /*TODO*///	DRIVER( inves ) 	/*												  */
-        /*TODO*///	DRIVER( tk90x ) 	/*												  */
-        /*TODO*///	DRIVER( tk95 )		/*												  */
-        /*TODO*///	DRIVER( tc2048 )	/*												  */
-        /*TODO*///	DRIVER( ts2068 )	/*												  */
+        //	DRIVER( specbusy )	/*												  */
+        driver_specbusy,
+        //	DRIVER( specgrot )	/*												  */
+        driver_specgrot,
+        //	DRIVER( specimc )	/*												  */
+        driver_specimc,
+        //	DRIVER( speclec )	/*												  */
+        driver_speclec,
+        //	DRIVER( inves ) 	/*												  */
+        driver_inves,
+        //	DRIVER( tk90x ) 	/*												  */
+        driver_tk90x,
+        //	DRIVER( tk95 )		/*												  */
+        driver_tk95,
+        //	DRIVER( tc2048 )	/*												  */
+        driver_tc2048,
+        //	DRIVER( ts2068 )	/*												  */
+        driver_ts2068,
         /*TODO*///
-        /*TODO*///	DRIVER( spec128 )	/* Spectrum 									  */
+        //	DRIVER( spec128 )	/* Spectrum 									  */
         driver_spec128,
-        /*TODO*///	DRIVER( spec128s )	/* Spectrum 									  */
-        /*TODO*///	DRIVER( specpls2 )	/* Spectrum 									  */
-        /*TODO*///	DRIVER( specpl2a )	/* Spectrum 									  */
-        /*TODO*///	DRIVER( specp2fr )	/*												  */
-        /*TODO*///	DRIVER( specp2sp )	/*												  */
-        /*TODO*///	DRIVER( specpls3 )	/* Spectrum Plus 3								  */
-        /*TODO*///	DRIVER( specp3sp )	/*												  */
-        /*TODO*///	DRIVER( specpl3e )	/*												  */
-        /*TODO*///	DRIVER( specpls4 )	/*												  */
+        //	DRIVER( spec128s )	/* Spectrum 									  */
+        driver_spec128s,
+        //	DRIVER( specpls2 )	/* Spectrum 									  */
+        driver_specpls2,
+        //	DRIVER( specpl2a )	/* Spectrum 									  */
+        driver_specpl2a,
+        //	DRIVER( specp2fr )	/*												  */
+        driver_specp2fr,
+        //	DRIVER( specp2sp )	/*												  */
+        driver_specp2sp,
+        //	DRIVER( specpls3 )	/* Spectrum Plus 3								  */
+        driver_specpls3,
+        //	DRIVER( specp3sp )	/*												  */
+        driver_specp3sp,
+        //	DRIVER( specpl3e )	/*												  */
+        driver_specpl3e,
+        //	DRIVER( specpls4 )	/*
+        driver_specpls4,
         /*TODO*///#endif
         /*TODO*///
         /*TODO*///	/* ASCII & MICROSOFT */

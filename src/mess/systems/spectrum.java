@@ -211,24 +211,30 @@ public class spectrum
                         //cpu_setbank(1, new UBytePtr(_nes.rom, bank * 0x8000 + 0x10000));
 			//cpu_setbank(2, spectrum_128_ram + (5<<14));
                         //spectrum_128_ram.offset = (5<<14);
-                        UBytePtr bank2 = new UBytePtr(0x4000);
-                        memcpy(bank2, spectrum_128_ram, (5<<14), 0x4000);
-                        cpu_setbank(2, bank2);
-                        //memcpy(spectrum_128_screen_location, spectrum_128_ram, (7<<14), 0x4000);
+                        //UBytePtr bank2 = new UBytePtr(0x4000);
+                        //memcpy(bank2, spectrum_128_ram, (5<<14), 0x4000);
+                        //cpu_setbank(2, bank2);
+                        cpu_setbank(2, new UBytePtr(spectrum_128_ram, (5<<14)));
+
+//memcpy(spectrum_128_screen_location, spectrum_128_ram, (7<<14), 0x4000);
                         //spectrum_128_screen_location=bank2;
 			
                         //cpu_setbank(6, spectrum_128_ram + (5<<14));
-                        cpu_setbank(6, bank2);
-	
+                        //cpu_setbank(6, bank2);
+                           cpu_setbank(6, new UBytePtr(spectrum_128_ram, (5<<14)));
+                           
 			/* Bank 2 is always in 0x8000 - 0xbfff */
                         //cpu_setbank(3, spectrum_128_ram + (2<<14));
                         //spectrum_128_ram.offset = (2<<14);
-                        UBytePtr bank3 = new UBytePtr(0x4000);
+                        /*UBytePtr bank3 = new UBytePtr(0x4000);
                         memcpy(bank3, spectrum_128_ram, (2<<14), 0x4000);
                         
                         cpu_setbank(3, bank3);
-			//cpu_setbank(7, spectrum_128_ram + (2<<14));
-                        cpu_setbank(7, bank3);
+			
+                        cpu_setbank(7, bank3);*/
+                        
+                        cpu_setbank(3, new UBytePtr(spectrum_128_ram, (2<<14)));
+                        cpu_setbank(7, new UBytePtr(spectrum_128_ram, (2<<14)));
 	
 			/* set initial ram config */
 			spectrum_128_port_7ffd_data = 0;
@@ -287,9 +293,12 @@ public class spectrum
 	
 	public static InitMachinePtr ts2068_init_machine = new InitMachinePtr() { public void handler() 
 	{
-			/*TODO*/////ts2068_ram = (UBytePtr )malloc(48*1024);
-			/*TODO*/////if(!ts2068_ram) return;
-			/*TODO*/////memset(ts2068_ram, 0, 48*1024);
+			//ts2068_ram = (UBytePtr )malloc(48*1024);
+                        ts2068_ram = new UBytePtr(48*1024);
+			//if(!ts2068_ram) return;
+                        //memset(ts2068_ram, 0, 48*1024);
+                        if(ts2068_ram==null) return;
+			memset(ts2068_ram, 0, 48*1024);
 	
 			cpu_setbankhandler_r(1, MRA_BANK1);
 			cpu_setbankhandler_r(2, MRA_BANK2);
@@ -320,9 +329,9 @@ public class spectrum
 	
 	public static InitMachinePtr tc2048_init_machine = new InitMachinePtr() { public void handler() 
 	{
-			/*TODO*/////ts2068_ram = (UBytePtr )malloc(48*1024);
-			/*TODO*/////if(!ts2068_ram) return;
-			/*TODO*/////memset(ts2068_ram, 0, 48*1024);
+			ts2068_ram = new UBytePtr(48*1024);
+			if(ts2068_ram==null) return;
+                        memset(ts2068_ram, 0, 48*1024);
 	
 			cpu_setbankhandler_r(1, MRA_BANK1);
 			cpu_setbankhandler_w(2, MWA_BANK2);
@@ -425,8 +434,7 @@ public class spectrum
 	
 	static int ts2068_port_ff_r(int offset)
 	{
-			/*TODO*/////return ts2068_port_ff_data;
-            return 0;
+			return ts2068_port_ff_data;            
 	}
 	
 	static void ts2068_port_ff_w(int offset, int data)
@@ -458,65 +466,33 @@ public class spectrum
 	
 	public static void spectrum_128_update_memory()
 	{
-            System.out.println("spectrum_128_update_memory()");
-            UBytePtr ChosenROM=new UBytePtr(0x4000);
+            UBytePtr ChosenROM;
             int ROMSelection;
             
             if (spectrum_128_ram != null){
+                
 			if ((spectrum_128_port_7ffd_data & 8) != 0)
 			{
 					logerror("SCREEN 1: BLOCK 7");
-                                        System.out.println("SCREEN 1: BLOCK 7");
-					//spectrum_128_screen_location = spectrum_128_ram + (7<<14);
-                                        //spectrum_128_ram.offset=(7<<14);
-                                        //spectrum_128_screen_location = spectrum_128_ram;
-                                        spectrum_128_ram.offset=0;
-                                        spectrum_128_screen_location.offset=0;
-                                        memcpy(spectrum_128_screen_location, spectrum_128_ram, (7<<14), 0x4000);
+                                        spectrum_128_screen_location = new UBytePtr(spectrum_128_ram, (7<<14));
 			}
 			else
 			{
 					logerror("SCREEN 0: BLOCK 5\n");
-                                        System.out.println("SCREEN 0: BLOCK 5");
-					//spectrum_128_screen_location = spectrum_128_ram + (5<<14);
-                                        //spectrum_128_ram.offset=(5<<14);
-                                        //spectrum_128_screen_location = spectrum_128_ram;
-                                        //System.out.println("screen lenght: "+spectrum_128_screen_location.memory.length);
-                                        spectrum_128_ram.offset=0;
-                                        spectrum_128_screen_location.offset=0;
-                                        //System.out.println("ram lenght: "+spectrum_128_ram.memory.length);
-                                        //System.out.println("lenght: "+(5<<14));
+                                        spectrum_128_screen_location = new UBytePtr(spectrum_128_ram, (5<<14));
                                         
-                                        /*
-                                        memcpy(spectrum_128_screen_location, spectrum_128_ram, (5<<14), 0x4000);
-                                        
-                                        spectrum_128_screen_location.offset=0;
-                                        cpu_setbank(2, spectrum_128_screen_location);
-                                        spectrum_128_screen_location.offset=0;
-                                        cpu_setbank(6, spectrum_128_screen_location);
-                                        */
 			}
 	
 			/* select ram at 0x0c000-0x0ffff */
 			{
 					int ram_page;
-					UBytePtr ram_data=new UBytePtr(0x4000);
+					UBytePtr ram_data;
 	
 					ram_page = spectrum_128_port_7ffd_data & 0x07;
-                                        //System.out.println("ram_page: "+ram_page);
-                                        //System.out.println("lenght: "+(ram_page<<14));
-					//ram_data = spectrum_128_ram + (ram_page<<14);
-                                        //spectrum_128_ram.offset=(ram_page<<14);
-                                        //ram_data = spectrum_128_ram;
-                                        spectrum_128_ram.offset=0;
-                                        ram_data.offset=0;
-                                        memcpy(ram_data, spectrum_128_ram, (ram_page<<14), 0x4000);
-                                        
+                                        ram_data=new UBytePtr(spectrum_128_ram, (ram_page<<14));
 	
-					//cpu_setbank(4, ram_data);
-                                        cpu_setbank(4, ram_data);
-					//cpu_setbank(8, ram_data);
-                                        cpu_setbank(8, ram_data);
+					cpu_setbank(4, ram_data);
+					cpu_setbank(8, ram_data);
 	
 					logerror("RAM at 0xc000: %02x\n",ram_page);
 			}
@@ -524,17 +500,10 @@ public class spectrum
 			/* ROM switching */
 			ROMSelection = ((spectrum_128_port_7ffd_data>>4) & 0x01);
                         
-                        System.out.println("ROMSelection: "+ROMSelection);
-			/* rom 1 is 128K rom, rom 1 is 48 BASIC */
+                        /* rom 1 is 128K rom, rom 1 is 48 BASIC */
 	
-			//ChosenROM = memory_region(REGION_CPU1) + 0x010000 + (ROMSelection<<14);
-                        //int offsetTemp = memory_region(REGION_CPU1).offset;
-                        //memory_region(REGION_CPU1).offset = 0x010000 + (ROMSelection<<14);
-                        //ChosenROM = memory_region(REGION_CPU1);
-                        //memory_region(REGION_CPU1).offset = offsetTemp;
-                        memcpy(ChosenROM, memory_region(REGION_CPU1), 0x010000 + (ROMSelection<<14), 0x4000);
-	
-			//cpu_setbank(1, ChosenROM);
+			ChosenROM=new UBytePtr(memory_region(REGION_CPU1), 0x010000+(ROMSelection<<14));
+			
                         cpu_setbank(1, ChosenROM);
 	
 			logerror("rom switch: %02x\n", ROMSelection);
@@ -547,12 +516,12 @@ public class spectrum
 			if ((spectrum_128_port_7ffd_data & 8) != 0)
 			{
 					logerror("+3 SCREEN 1: BLOCK 7\n");
-					/*TODO*/////spectrum_128_screen_location = spectrum_128_ram + (7<<14);
+					spectrum_128_screen_location = new UBytePtr(spectrum_128_ram, (7<<14));
 			}
 			else
 			{
 					logerror("+3 SCREEN 0: BLOCK 5\n");
-					/*TODO*/////spectrum_128_screen_location = spectrum_128_ram + (5<<14);
+					spectrum_128_screen_location = new UBytePtr(spectrum_128_ram, (5<<14));
 			}
 	
 			if ((spectrum_plus3_port_1ffd_data & 0x01)==0)
@@ -566,21 +535,21 @@ public class spectrum
 	
 					/* select ram at 0x0c000-0x0ffff */
 					ram_page = spectrum_128_port_7ffd_data & 0x07;
-					/*TODO*/////ram_data = spectrum_128_ram + (ram_page<<14);
+					ram_data = new UBytePtr(spectrum_128_ram, (ram_page<<14));
 	
-					/*TODO*/////cpu_setbank(4, ram_data);
-					/*TODO*/////cpu_setbank(8, ram_data);
+					cpu_setbank(4, ram_data);
+					cpu_setbank(8, ram_data);
 	
 					logerror("RAM at 0xc000: %02x\n",ram_page);
 	
 					/* Reset memory between 0x4000 - 0xbfff in case extended paging was being used */
 					/* Bank 5 in 0x4000 - 0x7fff */
-					/*TODO*/////cpu_setbank(2, spectrum_128_ram + (5<<14));
-					/*TODO*/////cpu_setbank(6, spectrum_128_ram + (5<<14));
+					cpu_setbank(2, new UBytePtr(spectrum_128_ram, (5<<14)));
+					cpu_setbank(6, new UBytePtr(spectrum_128_ram, (5<<14)));
 	
 					/* Bank 2 in 0x8000 - 0xbfff */
-					/*TODO*/////cpu_setbank(3, spectrum_128_ram + (2<<14));
-					/*TODO*/////cpu_setbank(7, spectrum_128_ram + (2<<14));
+					cpu_setbank(3, new UBytePtr(spectrum_128_ram, (2<<14)));
+					cpu_setbank(7, new UBytePtr(spectrum_128_ram, (2<<14)));
 	
 	
 					ROMSelection = ((spectrum_128_port_7ffd_data>>4) & 0x01) |
@@ -588,9 +557,9 @@ public class spectrum
 	
 					/* rom 0 is editor, rom 1 is syntax, rom 2 is DOS, rom 3 is 48 BASIC */
 	
-					/*TODO*/////ChosenROM = memory_region(REGION_CPU1) + 0x010000 + (ROMSelection<<14);
+					ChosenROM = new UBytePtr(memory_region(REGION_CPU1), 0x010000 + (ROMSelection<<14));
 	
-					/*TODO*/////cpu_setbank(1, ChosenROM);
+					cpu_setbank(1, ChosenROM);
 					cpu_setbankhandler_w(5, MWA_ROM);
 	
 					logerror("rom switch: %02x\n", ROMSelection);
@@ -654,12 +623,12 @@ public class spectrum
 			//UBytePtr ChosenROM, *ExROM;
                         UBytePtr ChosenROM, ExROM;
 	
-			/*TODO*/////ExROM = memory_region(REGION_CPU1) + 0x014000;
+			ExROM = new UBytePtr(memory_region(REGION_CPU1), 0x014000);
 			if ((ts2068_port_f4_data & 0x01) != 0)
 			{
 					if ((ts2068_port_ff_data & 0x80) != 0)
 					{
-							/*TODO*/////cpu_setbank(1, ExROM);
+							cpu_setbank(1, ExROM);
 							cpu_setbankhandler_r(1, MRA_BANK1);
 							logerror("0000-1fff EXROM\n");
 					}
@@ -672,8 +641,8 @@ public class spectrum
 			}
 			else
 			{
-					/*TODO*/////ChosenROM = memory_region(REGION_CPU1) + 0x010000;
-					/*TODO*/////cpu_setbank(1, ChosenROM);
+					ChosenROM = new UBytePtr(memory_region(REGION_CPU1), 0x010000);
+					cpu_setbank(1, ChosenROM);
 					cpu_setbankhandler_r(1, MRA_BANK1);
 					logerror("0000-1fff HOME\n");
 			}
@@ -682,7 +651,7 @@ public class spectrum
 			{
 					if ((ts2068_port_ff_data & 0x80) != 0)
 					{
-							/*TODO*/////cpu_setbank(2, ExROM);
+							cpu_setbank(2, ExROM);
 							cpu_setbankhandler_r(2, MRA_BANK2);
 							logerror("2000-3fff EXROM\n");
 					}
@@ -694,8 +663,8 @@ public class spectrum
 			}
 			else
 			{
-					/*TODO*/////ChosenROM = memory_region(REGION_CPU1) + 0x012000;
-					/*TODO*/////cpu_setbank(2, ChosenROM);
+					ChosenROM = new UBytePtr(memory_region(REGION_CPU1), 0x012000);
+					cpu_setbank(2, ChosenROM);
 					cpu_setbankhandler_r(2, MRA_BANK2);
 					logerror("2000-3fff HOME\n");
 			}
@@ -704,7 +673,7 @@ public class spectrum
 			{
 					if ((ts2068_port_ff_data & 0x80) != 0)
 					{
-							/*TODO*/////cpu_setbank(3, ExROM);
+							cpu_setbank(3, ExROM);
 							cpu_setbankhandler_r(3, MRA_BANK3);
 							cpu_setbankhandler_w(11, MWA_ROM);
 							logerror("4000-5fff EXROM\n");
@@ -729,7 +698,7 @@ public class spectrum
 			{
 					if ((ts2068_port_ff_data & 0x80) != 0)
 					{
-							/*TODO*/////cpu_setbank(4, ExROM);
+							cpu_setbank(4, ExROM);
 							cpu_setbankhandler_r(4, MRA_BANK4);
 							cpu_setbankhandler_w(12, MWA_ROM);
 							logerror("6000-7fff EXROM\n");
@@ -743,10 +712,10 @@ public class spectrum
 			}
 			else
 			{
-					/*TODO*/////cpu_setbank(4, ts2068_ram + 0x2000);
-					/*TODO*/////cpu_setbank(12, ts2068_ram + 0x2000);
-					/*TODO*/////cpu_setbankhandler_r(4, MRA_BANK4);
-					/*TODO*/////cpu_setbankhandler_w(12, MWA_BANK12);
+					cpu_setbank(4, new UBytePtr(ts2068_ram, 0x2000));
+					cpu_setbank(12, new UBytePtr(ts2068_ram, 0x2000));
+					cpu_setbankhandler_r(4, MRA_BANK4);
+					cpu_setbankhandler_w(12, MWA_BANK12);
 					logerror("6000-7fff RAM\n");
 			}
 	
@@ -754,7 +723,7 @@ public class spectrum
 			{
 					if ((ts2068_port_ff_data & 0x80) != 0)
 					{
-							/*TODO*/////cpu_setbank(5, ExROM);
+							cpu_setbank(5, ExROM);
 							cpu_setbankhandler_r(5, MRA_BANK5);
 							cpu_setbankhandler_w(13, MWA_ROM);
 							logerror("8000-9fff EXROM\n");
@@ -768,8 +737,8 @@ public class spectrum
 			}
 			else
 			{
-					/*TODO*/////cpu_setbank(5, ts2068_ram + 0x4000);
-					/*TODO*/////cpu_setbank(13, ts2068_ram + 0x4000);
+					cpu_setbank(5, new UBytePtr(ts2068_ram, 0x4000));
+					cpu_setbank(13, new UBytePtr(ts2068_ram, 0x4000));
 					cpu_setbankhandler_r(5, MRA_BANK5);
 					cpu_setbankhandler_w(13, MWA_BANK13);
 					logerror("8000-9fff RAM\n");
@@ -779,7 +748,7 @@ public class spectrum
 			{
 					if ((ts2068_port_ff_data & 0x80) != 0)
 					{
-							/*TODO*/////cpu_setbank(6, ExROM);
+							cpu_setbank(6, ExROM);
 							cpu_setbankhandler_r(6, MRA_BANK6);
 							cpu_setbankhandler_w(14, MWA_ROM);
 							logerror("a000-bfff EXROM\n");
@@ -793,8 +762,8 @@ public class spectrum
 			}
 			else
 			{
-					/*TODO*/////cpu_setbank(6, ts2068_ram + 0x6000);
-					/*TODO*/////cpu_setbank(14, ts2068_ram + 0x6000);
+					cpu_setbank(6, new UBytePtr(ts2068_ram, 0x6000));
+					cpu_setbank(14, new UBytePtr(ts2068_ram, 0x6000));
 					cpu_setbankhandler_r(6, MRA_BANK6);
 					cpu_setbankhandler_w(14, MWA_BANK14);
 					logerror("a000-bfff RAM\n");
@@ -804,7 +773,7 @@ public class spectrum
 			{
 					if ((ts2068_port_ff_data & 0x80) != 0)
 					{
-							/*TODO*/////cpu_setbank(7, ExROM);
+							cpu_setbank(7, ExROM);
 							cpu_setbankhandler_r(7, MRA_BANK7);
 							cpu_setbankhandler_w(15, MWA_ROM);
 							logerror("c000-dfff EXROM\n");
@@ -818,8 +787,8 @@ public class spectrum
 			}
 			else
 			{
-					/*TODO*/////cpu_setbank(7, ts2068_ram + 0x8000);
-					/*TODO*/////cpu_setbank(15, ts2068_ram + 0x8000);
+					cpu_setbank(7, new UBytePtr(ts2068_ram, 0x8000));
+					cpu_setbank(15, new UBytePtr(ts2068_ram, 0x8000));
 					cpu_setbankhandler_r(7, MRA_BANK7);
 					cpu_setbankhandler_w(15, MWA_BANK15);
 					logerror("c000-dfff RAM\n");
@@ -829,7 +798,7 @@ public class spectrum
 			{
 					if ((ts2068_port_ff_data & 0x80) != 0)
 					{
-							/*TODO*/////cpu_setbank(8, ExROM);
+							cpu_setbank(8, ExROM);
 							cpu_setbankhandler_r(8, MRA_BANK8);
 							cpu_setbankhandler_w(16, MWA_ROM);
 							logerror("e000-ffff EXROM\n");
@@ -843,8 +812,8 @@ public class spectrum
 			}
 			else
 			{
-					/*TODO*/////cpu_setbank(8, ts2068_ram + 0xa000);
-					/*TODO*/////cpu_setbank(16, ts2068_ram + 0xa000);
+					cpu_setbank(8, new UBytePtr(ts2068_ram, 0xa000));
+					cpu_setbank(16, new UBytePtr(ts2068_ram, 0xa000));
 					cpu_setbankhandler_r(8, MRA_BANK8);
 					cpu_setbankhandler_w(16, MWA_BANK16);
 					logerror("e000-ffff RAM\n");
@@ -1675,9 +1644,9 @@ public class spectrum
 			spectrum_128_exit_machine,
 	
 		/* video hardware */
-			SPEC_SCREEN_WIDTH,				/* screen width */
-			SPEC_SCREEN_HEIGHT, 			/* screen height */
-			new rectangle( 0, SPEC_SCREEN_WIDTH-1, 0, SPEC_SCREEN_HEIGHT-1),  /* visible_area */
+		SPEC_SCREEN_WIDTH,				/* screen width */
+		SPEC_SCREEN_HEIGHT, 			/* screen height */
+		new rectangle( 0, SPEC_SCREEN_WIDTH-1, 0, SPEC_SCREEN_HEIGHT-1),  /* visible_area */
 		spectrum_gfxdecodeinfo, 			 /* graphics decode info */
 		16, 256,							 /* colors used for the characters */
 		spectrum_init_palette,				 /* initialise palette */
@@ -1730,9 +1699,9 @@ public class spectrum
 			spectrum_128_exit_machine,
 	
 		/* video hardware */
-			SPEC_SCREEN_WIDTH,				/* screen width */
-			SPEC_SCREEN_HEIGHT, 			/* screen height */
-			new rectangle( 0, SPEC_SCREEN_WIDTH-1, 0, SPEC_SCREEN_HEIGHT-1),  /* visible_area */
+		SPEC_SCREEN_WIDTH,				/* screen width */
+		SPEC_SCREEN_HEIGHT, 			/* screen height */
+		new rectangle( 0, SPEC_SCREEN_WIDTH-1, 0, SPEC_SCREEN_HEIGHT-1),  /* visible_area */
 		spectrum_gfxdecodeinfo, 			 /* graphics decode info */
 		16, 256,							 /* colors used for the characters */
 		spectrum_init_palette,				 /* initialise palette */
@@ -1992,8 +1961,10 @@ public class spectrum
 	
 	static RomLoadPtr rom_specpl3e = new RomLoadPtr(){ public void handler(){ 
 			ROM_REGION(0x20000,REGION_CPU1);
-			ROM_LOAD("roma.bin",0x10000,0x8000, 0x7c20e2c9);
-			ROM_LOAD("romb.bin",0x18000,0x8000, 0x4a700c7e);
+			//ROM_LOAD("roma.bin",0x10000,0x8000, 0x7c20e2c9);
+                        ROM_LOAD("roma-en.rom",0x10000,0x8000, 0x2d533344);
+			//ROM_LOAD("romb.bin",0x18000,0x8000, 0x4a700c7e);
+                        ROM_LOAD("romb-en.rom",0x18000,0x8000, 0xef8d5d92);
 	ROM_END(); }}; 
 	
         
@@ -2110,30 +2081,59 @@ public class spectrum
 	#define io_specpl3e io_specpls3*/
 	
 	/*         YEAR  NAME      PARENT        MACHINE                 INPUT     INIT      COMPANY   FULLNAME */
+        // COMP ( 1982, , 0,		 spectrum,		 spectrum, 0,			 "",    "" );
         public static GameDriver driver_spectrum = new GameDriver("1982", "spectrum", "spectrum.java", rom_spectrum, null, machine_driver_spectrum, input_ports_spectrum, null, io_spectrum, "Sinclair Research", "ZX Spectrum");
-    
-	/*COMP ( 1982, , 0,		 spectrum,		 spectrum, 0,			 "",    "" );
-	COMPX( 2000, specpls4, spectrum, spectrum,		 spectrum, 0,			 "Amstrad plc",          "ZX Spectrum +4", GAME_COMPUTER_MODIFIED );
-	COMPX( 1994, specbusy, spectrum, spectrum,		 spectrum, 0,			 "Amstrad plc",          "ZX Spectrum (BusySoft Upgrade)", GAME_COMPUTER_MODIFIED )
-	COMPX( ????, specgrot, spectrum, spectrum,		 spectrum, 0,			 "Amstrad plc",          "ZX Spectrum (De Groot's Upgrade)", GAME_COMPUTER_MODIFIED )
-	COMPX( 1985, specimc,  spectrum, spectrum,		 spectrum, 0,			 "Amstrad plc",          "ZX Spectrum (Collier's Upgrade)", GAME_COMPUTER_MODIFIED )
-	COMPX( 1987, speclec,  spectrum, spectrum,		 spectrum, 0,			 "Amstrad plc",          "ZX Spectrum (LEC Upgrade)", GAME_COMPUTER_MODIFIED )
-	COMP ( 1986, inves,    spectrum, spectrum,		 spectrum, 0,			 "Investronica",         "Inves Spectrum 48K+" )
-	COMP ( 1985, tk90x,    spectrum, spectrum,		 spectrum, 0,			 "Micro Digital",        "TK90x Color Computer" )
-	COMP ( 1986, tk95,	   spectrum, spectrum,		 spectrum, 0,			 "Micro Digital",        "TK95 Color Computer" )
-	COMP ( 198?, tc2048,   spectrum, tc2048,		 spectrum, 0,			 "Timex of Portugal",    "TC2048" )
-	COMP ( 1983, ts2068,   spectrum, ts2068,		 spectrum, 0,			 "Timex Sinclair",       "TS2068" )
-	
-	COMPX( 1986, spec128,  0,		 spectrum_128,	 spectrum, 0,			 "Sinclair Research",    "ZX Spectrum 128" ,GAME_NOT_WORKING)*/
+        
+        // COMPX( 2000, specpls4, spectrum, spectrum,		 spectrum, 0,			 "Amstrad plc",          "ZX Spectrum +4", GAME_COMPUTER_MODIFIED );
+        public static GameDriver driver_specpls4 = new GameDriver("2000", "specpls4", "spectrum.java", rom_specpls4, null, machine_driver_spectrum_plus3, input_ports_spectrum, null, io_spectrum, "Amstrad plc", "ZX Spectrum +4");
+		
+	//COMPX( 1994, specbusy, spectrum, spectrum,		 spectrum, 0,			 "Amstrad plc",          "ZX Spectrum (BusySoft Upgrade)", GAME_COMPUTER_MODIFIED )
+	public static GameDriver driver_specbusy = new GameDriver("1994", "specbusy", "spectrum.java", rom_specbusy, null, machine_driver_spectrum, input_ports_spectrum, null, io_spectrum, "Amstrad plc", "ZX Spectrum (BusySoft Upgrade)");
+        
+        //COMPX( ????, specgrot, spectrum, spectrum,		 spectrum, 0,			 "Amstrad plc",          "ZX Spectrum (De Groot's Upgrade)", GAME_COMPUTER_MODIFIED )
+	public static GameDriver driver_specgrot = new GameDriver("????", "specgrot", "spectrum.java", rom_specgrot, null, machine_driver_spectrum, input_ports_spectrum, null, io_spectrum, "Amstrad plc", "ZX Spectrum (De Groot's Upgrade)");
+        
+        //COMPX( 1985, specimc,  spectrum, spectrum,		 spectrum, 0,			 "Amstrad plc",          "ZX Spectrum (Collier's Upgrade)", GAME_COMPUTER_MODIFIED )
+	public static GameDriver driver_specimc = new GameDriver("1985", "specimc", "spectrum.java", rom_specimc, null, machine_driver_spectrum, input_ports_spectrum, null, io_spectrum, "Amstrad plc", "ZX Spectrum (Collier's Upgrade)");
+        
+        //COMPX( 1987, speclec,  spectrum, spectrum,		 spectrum, 0,			 "Amstrad plc",          "ZX Spectrum (LEC Upgrade)", GAME_COMPUTER_MODIFIED )
+	public static GameDriver driver_speclec = new GameDriver("1987", "speclec", "spectrum.java", rom_speclec, null, machine_driver_spectrum, input_ports_spectrum, null, io_spectrum, "Amstrad plc", "ZX Spectrum (LEC Upgrade)");
+        
+        //COMP ( 1986, inves,    spectrum, spectrum,		 spectrum, 0,			 "Investronica",         "Inves Spectrum 48K+" )
+	public static GameDriver driver_inves = new GameDriver("1986", "inves", "spectrum.java", rom_inves, null, machine_driver_spectrum, input_ports_spectrum, null, io_spectrum, "Investronica", "Inves Spectrum 48K+");
+        
+        //COMP ( 1985, tk90x,    spectrum, spectrum,		 spectrum, 0,			 "Micro Digital",        "TK90x Color Computer" )
+	public static GameDriver driver_tk90x = new GameDriver("1985", "tk90x", "spectrum.java", rom_tk90x, null, machine_driver_spectrum, input_ports_spectrum, null, io_spectrum, "Micro Digital", "TK90x Color Computer");
+
+        //COMP ( 1986, tk95,	   spectrum, spectrum,		 spectrum, 0,			 "Micro Digital",        "TK95 Color Computer" )
+	public static GameDriver driver_tk95 = new GameDriver("1986", "tk95", "spectrum.java", rom_tk95, null, machine_driver_spectrum, input_ports_spectrum, null, io_spectrum, "Micro Digital", "TK95 Color Computer");
+        
+        //COMP ( 198?, tc2048,   spectrum, tc2048,		 spectrum, 0,			 "Timex of Portugal",    "TC2048" )
+	public static GameDriver driver_tc2048 = new GameDriver("1983", "tc2048", "spectrum.java", rom_tc2048, null, machine_driver_tc2048, input_ports_spectrum, null, io_spectrum, "Timex of Portugal", "TC2048");
+        //COMP ( 1983, ts2068,   spectrum, ts2068,		 spectrum, 0,			 "Timex Sinclair",       "TS2068" )
+	public static GameDriver driver_ts2068 = new GameDriver("1983", "ts2068", "spectrum.java", rom_ts2068, null, machine_driver_ts2068, input_ports_spectrum, null, io_spectrum, "Timex Sinclair", "TS2068");
+        
+	//COMPX( 1986, spec128,  0,		 spectrum_128,	 spectrum, 0,			 "Sinclair Research",    "ZX Spectrum 128" ,GAME_NOT_WORKING)*/
         public static GameDriver driver_spec128 = new GameDriver("1986", "spec128", "spectrum.java", rom_spec128, null, machine_driver_spectrum_128, input_ports_spectrum, null, io_spectrum, "Sinclair Research", "ZX Spectrum 128");
-	/*COMPX( 1985, spec128s, spec128,  spectrum_128,	 spectrum, 0,			 "Sinclair Research",    "ZX Spectrum 128 (Spain)" ,GAME_NOT_WORKING)
-	COMPX( 1986, specpls2, spec128,  spectrum_128,	 spectrum, 0,			 "Amstrad plc",          "ZX Spectrum +2" ,GAME_NOT_WORKING)
-	COMPX( 1987, specpl2a, spec128,  spectrum_plus3, spectrum, 0,			 "Amstrad plc",          "ZX Spectrum +2a" ,GAME_NOT_WORKING)
-	COMPX( 1987, specpls3, spec128,  spectrum_plus3, spectrum, 0,			 "Amstrad plc",          "ZX Spectrum +3" ,GAME_NOT_WORKING)
-	
-	COMPX( 1986, specp2fr, spec128,  spectrum_128,	 spectrum, 0,			 "Amstrad plc",          "ZX Spectrum +2 (France)" ,GAME_NOT_WORKING)
-	COMPX( 1986, specp2sp, spec128,  spectrum_128,	 spectrum, 0,			 "Amstrad plc",          "ZX Spectrum +2 (Spain)" ,GAME_NOT_WORKING)
-	COMPX( 1987, specp3sp, spec128,  spectrum_plus3, spectrum, 0,			 "Amstrad plc",          "ZX Spectrum +3 (Spain)" ,GAME_NOT_WORKING)
-	COMPX( 2000, specpl3e, spec128,  spectrum_plus3, spectrum, 0,			 "Amstrad plc",          "ZX Spectrum +3e" , GAME_NOT_WORKING|GAME_COMPUTER_MODIFIED )
-	*/
+	//COMPX( 1985, spec128s, spec128,  spectrum_128,	 spectrum, 0,			 "Sinclair Research",    "ZX Spectrum 128 (Spain)" ,GAME_NOT_WORKING)*/
+	public static GameDriver driver_spec128s = new GameDriver("1986", "spec128s", "spectrum.java", rom_spec128s, null, machine_driver_spectrum_128, input_ports_spectrum, null, io_spectrum, "Sinclair Research", "ZX Spectrum 128 (Spain)");
+        //COMPX( 1986, specpls2, spec128,  spectrum_128,	 spectrum, 0,			 "Amstrad plc",          "ZX Spectrum +2" ,GAME_NOT_WORKING)
+	public static GameDriver driver_specpls2 = new GameDriver("1986", "specpls2", "spectrum.java", rom_specpls2, null, machine_driver_spectrum_128, input_ports_spectrum, null, io_spectrum, "Amstrad plc", "ZX Spectrum +2");
+        //COMPX( 1987, specpl2a, spec128,  spectrum_plus3, spectrum, 0,			 "Amstrad plc",          "ZX Spectrum +2a" ,GAME_NOT_WORKING)
+	public static GameDriver driver_specpl2a = new GameDriver("1987", "specpl2a", "spectrum.java", rom_specpl2a, null, machine_driver_spectrum_plus3, input_ports_spectrum, null, io_spectrum, "Amstrad plc", "ZX Spectrum +2a");
+        
+        //COMPX( 1987, specpls3, spec128,  spectrum_plus3, spectrum, 0,			 "Amstrad plc",          "ZX Spectrum +3" ,GAME_NOT_WORKING)
+	public static GameDriver driver_specpls3 = new GameDriver("1987", "specpls3", "spectrum.java", rom_specpls3, null, machine_driver_spectrum_plus3, input_ports_spectrum, null, io_spectrum, "Amstrad plc", "ZX Spectrum +3");
+        
+	//COMPX( 1986, specp2fr, spec128,  spectrum_128,	 spectrum, 0,			 "Amstrad plc",          "ZX Spectrum +2 (France)" ,GAME_NOT_WORKING)
+	public static GameDriver driver_specp2fr = new GameDriver("1986", "specp2fr", "spectrum.java", rom_specp2fr, null, machine_driver_spectrum_128, input_ports_spectrum, null, io_spectrum, "Amstrad plc", "ZX Spectrum +2 (France)");
+        
+        //COMPX( 1986, specp2sp, spec128,  spectrum_128,	 spectrum, 0,			 "Amstrad plc",          "ZX Spectrum +2 (Spain)" ,GAME_NOT_WORKING)
+	public static GameDriver driver_specp2sp = new GameDriver("1986", "specp2sp", "spectrum.java", rom_specp2sp, null, machine_driver_spectrum_128, input_ports_spectrum, null, io_spectrum, "Amstrad plc", "ZX Spectrum +2 (Spain)");
+        
+        //COMPX( 1987, specp3sp, spec128,  spectrum_plus3, spectrum, 0,			 "Amstrad plc",          "ZX Spectrum +3 (Spain)" ,GAME_NOT_WORKING)
+	public static GameDriver driver_specp3sp = new GameDriver("1987", "specp3sp", "spectrum.java", rom_specp3sp, null, machine_driver_spectrum_plus3, input_ports_spectrum, null, io_spectrum, "Amstrad plc", "ZX Spectrum +3 (Spain)");
+        
+        //COMPX( 2000, specpl3e, spec128,  spectrum_plus3, spectrum, 0,			 "Amstrad plc",          "ZX Spectrum +3e" , GAME_NOT_WORKING|GAME_COMPUTER_MODIFIED )
+	public static GameDriver driver_specpl3e = new GameDriver("2000", "specpl3e", "spectrum.java", rom_specpl3e, null, machine_driver_spectrum_plus3, input_ports_spectrum, null, io_spectrum, "Amstrad plc", "ZX Spectrum +3e");
 }

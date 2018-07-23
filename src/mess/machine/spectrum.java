@@ -240,7 +240,7 @@ public class spectrum
 					/* .SNA */
                                         System.out.println("HANDLE SNA!!!!!");
                                         //memorycontextswap(activecpu);
-					spectrum_setup_sna(pSnapshotData, SnapshotDataSize);
+					//spectrum_setup_sna(pSnapshotData, SnapshotDataSize);
                                         SPECTRUM_SNAPSHOT_TYPE=SPECTRUM_SNAPSHOT_NONE;
 				}
 				break;

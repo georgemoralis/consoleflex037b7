@@ -420,7 +420,8 @@ public class border
                                                 CurrBorderColor = pItem.Event_Data;
 	                                        do {
 	                                                CurrItem++;
-                                                        pItem = (EVENT_LIST_ITEM) pEventListBuffer.get(CurrItem);
+                                                        if (CurrItem<pEventListBuffer.size())
+                                                            pItem = (EVENT_LIST_ITEM) pEventListBuffer.get(CurrItem);
 	                                        //} while ((CurrItem < NumItems) && (pItem[CurrItem].Event_ID != EventID));
                                                 } while ((CurrItem < NumItems) && (pItem.Event_ID != EventID));
 	                                }

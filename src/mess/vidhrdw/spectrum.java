@@ -438,33 +438,25 @@ public class spectrum
 	/* Refresh the spectrum 128 screen (code modified from COUPE.C) */
 	public static VhUpdatePtr spectrum_128_vh_screenrefresh = new VhUpdatePtr() { public void handler(osd_bitmap bitmap,int full_refresh) 
 	{
-            //System.out.println("Pinto 128");
-	        /* for now do a full-refresh */
+            /* for now do a full-refresh */
 	        int x, y, b, scrx, scry;
-	        //unsigned short ink, pap;
-                int ink, pap;
-	        //UBytePtr attr, *scr;
-                UBytePtr attr, scr;
-                
-                spectrum_128_screen_location.offset=0;
-                
-                //memcpy(spectrum_128_screen_location, spectrum_128_ram, (7<<14), 0x4000);
+	        int ink, pap;
+	        UBytePtr attr, scr;
 	
-	        //scr=spectrum_128_screen_location;
-                scr=spectrum_128_screen_location;
+	        scr=new UBytePtr(spectrum_128_screen_location, 0);
+                //scr=spectrum_128_screen_location;
+                //scr.offset=0;
 	
 	        for (y=0; y<192; y++)
 	        {
 	                scrx=SPEC_LEFT_BORDER;
 	                scry=((y&7) * 8) + ((y&0x38)>>3) + (y&0xC0);
-	                //attr=spectrum_128_screen_location + ((scry>>3)*32) + 0x1800;
-                        attr=spectrum_128_screen_location;
-                        attr.offset=(((scry>>3)*32) + 0x1800);
+	                attr=new UBytePtr(spectrum_128_screen_location, ((scry>>3)*32) + 0x1800);
 	
 	                for (x=0;x<32;x++)
 	                {
 	                        /* Get ink and paper colour with bright */
-	                        if ((flash_invert==1) && ((attr.read() & 0x80)!=0) )
+	                        if ((flash_invert==1) & ((attr.read() & 0x80)!=0))
 	                        {
 	                                ink=((attr.read())>>3) & 0x0f;
 	                                pap=((attr.read()) & 0x07) + (((attr.read())>>3) & 0x08);
@@ -482,10 +474,8 @@ public class spectrum
 	                                else
 	                                        plot_pixel.handler(bitmap,scrx++,SPEC_TOP_BORDER+scry,Machine.pens[pap]);
 				}
-	                //scr.inc();
-                        scr.offset++;
-	                //attr.inc();
-                        attr.offset++;
+	                scr.inc();
+	                attr.inc();
 	                }
 		}
 	
@@ -495,7 +485,7 @@ public class spectrum
 	                SPEC_LEFT_BORDER_CYCLES, SPEC_DISPLAY_XSIZE_CYCLES,
 	                SPEC_RIGHT_BORDER_CYCLES, SPEC128_RETRACE_CYCLES, 200, 0xfe);
                 
-                spectrum_128_screen_location.offset=0;
+                //spectrum_128_screen_location.offset=0;
 	} };
 	
 	/*******************************************************************
@@ -525,44 +515,46 @@ public class spectrum
         static void ts2068_hires_scanline(osd_bitmap bitmap, int y, int borderlines)
 	{
 		int x,b,scrx,scry;
-		short ink,pap;
+		int ink,pap;
 	        UBytePtr attr, scr;
 	
 	        scrx=TS2068_LEFT_BORDER;
 		scry=((y&7) * 8) + ((y&0x38)>>3) + (y&0xC0);
 	
-	        /*TODO*/////scr=ts2068_ram + y*32;
-	        /*TODO*/////attr=scr + 0x2000;
+	        //scr=ts2068_ram + y*32;
+                scr=new UBytePtr(ts2068_ram, y*32);
+	        //attr=scr + 0x2000;
+                attr=new UBytePtr(scr, 0x2000);
 	
 	        for (x=0;x<32;x++)
 		{
 	                /* Get ink and paper colour with bright */
-	                /*TODO*/////if (flash_invert && (*attr & 0x80))
-	                /*TODO*/////{
-	                /*TODO*/////        ink=((*attr)>>3) & 0x0f;
-	                /*TODO*/////        pap=((*attr) & 0x07) + (((*attr)>>3) & 0x08);
-	                /*TODO*/////}
-	                /*TODO*/////else
-	                /*TODO*/////{
-	                /*TODO*/////        ink=((*attr) & 0x07) + (((*attr)>>3) & 0x08);
-	                /*TODO*/////        pap=((*attr)>>3) & 0x0f;
-	                /*TODO*/////}
+	                if ((flash_invert==1) && ((attr.read() & 0x80)!=0))
+	                {
+	                        ink=((attr.read())>>3) & 0x0f;
+	                        pap=((attr.read()) & 0x07) + (((attr.read())>>3) & 0x08);
+	                }
+	                else
+	                {
+	                        ink=((attr.read()) & 0x07) + (((attr.read())>>3) & 0x08);
+	                        pap=((attr.read())>>3) & 0x0f;
+	                }
 	
 			for (b=0x80;b!=0;b>>=1)
 			{
-	                        /*TODO*/////if (*scr&b)
-				/*TODO*/////{
-	                        /*TODO*/////        plot_pixel(bitmap,scrx++,scry+borderlines,Machine.pens[ink]);
-	                        /*TODO*/////        plot_pixel(bitmap,scrx++,scry+borderlines,Machine.pens[ink]);
-				/*TODO*/////}
-				/*TODO*/////else
-				/*TODO*/////{
-	                        /*TODO*/////        plot_pixel(bitmap,scrx++,scry+borderlines,Machine.pens[pap]);
-	                        /*TODO*/////        plot_pixel(bitmap,scrx++,scry+borderlines,Machine.pens[pap]);
-				/*TODO*/////}
+	                        if ((scr.read()&b) != 0)
+				{
+	                                plot_pixel.handler(bitmap,scrx++,scry+borderlines,Machine.pens[ink]);
+	                                plot_pixel.handler(bitmap,scrx++,scry+borderlines,Machine.pens[ink]);
+				}
+				else
+				{
+	                                plot_pixel.handler(bitmap,scrx++,scry+borderlines,Machine.pens[pap]);
+	                                plot_pixel.handler(bitmap,scrx++,scry+borderlines,Machine.pens[pap]);
+				}
 			}
-	                /*TODO*/////scr++;
-	                /*TODO*/////attr++;
+	                scr.inc();
+	                attr.inc();
 		}
 	}
 	
@@ -576,28 +568,28 @@ public class spectrum
 	        scrx=TS2068_LEFT_BORDER;
 		scry=((y&7) * 8) + ((y&0x38)>>3) + (y&0xC0);
 	
-	        /*TODO*/////scr1=ts2068_ram + y*32;
-	        /*TODO*/////scr2=scr1 + 0x2000;
+	        scr1=new UBytePtr(ts2068_ram, y*32);
+	        scr2=new UBytePtr(scr1, 0x2000);
 	
 	        for (x=0;x<32;x++)
 		{
 			for (b=0x80;b!=0;b>>=1)
 			{
-	                        /*TODO*/////if (*scr1&b)
-	                        /*TODO*/////        plot_pixel(bitmap,scrx++,scry+borderlines,Machine.pens[inkcolor]);
-				/*TODO*/////else
-	                        /*TODO*/////        plot_pixel(bitmap,scrx++,scry+borderlines,Machine.pens[7-inkcolor]);
+	                        if ((scr1.read()&b) != 0)
+	                                plot_pixel.handler(bitmap,scrx++,scry+borderlines,Machine.pens[inkcolor]);
+				else
+	                                plot_pixel.handler(bitmap,scrx++,scry+borderlines,Machine.pens[7-inkcolor]);
 			}
-	                /*TODO*/////scr1++;
+	                scr1.inc();
 	
 			for (b=0x80;b!=0;b>>=1)
 			{
-	                        /*TODO*/////if (*scr2&b)
-	                        /*TODO*/////        plot_pixel(bitmap,scrx++,scry+borderlines,Machine.pens[inkcolor]);
-				/*TODO*/////else
-	                        /*TODO*/////        plot_pixel(bitmap,scrx++,scry+borderlines,Machine.pens[7-inkcolor]);
+	                        if ((scr2.read()&b) != 0)
+	                                plot_pixel.handler(bitmap,scrx++,scry+borderlines,Machine.pens[inkcolor]);
+				else
+	                                plot_pixel.handler(bitmap,scrx++,scry+borderlines,Machine.pens[7-inkcolor]);
 			}
-	                /*TODO*/////scr2++;
+	                scr2.inc();
 		}
 	}
 	
@@ -606,44 +598,44 @@ public class spectrum
         static void ts2068_lores_scanline(osd_bitmap bitmap, int y, int borderlines, int screen)
 	{
 		int x,b,scrx,scry;
-		short ink,pap;
+		int ink,pap;
 	        UBytePtr attr, scr;
 	
 	        scrx=TS2068_LEFT_BORDER;
 		scry=((y&7) * 8) + ((y&0x38)>>3) + (y&0xC0);
 	
-	        /*TODO*/////scr=ts2068_ram + y*32 + screen*0x2000;
-	        /*TODO*/////attr=ts2068_ram + ((scry>>3)*32) + screen*0x2000 + 0x1800;
+	        scr=new UBytePtr(ts2068_ram, y*32 + screen*0x2000);
+	        attr=new UBytePtr(ts2068_ram, ((scry>>3)*32) + screen*0x2000 + 0x1800);
 	
 	        for (x=0;x<32;x++)
 		{
 	                /* Get ink and paper colour with bright */
-	                /*TODO*/////if (flash_invert && (*attr & 0x80))
-	                /*TODO*/////{
-	                /*TODO*/////        ink=((*attr)>>3) & 0x0f;
-	                /*TODO*/////        pap=((*attr) & 0x07) + (((*attr)>>3) & 0x08);
-	                /*TODO*/////}
-	                /*TODO*/////else
-	                /*TODO*/////{
-	                /*TODO*/////        ink=((*attr) & 0x07) + (((*attr)>>3) & 0x08);
-	                /*TODO*/////        pap=((*attr)>>3) & 0x0f;
-	                /*TODO*/////}
+	                if ((flash_invert==1) && ((attr.read() & 0x80) != 0))
+	                {
+	                        ink=((attr.read())>>3) & 0x0f;
+	                        pap=((attr.read()) & 0x07) + (((attr.read())>>3) & 0x08);
+	                }
+	                else
+	                {
+	                        ink=((attr.read()) & 0x07) + (((attr.read())>>3) & 0x08);
+	                        pap=((attr.read())>>3) & 0x0f;
+	                }
 	
 			for (b=0x80;b!=0;b>>=1)
 			{
-	                        /*TODO*/////if (*scr&b)
-				/*TODO*/////{
-	                        /*TODO*/////        plot_pixel(bitmap,scrx++,scry+borderlines,Machine.pens[ink]);
-	                        /*TODO*/////        plot_pixel(bitmap,scrx++,scry+borderlines,Machine.pens[ink]);
-				/*TODO*/////}
-				/*TODO*/////else
-				/*TODO*/////{
-	                        /*TODO*/////        plot_pixel(bitmap,scrx++,scry+borderlines,Machine.pens[pap]);
-	                        /*TODO*/////        plot_pixel(bitmap,scrx++,scry+borderlines,Machine.pens[pap]);
-				/*TODO*/////}
+	                        if ((scr.read()&b) != 0)
+				{
+	                                plot_pixel.handler(bitmap,scrx++,scry+borderlines,Machine.pens[ink]);
+	                                plot_pixel.handler(bitmap,scrx++,scry+borderlines,Machine.pens[ink]);
+				}
+				else
+				{
+	                                plot_pixel.handler(bitmap,scrx++,scry+borderlines,Machine.pens[pap]);
+	                                plot_pixel.handler(bitmap,scrx++,scry+borderlines,Machine.pens[pap]);
+				}
 			}
-	                /*TODO*/////scr++;
-	                /*TODO*/////attr++;
+	                scr.inc();
+	                attr.inc();
 		}
 	}
 	
