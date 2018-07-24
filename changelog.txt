@@ -1,3 +1,7 @@
+24/07/2018
+==========
+-Loads Z80 128k files in ZX Spectrum 128k
+
 23/07/2018
 ==========
 -Added ZX Spectrum driver
