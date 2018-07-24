@@ -20,7 +20,7 @@ import static old.mame.driverH.GAME_REQUIRES_16BIT;
 import static old.mame.driverH.VIDEO_MODIFIES_PALETTE;
 import static WIP.mame.mame.Machine;
 import static old.mame.paletteH.*;
-import static old.mame.usrintrf.usrintf_showmessage;
+import static mame.usrintrf.usrintf_showmessage;
 
 public class palette {
 

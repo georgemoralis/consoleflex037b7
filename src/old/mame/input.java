@@ -546,7 +546,7 @@ public class input {
     /*TODO*///	return 0;
     /*TODO*///}
     /*TODO*///
-    static String seq_name(int[] code, int max)
+    public static String seq_name(int[] code, int max)
     {
     	int j;
         String buffer="";
@@ -677,7 +677,7 @@ public class input {
     	return ==0 if sequence succesfully recorded
     	return >0 if aborted
     */
-    static int seq_read_async(int[] seq, int first)
+    public static int seq_read_async(int[] seq, int first)
     {
     	int newkey;
     

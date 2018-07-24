@@ -17,9 +17,9 @@ import static old.mame.inptportH.*;
 import static old.mame.input.input_ui_pressed;
 import static WIP.mame.mame.*;
 import static WIP.mame.osdependH.osd_bitmap;
-import static old.mame.usrintrf.set_ui_visarea;
-import static old.mame.usrintrf.ui_text;
 import static WIP.mame.version.build_version;
+import static mame.usrintrf.set_ui_visarea;
+import static mame.usrintrf.ui_text;
 import static old.arcadeflex.video.*;
 
 public class video_old {
