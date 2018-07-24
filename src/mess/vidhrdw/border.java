@@ -453,7 +453,9 @@ public class border
                                 if (pItem.Event_ID == EventID)
 	                                CurrBorderColor = pItem.Event_Data;
 	                        CurrItem++;
-                                pItem = (EVENT_LIST_ITEM) pEventListBuffer.get(CurrItem);
+                                
+                                if (CurrItem<pEventListBuffer.size())
+                                    pItem = (EVENT_LIST_ITEM) pEventListBuffer.get(CurrItem);
 	                }
 	
 	                /* Set value to ensure redraw on next frame */

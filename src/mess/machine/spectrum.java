@@ -786,7 +786,7 @@ public class spectrum
 	
 		is48ksnap = is48k_z80snapshot(pSnapshotData, SnapshotDataSize);
                 System.out.println(is48ksnap);
-                //pSnapshotData.offset=0;
+                pSnapshotData.offset=0;
                 
 		//if ((spectrum_128_port_7ffd_data == -1) && !is48ksnap)
                 if ((spectrum_128_port_7ffd_data == -1) && (is48ksnap !=0))
@@ -987,6 +987,7 @@ public class spectrum
 	
 			do
 			{
+                            if ((pSource.memory.length - pSnapshot.memory.length) < SnapshotDataSize){
 				//short length;
                                 int length;
 				//char page;
@@ -1062,9 +1063,10 @@ public class spectrum
 				//pSource += (3 + length);
                                 //pSource.offset=(3 + length);
                                 pSource.inc(3 + length);
+                                }
 			}
 			//while (((unsigned long) pSource - (unsigned long) pSnapshot) < SnapshotDataSize);
-                        while ((pSource.memory.length - pSnapshot.memory.length) < SnapshotDataSize);
+                        while (((pSource.memory.length - pSnapshot.memory.length) < SnapshotDataSize)&&(pSource.offset<pSource.memory.length));
 	
 			//if ((spectrum_128_port_7ffd_data != -1) && !is48ksnap)
                         if ((spectrum_128_port_7ffd_data != -1) && (is48ksnap==0))
