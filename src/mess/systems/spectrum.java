@@ -116,6 +116,12 @@ import static mess.eventlstH.*;
 import static sound.speaker.*;
 import sound.speakerH.Speaker_interface;
 
+import static mess.machine.nec765.*;
+import static mess.includes.nec765H.*;
+import static mess.includes.flopdrvH.*;
+import static mess.machine.flopdrv.*;
+import static mess.machine.dsk.*;
+
 public class spectrum
 {
 	
@@ -179,12 +185,22 @@ public class spectrum
 	public static UBytePtr ts2068_ram = null;
 	
 	
-	/*TODO*/////static nec765_interface spectrum_plus3_nec765_interface =
-	/*TODO*/////{
-	/*TODO*/////		null,
-	/*TODO*/////		null
-	/*TODO*/////};
-	
+	/*static nec765_interface spectrum_plus3_nec765_interface = 
+	{
+			null,
+			null
+	};*/
+	static nec765_interface spectrum_plus3_nec765_interface = new nec765_interface() {
+            @Override
+            public void interrupt(int state) {
+                /*TODO*/////throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+            }
+
+            @Override
+            public void dma_drq(int state, int read_write) {
+                /*TODO*/////throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+            }
+        };
 	
 	
 	public static InitMachinePtr spectrum_128_init_machine = new InitMachinePtr() { public void handler() 
@@ -263,10 +279,10 @@ public class spectrum
 			cpu_setbankhandler_w(7, MWA_BANK7);
 			cpu_setbankhandler_w(8, MWA_BANK8);
 	
-			/*TODO*/////nec765_init(&spectrum_plus3_nec765_interface, NEC765A);
+			nec765_init(spectrum_plus3_nec765_interface, NEC765A);
 	
-			/*TODO*/////floppy_drive_set_geometry(0, FLOPPY_DRIVE_SS_40);
-			/*TODO*/////floppy_drive_set_geometry(1, FLOPPY_DRIVE_SS_40);
+			/*TODO*/////floppy_drive_set_geometry(0, floppy_type.FLOPPY_DRIVE_SS_40);
+			/*TODO*/////floppy_drive_set_geometry(1, floppy_type.FLOPPY_DRIVE_SS_40);
 			/*TODO*/////floppy_drive_set_flag_state(0, FLOPPY_DRIVE_PRESENT, 1);
 			/*TODO*/////floppy_drive_set_flag_state(1, FLOPPY_DRIVE_PRESENT, 1);
 	
@@ -360,18 +376,18 @@ public class spectrum
     	
 	static void spectrum_plus3_port_3ffd_w(int offset, int data)
 	{
-			/*TODO*/////if (~readinputport(16) & 0x20)
-			/*TODO*/////		nec765_data_w(0,data);
+			if ((~readinputport(16) & 0x20) != 0)
+					nec765_data_w.handler(0,data);
 	}
 	
 	static int spectrum_plus3_port_3ffd_r(int offset)
 	{
 			if ((readinputport(16) & 0x20) != 0)
 					return 0xff;
-			/*TODO*/////else
-			/*TODO*/////		return nec765_data_r(0);
+			else
+					return nec765_data_r.handler(0);
             // REMOVE IT!!!!!
-            return 0;
+            //return 0;
 	}
 	
 	
@@ -379,10 +395,9 @@ public class spectrum
 	{
 			if ((readinputport(16) & 0x20) != 0)
 					return 0xff;
-			/*TODO*/////else
-			/*TODO*/////		return nec765_status_r(0);
-                        // REMOVE IT!!!!!
-                        return 0;
+			else
+					return nec765_status_r.handler(0);
+                        
 	}
 	
 	static void spectrum_128_port_fffd_w(int offset, int data)
@@ -573,25 +588,29 @@ public class spectrum
 	
 					MemorySelection = (spectrum_plus3_port_1ffd_data>>1) & 0x03;
 	
-					/*TODO*/////memory_selection = &spectrum_plus3_memory_selections[(MemorySelection<<2)];
+					memory_selection = spectrum_plus3_memory_selections[(MemorySelection<<2)];
 	
-					/*TODO*/////ram_data = spectrum_128_ram + (memory_selection[0]<<14);
-					/*TODO*/////cpu_setbank(1, ram_data);
-					/*TODO*/////cpu_setbank(5, ram_data);
+					//ram_data = spectrum_128_ram + (memory_selection[0]<<14);
+                                        ram_data = new UBytePtr(spectrum_128_ram, (spectrum_plus3_memory_selections[0]<<14));
+                                        cpu_setbank(1, ram_data);
+					cpu_setbank(5, ram_data);
 					/* allow writes to 0x0000-0x03fff */
 					cpu_setbankhandler_w(5, MWA_BANK5);
 	
-					/*TODO*/////ram_data = spectrum_128_ram + (memory_selection[1]<<14);
-					/*TODO*/////cpu_setbank(2, ram_data);
-					/*TODO*/////cpu_setbank(6, ram_data);
+					//ram_data = spectrum_128_ram + (memory_selection[1]<<14);
+                                        ram_data = new UBytePtr(spectrum_128_ram, (spectrum_plus3_memory_selections[1]<<14));
+					cpu_setbank(2, ram_data);
+					cpu_setbank(6, ram_data);
 	
-					/*TODO*/////ram_data = spectrum_128_ram + (memory_selection[2]<<14);
-					/*TODO*/////cpu_setbank(3, ram_data);
-					/*TODO*/////cpu_setbank(7, ram_data);
+					//ram_data = spectrum_128_ram + (memory_selection[2]<<14);
+                                        ram_data = new UBytePtr(spectrum_128_ram, (spectrum_plus3_memory_selections[2]<<14));
+					cpu_setbank(3, ram_data);
+					cpu_setbank(7, ram_data);
 	
-					/*TODO*/////ram_data = spectrum_128_ram + (memory_selection[3]<<14);
-					/*TODO*/////cpu_setbank(4, ram_data);
-					/*TODO*/////cpu_setbank(8, ram_data);
+					//ram_data = spectrum_128_ram + (memory_selection[3]<<14);
+                                        ram_data = new UBytePtr(spectrum_128_ram, (spectrum_plus3_memory_selections[3]<<14));
+					cpu_setbank(4, ram_data);
+					cpu_setbank(8, ram_data);
 	
 					logerror("extended memory paging: %02x\n",MemorySelection);
 			 }
@@ -2037,24 +2056,25 @@ public class spectrum
                 ),
 			/*TODO*/////IODEVICE_SPEC_QUICK,
 			/*TODO*/////IO_CASSETTE_WAVE(1,"wav\0tap\0", null,spectrum_cassette_init, spectrum_cassette_exit),
-		/*TODO*/////{
-		/*TODO*/////	IO_FLOPPY,			/* type */
-		/*TODO*/////	2,					/* count */
-		/*TODO*/////	"dsk\0",            /* file extensions */
-		/*TODO*/////	IO_RESET_NONE,		/* reset if file changed */
-		/*TODO*/////	dsk_floppy_id,		/* id */
-		/*TODO*/////	dsk_floppy_load,	/* init */
-		/*TODO*/////	dsk_floppy_exit,	/* exit */
-		/*TODO*/////	null,				/* info */
-		/*TODO*/////	null,				/* open */
-		/*TODO*/////	null,				/* close */
-		/*TODO*/////	null,				/* status */
-		/*TODO*/////	null,				/* seek */
-		/*TODO*/////	null,				/* input */
-		/*TODO*/////	null,				/* output */
-		/*TODO*/////	null,				/* input_chunk */
-		/*TODO*/////	null,				/* output chunk */
-		/*TODO*/////},
+		new IODevice(
+			IO_FLOPPY,			/* type */
+			2,					/* count */
+			"dsk\0",            /* file extensions */
+			IO_RESET_NONE,		/* reset if file changed */
+			dsk_floppy_id,		/* id */
+			dsk_floppy_load,	/* init */
+			dsk_floppy_exit,	/* exit */
+			null, /* info */
+                        null, /* open */
+                        null, /* close */
+                        null, /* status */
+                        null, /* seek */
+                        null, /* tell */
+                        null, /* input */
+                        null, /* output */
+                        null, /* input_chunk */
+                        null /* output_chunk */
+                ),
 		new IODevice(IO_END)
 	};
 	
