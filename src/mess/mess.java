@@ -6,7 +6,11 @@ package mess;
 import static WIP.arcadeflex.libc_v2.sprintf;
 import static WIP.mame.mame.Machine;
 import static WIP.mame.mame.options;
+import WIP.mame.osdependH.osd_bitmap;
+import static arcadeflex.libc.cstring.strlen;
 import static arcadeflex.libc.cstring.strrchr;
+import static mame.usrintrf.ui_displaymessagewindow;
+import static mame.usrintrf.ui_drawbox;
 import mess.messH.GameDriver;
 import mess.messH.IODevice;
 import static mess.messH.*;
@@ -14,6 +18,10 @@ import static mess.osdepend.fileio.osd_fopen;
 import old.arcadeflex.libc_old.FILE;
 import static old.arcadeflex.libc_old.printf;
 import static old.arcadeflex.osdepend.logerror;
+import static old.mame.inptportH.*;
+import static old.mame.input.*;
+import static old.mame.inputH.*;
+import  static WIP.mame.mame.*;
 
 public class mess {
 
@@ -164,14 +172,14 @@ public class mess {
 
             sysname = Machine.gamedrv.name;
             logerror("image_fopen: trying %s for system %s\n", img.name, sysname);
-            
+
             System.out.println("image_fopen: trying %s for system %s\n");
             System.out.println(img.name);
             System.out.println(sysname);
-            
+
             file = osd_fopen(sysname, img.name, filetype, read_or_write);
             /* file found, break out */
-            System.out.println("file==null "+file);
+            System.out.println("file==null " + file);
             if (file != null) {
                 break;
             }
@@ -188,20 +196,20 @@ public class mess {
             ext = device_file_extension(type, extnum);
             System.out.println(ext);
             extnum++;
-            
-		/* no (more) extensions, break out */
-		if( ext==null )
-			break;
-		p = strrchr(img.name, '.');
-                System.out.println("p: "+p);
-                System.out.println("img.name: "+img.name);
-                System.out.println("ext: "+ext);
-                
-		/* does the current name already have an extension? */
-		if( p!=null )
-		{
-                    throw new UnsupportedOperationException("unimplemented");
-/*TODO*///			++p; /* skip the dot */
+
+            /* no (more) extensions, break out */
+            if (ext == null) {
+                break;
+            }
+            p = strrchr(img.name, '.');
+            System.out.println("p: " + p);
+            System.out.println("img.name: " + img.name);
+            System.out.println("ext: " + ext);
+
+            /* does the current name already have an extension? */
+            if (p != null) {
+                throw new UnsupportedOperationException("unimplemented");
+                /*TODO*///			++p; /* skip the dot */
 /*TODO*///			/* new extension won't fit? */
 /*TODO*///			if( strlen(p) < strlen(ext) )
 /*TODO*///			{
@@ -213,11 +221,9 @@ public class mess {
 /*TODO*///				}
 /*TODO*///			}
 /*TODO*///			strcpy(p, ext);
-		}
-		else
-		{
-			img.name+=sprintf(".%s", ext);
-		}
+            } else {
+                img.name += sprintf(".%s", ext);
+            }
         }
         /*TODO*///
 /*TODO*///	if( file )
@@ -341,15 +347,15 @@ public class mess {
         return "UNKNOWN";
     }
 
-    /*TODO*////*
-/*TODO*/// * Return the number of filenames for a device of type 'type'.
-/*TODO*/// */
-/*TODO*///int device_count(int type)
-/*TODO*///{
-/*TODO*///	if (type >= IO_COUNT)
-/*TODO*///		return 0;
-/*TODO*///	return count[type];
-/*TODO*///}
+    /*
+    * Return the number of filenames for a device of type 'type'.
+     */
+    public static int device_count(int type) {
+        if (type >= IO_COUNT) {
+            return 0;
+        }
+        return count[type];
+    }
 
     /*
     * Return the 'id'th filename for a device of type 'type',
@@ -442,58 +448,62 @@ public class mess {
 /*TODO*///		return images[type][id].length;
 /*TODO*///	return 0;
 /*TODO*///}
-/*TODO*///
-/*TODO*////*
-/*TODO*/// * Return the 'id'th long name for a device of type 'type',
-/*TODO*/// * NULL if not enough image names of that type are available.
-/*TODO*/// */
-/*TODO*///const char *device_longname(int type, int id)
-/*TODO*///{
-/*TODO*///	if (type >= IO_COUNT)
-/*TODO*///		return NULL;
-/*TODO*///	if (id < count[type])
-/*TODO*///		return images[type][id].longname;
-/*TODO*///	return NULL;
-/*TODO*///}
-/*TODO*///
-/*TODO*////*
-/*TODO*/// * Return the 'id'th manufacturer name for a device of type 'type',
-/*TODO*/// * NULL if not enough image names of that type are available.
-/*TODO*/// */
-/*TODO*///const char *device_manufacturer(int type, int id)
-/*TODO*///{
-/*TODO*///	if (type >= IO_COUNT)
-/*TODO*///		return NULL;
-/*TODO*///	if (id < count[type])
-/*TODO*///		return images[type][id].manufacturer;
-/*TODO*///	return NULL;
-/*TODO*///}
-/*TODO*///
-/*TODO*////*
-/*TODO*/// * Return the 'id'th release year for a device of type 'type',
-/*TODO*/// * NULL if not enough image names of that type are available.
-/*TODO*/// */
-/*TODO*///const char *device_year(int type, int id)
-/*TODO*///{
-/*TODO*///	if (type >= IO_COUNT)
-/*TODO*///		return NULL;
-/*TODO*///	if (id < count[type])
-/*TODO*///		return images[type][id].year;
-/*TODO*///	return NULL;
-/*TODO*///}
-/*TODO*///
-/*TODO*////*
-/*TODO*/// * Return the 'id'th playable info for a device of type 'type',
-/*TODO*/// * NULL if not enough image names of that type are available.
-/*TODO*/// */
-/*TODO*///const char *device_playable(int type, int id)
-/*TODO*///{
-/*TODO*///	if (type >= IO_COUNT)
-/*TODO*///		return NULL;
-/*TODO*///	if (id < count[type])
-/*TODO*///		return images[type][id].playable;
-/*TODO*///	return NULL;
-/*TODO*///}
+
+    /*
+     * Return the 'id'th long name for a device of type 'type',
+     * NULL if not enough image names of that type are available.
+     */
+    public static String device_longname(int type, int id) {
+        if (type >= IO_COUNT) {
+            return null;
+        }
+        if (id < count[type]) {
+            return images[type][id].longname;
+        }
+        return null;
+    }
+
+    /*
+    * Return the 'id'th manufacturer name for a device of type 'type',
+    * NULL if not enough image names of that type are available.
+     */
+    public static String device_manufacturer(int type, int id) {
+        if (type >= IO_COUNT) {
+            return null;
+        }
+        if (id < count[type]) {
+            return images[type][id].manufacturer;
+        }
+        return null;
+    }
+
+    /*
+    * Return the 'id'th release year for a device of type 'type',
+    * NULL if not enough image names of that type are available.
+     */
+    public static String device_year(int type, int id) {
+        if (type >= IO_COUNT) {
+            return null;
+        }
+        if (id < count[type]) {
+            return images[type][id].year;
+        }
+        return null;
+    }
+
+    
+    /*
+     * Return the 'id'th playable info for a device of type 'type',
+     * NULL if not enough image names of that type are available.
+     */
+    public static String device_playable(int type, int id)
+    {
+            if (type >= IO_COUNT)
+                    return null;
+            if (id < count[type])
+                    return images[type][id].playable;
+            return null;
+    }
 /*TODO*///
 /*TODO*///
 /*TODO*////*
@@ -559,9 +569,9 @@ public class mess {
         if (dev != null) {
             while (dev[dev_ptr].count != 0) {
                 int type = dev[dev_ptr].type;
-/*TODO*///                while (count[type] < dev[dev_ptr].count) {
+                /*TODO*///                while (count[type] < dev[dev_ptr].count) {
 /*TODO*///                    throw new UnsupportedOperationException("unimplemented");
-                    /*TODO*///				/* Add an empty slot name the arrays of names */
+                /*TODO*///				/* Add an empty slot name the arrays of names */
 /*TODO*///				if( images[type] )
 /*TODO*///					images[type] = realloc(images[type],(count[type]+1)*sizeof(struct image_info));
 /*TODO*///				else
@@ -640,6 +650,7 @@ public class mess {
         }
         return 0;
     }
+
     /*TODO*///
 /*TODO*////*
 /*TODO*/// * Call the exit() functions for all devices of a
@@ -858,90 +869,87 @@ public class mess {
 /*TODO*///
 /*TODO*///
 /*TODO*///
-/*TODO*///
-/*TODO*///int displayimageinfo(struct osd_bitmap *bitmap, int selected)
-/*TODO*///{
-/*TODO*///	char buf[2048], *dst = buf;
-/*TODO*///	int type, id, sel = selected - 1;
-/*TODO*///
-/*TODO*///	dst += sprintf(dst,"%s\n\n",Machine->gamedrv->description);
-/*TODO*///
-/*TODO*///	for (type = 0; type < IO_COUNT; type++)
-/*TODO*///	{
-/*TODO*///		for( id = 0; id < device_count(type); id++ )
-/*TODO*///		{
-/*TODO*///			const char *name = device_filename(type,id);
-/*TODO*///			if( name )
-/*TODO*///			{
-/*TODO*///				const char *info;
-/*TODO*///				dst += sprintf(dst,"%s: %s\n", device_typename_id(type,id), device_filename(type,id));
-/*TODO*///				info = device_longname(type,id);
-/*TODO*///				if( info )
-/*TODO*///					dst += sprintf(dst,"%s\n", info);
-/*TODO*///				info = device_manufacturer(type,id);
-/*TODO*///				if( info )
-/*TODO*///				{
-/*TODO*///					dst += sprintf(dst,"%s", info);
-/*TODO*///					info = stripspace(device_year(type,id));
-/*TODO*///					if( info && strlen(info))
-/*TODO*///						dst += sprintf(dst,", %s", info);
-/*TODO*///					dst += sprintf(dst,"\n");
-/*TODO*///				}
-/*TODO*///				info = device_playable(type,id);
-/*TODO*///				if( info )
-/*TODO*///					dst += sprintf(dst,"%s\n", info);
-/*TODO*///// why is extrainfo printed? only MSX and NES use it that i know of ... Cowering
-/*TODO*/////				info = device_extrainfo(type,id);
-/*TODO*/////				if( info )
-/*TODO*/////					dst += sprintf(dst,"%s\n", info);
-/*TODO*///			}
-/*TODO*///			else
-/*TODO*///			{
-/*TODO*///				dst += sprintf(dst,"%s: ---\n", device_typename_id(type,id));
-/*TODO*///			}
-/*TODO*///		}
-/*TODO*///	}
-/*TODO*///
-/*TODO*///	if (sel == -1)
-/*TODO*///	{
-/*TODO*///		/* startup info, print MAME version and ask for any key */
-/*TODO*///
-/*TODO*///		strcat(buf,"\n\tPress any key to Begin");
-/*TODO*///		ui_drawbox(bitmap,0,0,Machine->uiwidth,Machine->uiheight);
-/*TODO*///		ui_displaymessagewindow(bitmap, buf);
-/*TODO*///
-/*TODO*///		sel = 0;
-/*TODO*///		if (code_read_async() != KEYCODE_NONE ||
-/*TODO*///			code_read_async() != JOYCODE_NONE)
-/*TODO*///			sel = -1;
-/*TODO*///	}
-/*TODO*///	else
-/*TODO*///	{
-/*TODO*///		/* menu system, use the normal menu keys */
-/*TODO*///		strcat(buf,"\n\t\x1a Return to Main Menu \x1b");
-/*TODO*///
-/*TODO*///		ui_displaymessagewindow(bitmap,buf);
-/*TODO*///
-/*TODO*///		if (input_ui_pressed(IPT_UI_SELECT))
-/*TODO*///			sel = -1;
-/*TODO*///
-/*TODO*///		if (input_ui_pressed(IPT_UI_CANCEL))
-/*TODO*///			sel = -1;
-/*TODO*///
-/*TODO*///		if (input_ui_pressed(IPT_UI_CONFIGURE))
-/*TODO*///			sel = -2;
-/*TODO*///	}
-/*TODO*///
-/*TODO*///	if (sel == -1 || sel == -2)
-/*TODO*///	{
-/*TODO*///		/* tell updatescreen() to clean after us */
-/*TODO*///		need_to_clear_bitmap = 1;
-/*TODO*///	}
-/*TODO*///
-/*TODO*///	return sel + 1;
-/*TODO*///}
-/*TODO*///
-/*TODO*///
+    public static int displayimageinfo(osd_bitmap bitmap, int selected) {
+        //char buf[2048], *dst = buf;
+        String dst = "";
+        int type, id, sel = selected - 1;
+
+        dst += sprintf("%s\n\n", Machine.gamedrv.description);
+
+        for (type = 0; type < IO_COUNT; type++) {
+            for (id = 0; id < device_count(type); id++) {
+                String name = device_filename(type, id);
+                if (name != null) {
+                    String info;
+                    dst += sprintf("%s: %s\n", device_typename_id(type, id), device_filename(type, id));
+                    info = device_longname(type, id);
+                    if (info!=null) {
+                        dst += sprintf("%s\n", info);
+                    }
+                    info = device_manufacturer(type, id);
+                    if (info!=null) {
+                        dst += sprintf("%s", info);
+                        info = /*stripspace*/(device_year(type, id));
+                        if (info!=null && strlen(info)!=0) {
+                            dst += sprintf(", %s", info);
+                        }
+                        dst += sprintf("\n");
+                    }
+                    info = device_playable(type, id);
+                    if (info!=null) {
+                        dst += sprintf("%s\n", info);
+                    }
+// why is extrainfo printed? only MSX and NES use it that i know of ... Cowering
+//				info = device_extrainfo(type,id);
+//				if( info )
+//					dst += sprintf(dst,"%s\n", info);
+                } else {
+                    dst += sprintf("%s: ---\n", device_typename_id(type, id));
+                }
+            }
+        }
+        
+
+        if (sel == -1) {
+            /* startup info, print MAME version and ask for any key */
+
+            dst+= "\n\tPress any key to Begin";
+            ui_drawbox(bitmap, 0, 0, Machine.uiwidth, Machine.uiheight);
+            ui_displaymessagewindow(bitmap, dst);
+
+            sel = 0;
+            if (code_read_async() != CODE_NONE
+                    || code_read_async() != CODE_NONE) {
+                sel = -1;
+            }
+        } else {
+            /* menu system, use the normal menu keys */
+            dst+= "\n\t\u001A Return to Main Menu \u001B";
+
+            ui_displaymessagewindow(bitmap, dst);
+
+            if ((input_ui_pressed(IPT_UI_SELECT))!=0) {
+                sel = -1;
+            }
+
+            if ((input_ui_pressed(IPT_UI_CANCEL))!=0) {
+                sel = -1;
+            }
+
+            if ((input_ui_pressed(IPT_UI_CONFIGURE))!=0) {
+                sel = -2;
+            }
+        }
+
+        if (sel == -1 || sel == -2) {
+            /* tell updatescreen() to clean after us */
+            need_to_clear_bitmap = 1;
+        }
+
+        return sel + 1;
+    }
+
+    /*TODO*///
 /*TODO*///void showmessdisclaimer(void)
 /*TODO*///{
 /*TODO*///	mess_printf(

@@ -16,10 +16,10 @@ import static old.mame.inptportH.*;
 import static old.mame.input.input_ui_pressed_repeat;
 import static WIP.mame.mame.Machine;
 import static WIP.mame.mame.bitmap_dirty;
-import static old.mame.usrintrf.set_ui_visarea;
 import static WIP.mame.osdependH.*;
 import static WIP.mame.version.build_version;
 import static WIP.arcadeflex.video.*;
+import static mame.usrintrf.set_ui_visarea;
 
 public class video {
 

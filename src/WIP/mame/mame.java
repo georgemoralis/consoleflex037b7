@@ -61,6 +61,7 @@ import static WIP.mame.sndintrf.*;
 import static mame.cheat.InitCheat;
 import static mame.cheat.StopCheat;
 import static mame.cheat.he_did_cheat;
+import static mame.usrintrf.builduifont;
 import static mess.mess.get_filenames;
 import static mess.mess.init_devices;
 import static old.mame.usrintrf.*;

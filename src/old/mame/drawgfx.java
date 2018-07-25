@@ -10,7 +10,7 @@ import static old.mame.drawgfxH.*;
 import static old.mame.driverH.*;
 import static WIP.mame.mame.Machine;
 import static WIP.mame.osdependH.osd_bitmap;
-import static old.mame.usrintrf.usrintf_showmessage;
+import static mame.usrintrf.usrintf_showmessage;
 import static WIP.mame.drawgfx.*;
 import static WIP.arcadeflex.libc.memset.memset;
 import static mame.drawgfx.blockmove_8toN_transthrough_8;
