@@ -12,12 +12,12 @@ public static final int ID_FLAG_CRC_ERROR_IN_DATA_FIELD = 0x0004;
 
 public static class chrn_id
 {
-	char C;
-	char H;
-	char R;
-	char N;
-	int data_id;			// id for read/write data command
-	long flags;
+	public char C;
+	public char H;
+	public char R;
+	public char N;
+	public int data_id;			// id for read/write data command
+	public long flags;
 };
 
 /* set if drive is present */
@@ -53,9 +53,9 @@ public static interface floppy_interface
 	public void get_id_callback(int drive, chrn_id chrn, int id_index, int physical_side);
 
 	/* read sector data into buffer, length = number of bytes to read */
-	public void read_sector_data_into_buffer(int drive, int side,int data_id,char c, int length);
+	public void read_sector_data_into_buffer(int drive, int side,int data_id,char[] c, int length);
 	/* write sector data from buffer, length = number of bytes to read  */
-	public void write_sector_data_from_buffer(int drive, int side,int data_id, char c, int length);
+	public void write_sector_data_from_buffer(int drive, int side,int data_id, char[] c, int length);
 	/* format */
 	public void format_sector(int drive, int side, int sector_index,int c, int h, int r, int n, int filler);
 };
@@ -64,18 +64,18 @@ public static interface floppy_interface
 public static class floppy_drive
 {
 	/* flags */
-	int flags;
+	public int flags;
 	/* maximum track allowed */
-	int max_track;
+	public int max_track;
 	/* num sides */
-	int num_sides;
+	public int num_sides;
 	/* current track - this may or may not relate to the present cylinder number
 	stored by the fdc */
-	int current_track;
+	public int current_track;
 
-	int id_index;
+	public int id_index;
 
-	floppy_interface f_interface;
+	public floppy_interface f_interface;
 };
 
 

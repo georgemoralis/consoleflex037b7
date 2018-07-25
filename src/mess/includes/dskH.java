@@ -3,7 +3,7 @@ package mess.includes;
 import static mess.includes.flopdrvH.*;
 
 public interface dskH {
-    public int dsk_floppy_load(int id);
+    public abstract int dsk_floppy_load(int id);
     public int dsk_floppy_id(int id);
     public void dsk_floppy_exit(int id);
     public void dsk_seek_callback(int drive, int physical_track);

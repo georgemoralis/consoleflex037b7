@@ -28,7 +28,7 @@ public interface nec765H
 	/* init nec765 interface */
 	void nec765_init(nec765_interface nInterface, int version);
 	/* set nec765 terminal count input state */
-	void nec765_set_tc_state(int i);
+	abstract void nec765_set_tc_state(int i);
 	/* set nec765 ready input*/
 	void nec765_set_ready_state(int i);
 	
