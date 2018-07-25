@@ -1,6 +1,7 @@
 25/07/2018
 ==========
 -Implemented displayImageInfo and a few more functions in mess.java
+-WIP NEC765 and Floppy Disk support
 
 24/07/2018
 ==========
