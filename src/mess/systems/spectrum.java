@@ -158,7 +158,9 @@ public class spectrum
 	
 		if ((Changed & (1<<3))!=0)
 		{
-			/*-----------------27/02/00 10:41-------------------
+			// Sounds while saving
+                        speaker_level_w(0,(data>>3) & 0x01);
+                        /*-----------------27/02/00 10:41-------------------
 			 write cassette data
 			--------------------------------------------------*/
 			/*TODO*/////device_output(IO_CASSETTE, 0, (data & (1<<3)) ? -32768: 32767);
