@@ -28,6 +28,7 @@ import static old.mame.usrintrf.*;
 import static old.mame.usrintrfH.*;
 import static WIP.mame.mame.*;
 import static mame.cheat.cheat_menu;
+import static mess.mess.displayimageinfo;
 import static old.arcadeflex.libc_old.sprintf;
 import static old.arcadeflex.sound.osd_get_mastervolume;
 import static old.arcadeflex.sound.osd_set_mastervolume;
@@ -2547,9 +2548,9 @@ public class usrintrf {
 /*TODO*///			case UI_CALIBRATE:
 /*TODO*///				res = calibratejoysticks(bitmap, sel >> SEL_BITS);
 /*TODO*///				break;
-/*TODO*///			case UI_IMAGEINFO:
-/*TODO*///				res = displayimageinfo(bitmap, sel >> SEL_BITS);
-/*TODO*///				break;
+			case UI_IMAGEINFO:
+				res = displayimageinfo(bitmap, sel >> SEL_BITS);
+				break;
 /*TODO*///			case UI_FILEMANAGER:
 /*TODO*///				res = filemanager(bitmap, sel >> SEL_BITS);
 /*TODO*///				break;
