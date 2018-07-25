@@ -281,10 +281,10 @@ public class spectrum
 	
 			nec765_init(spectrum_plus3_nec765_interface, NEC765A);
 	
-			/*TODO*/////floppy_drive_set_geometry(0, floppy_type.FLOPPY_DRIVE_SS_40);
-			/*TODO*/////floppy_drive_set_geometry(1, floppy_type.FLOPPY_DRIVE_SS_40);
-			/*TODO*/////floppy_drive_set_flag_state(0, FLOPPY_DRIVE_PRESENT, 1);
-			/*TODO*/////floppy_drive_set_flag_state(1, FLOPPY_DRIVE_PRESENT, 1);
+			floppy_drive_set_geometry(0, floppy_type.FLOPPY_DRIVE_SS_40);
+			floppy_drive_set_geometry(1, floppy_type.FLOPPY_DRIVE_SS_40);
+			floppy_drive_set_flag_state(0, FLOPPY_DRIVE_PRESENT, 1);
+			floppy_drive_set_flag_state(1, FLOPPY_DRIVE_PRESENT, 1);
 	
 			/* Initial configuration */
 			spectrum_128_port_7ffd_data = 0;
@@ -881,10 +881,10 @@ public class spectrum
 			/* D3 - Disk motor on/off */
 			/* D4 - parallel port strobe */
 	
-			/*TODO*/////floppy_drive_set_motor_state(0, data & (1<<3));
-			/*TODO*/////floppy_drive_set_motor_state(1, data & (1<<3));
-			/*TODO*/////floppy_drive_set_ready_state(0, 1, 1);
-			/*TODO*/////floppy_drive_set_ready_state(1, 1, 1);
+			floppy_drive_set_motor_state(0, data & (1<<3));
+			floppy_drive_set_motor_state(1, data & (1<<3));
+			floppy_drive_set_ready_state(0, 1, 1);
+			floppy_drive_set_ready_state(1, 1, 1);
 	
 			spectrum_plus3_port_1ffd_data = data;
 	
@@ -2041,8 +2041,8 @@ public class spectrum
 			IO_RESET_ALL,		/* reset if file changed */
 			spectrum_rom_id,	/* id */
 			spectrum_rom_load,	/* init */
-			//spectrum_rom_exit,	/* exit */
-			null, /* exit */
+			spectrum_rom_exit,	/* exit */
+			//null, /* exit */
                         null, /* info */
                         null, /* open */
                         null, /* close */
