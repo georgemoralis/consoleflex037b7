@@ -14,17 +14,22 @@ public class flopdrv
 	public static floppy_drive[] drives = new floppy_drive[MAX_DRIVES];
 	
 	/* init all floppy drives */
-	void	floppy_drives_init()
+	public static void floppy_drives_init()
 	{
-	/* KT - caused problems with disk missing etc */
+	System.out.println("floppy_drives_init");
+        /* KT - caused problems with disk missing etc */
 	//        memset(&drives[0], 0, sizeof(floppy_drive));
+            drives[0]=new floppy_drive();
 	//        memset(&drives[1], 0, sizeof(floppy_drive));
+            drives[1]=new floppy_drive();
 	//        memset(&drives[2], 0, sizeof(floppy_drive));
+            drives[2]=new floppy_drive();
 	//        memset(&drives[3], 0, sizeof(floppy_drive));
-	//        drives[0].current_track = 10;
-	//        drives[1].current_track = 10;
-	//        drives[2].current_track = 10;
-	//        drives[3].current_track = 10;
+            drives[3]=new floppy_drive();
+	        drives[0].current_track = 10;
+	        drives[1].current_track = 10;
+	        drives[2].current_track = 10;
+	        drives[3].current_track = 10;
 	}
 	
 	public static void floppy_drive_set_interface(int index1, floppy_interface iface)
@@ -104,11 +109,11 @@ public class flopdrv
 			case FLOPPY_DRIVE_HEAD_AT_TRACK_0:
 			{
 				/* drive present */
-				/*TODO*/////if ((drives[drive].flags & FLOPPY_DRIVE_PRESENT) != 0)
-				/*TODO*/////{
+				if ((drives[drive].flags & FLOPPY_DRIVE_PRESENT) != 0)
+				{
 					/* return real state of track 0 flag */
-				/*TODO*/////	return drives[drive].flags & FLOPPY_DRIVE_HEAD_AT_TRACK_0;
-				/*TODO*/////}
+					return drives[drive].flags & FLOPPY_DRIVE_HEAD_AT_TRACK_0;
+				}
 		
 				/* return not at track 0 */
 				return 0;
@@ -121,17 +126,17 @@ public class flopdrv
 			/* return ready state - in case of CPC drive will not be ready if it is not present */
 			/* in case of PC drive will be ready even if it is not present */
 			case FLOPPY_DRIVE_READY:
-				/*TODO*/////return drives[drive].flags & flag;
-                                return 0;
+				return drives[drive].flags & flag;
+                                //return 0;
 		
 			case FLOPPY_DRIVE_DISK_WRITE_PROTECTED:
 			{
 				/* drive present */
-				/*TODO*/////if ((drives[drive].flags & FLOPPY_DRIVE_PRESENT) != 0)
-				/*TODO*/////{
+				if ((drives[drive].flags & FLOPPY_DRIVE_PRESENT) != 0)
+				{
 					/* return real state of write protected flag */
-				/*TODO*/////	return drives[drive].flags & FLOPPY_DRIVE_DISK_WRITE_PROTECTED;
-				/*TODO*/////}
+					return drives[drive].flags & FLOPPY_DRIVE_DISK_WRITE_PROTECTED;
+				}
 		
 				/* drive not present. return write protected  */
 				return FLOPPY_DRIVE_DISK_WRITE_PROTECTED;

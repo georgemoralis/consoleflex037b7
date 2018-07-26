@@ -105,7 +105,7 @@ public class dsk
                 Object file=null;
 	
 		//file = image_fopen(IO_SNAPSHOT, id, OSD_FILETYPE_IMAGE_RW, OSD_FOPEN_READ);
-                file = image_fopen(IO_FLOPPY, id, OSD_FILETYPE_IMAGE_RW, 0);
+                file = image_fopen(IO_FLOPPY, id, OSD_FILETYPE_IMAGE_R, 0);
                 
 		//if (file != 0)
                 if (file != null)

@@ -142,7 +142,7 @@ public class spectrum
 	           doing it now as contented memory is not emulated so timings will
 	           be way off. (eg Zynaps taking 212 cycles not 224 per scanline)
 	        */
-	        EventList_AddItemOffset(offset+0x5800, data, cpu_getcurrentcycles());
+	        //EventList_AddItemOffset(offset+0x5800, data, cpu_getcurrentcycles());
 	
 		//spectrum_colorram[offset] = data;
                 spectrum_colorram.offset=offset;
@@ -204,8 +204,9 @@ public class spectrum
 	        {
 	                pItem = EventList_GetFirstItem();
 	                //set_last_border_color ( pItem[NumItems-1].Event_Data );
-                        EVENT_LIST_ITEM last_border_item = (EVENT_LIST_ITEM) pEventListBuffer.get(NumItems-1);
-                        set_last_border_color( last_border_item.Event_Data );
+                        set_last_border_color ( pEventListBuffer[NumItems-1].Event_Data );
+                        //EVENT_LIST_ITEM last_border_item = (EVENT_LIST_ITEM) pEventListBuffer.get(NumItems-1);
+                        //set_last_border_color( last_border_item.Event_Data );
                         
 	                EventList_Reset();
 	                EventList_SetOffsetStartTime ( cpu_getcurrentcycles() );
@@ -238,9 +239,9 @@ public class spectrum
 	        {
 	                pItem = EventList_GetFirstItem();
                         
-                        //set_last_border_color ( pItem[NumItems-1].Event_Data );
-                        EVENT_LIST_ITEM last_border_item = (EVENT_LIST_ITEM) pEventListBuffer.get(NumItems-1);
-                        set_last_border_color( last_border_item.Event_Data );
+                        set_last_border_color ( pEventListBuffer[NumItems-1].Event_Data );
+                        //EVENT_LIST_ITEM last_border_item = (EVENT_LIST_ITEM) pEventListBuffer.get(NumItems-1);
+                        //set_last_border_color( last_border_item.Event_Data );
                                                 
 	                EventList_Reset();
 	                EventList_SetOffsetStartTime ( cpu_getcurrentcycles() );

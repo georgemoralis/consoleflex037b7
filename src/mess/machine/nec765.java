@@ -657,11 +657,12 @@ public class nec765
 	public static void nec765_init(nec765_interface iface, int version)
 	{
 		System.out.println("nec765_init "+iface);
+                floppy_drives_init();
                 fdc.version = version;
                 fdc.timer = 0;	//timer_set(TIME_NEVER, 0, nec765_timer_callback);
 		fdc.seek_timer = 0;
 		//memset(&nec765_iface, 0, sizeof(nec765_interface));
-	
+                	
 	        if (iface != null)
 	        {
 	                //memcpy(&nec765_iface, iface, sizeof(nec765_interface));
