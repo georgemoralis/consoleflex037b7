@@ -81,7 +81,7 @@ public class border
             {
                             //int CyclesPerFrame = (int)(Machine.drv.cpu[0].cpu_clock / Machine.screen[0].refresh);
                             int CyclesPerFrame = (int)(Machine.drv.cpu[0].cpu_clock / Machine.drv.frames_per_second);
-                            logerror ("Event count = %ld, curr cycle = %ld, total cycles = %ld \n", NumItems, cpu_getcurrentcycles(), CyclesPerFrame);
+                            //logerror ("Event count = %ld, curr cycle = %ld, total cycles = %ld \n", NumItems, cpu_getcurrentcycles(), CyclesPerFrame);
             }
             /*for (Count = 0; Count < NumItems; Count++)
             {
