@@ -7,7 +7,6 @@
 //23/07/2018 (shadow) - Intial work for use with mess
 package mame;
 
-
 import WIP.arcadeflex.libc_v2;
 import WIP.arcadeflex.libc_v2.UBytePtr;
 import WIP.arcadeflex.libc_v2.UShortArray;
@@ -27,8 +26,14 @@ import static old.mame.input.input_ui_pressed_repeat;
 import static old.mame.usrintrf.*;
 import static old.mame.usrintrfH.*;
 import static WIP.mame.mame.*;
+import static WIP.mame.sndintrf.sound_clock;
+import static WIP.mame.sndintrf.sound_name;
+import static WIP.mame.sndintrf.sound_num;
+import static WIP.mame.version.build_version;
 import static mame.cheat.cheat_menu;
 import static mess.mess.displayimageinfo;
+import mess.messH;
+import static mess.system.drivers;
 import static old.arcadeflex.libc_old.sprintf;
 import static old.arcadeflex.sound.osd_get_mastervolume;
 import static old.arcadeflex.sound.osd_set_mastervolume;
@@ -37,14 +42,30 @@ import static old.arcadeflex.video.osd_get_brightness;
 import static old.arcadeflex.video.osd_get_pen;
 import static old.arcadeflex.video.osd_mark_dirty;
 import static old.arcadeflex.video.osd_set_brightness;
+import static old.mame.cpuintrf.cputype_name;
 import static old.mame.cpuintrf.machine_reset;
 import static old.mame.drawgfx.*;
 import old.mame.drawgfxH.GfxElement;
 import old.mame.drawgfxH.GfxLayout;
 import static old.mame.drawgfxH.TRANSPARENCY_NONE;
+import static old.mame.driverH.CPU_AUDIO_CPU;
+import static old.mame.driverH.GAME_COMPUTER;
+import static old.mame.driverH.GAME_IMPERFECT_COLORS;
+import static old.mame.driverH.GAME_IMPERFECT_SOUND;
+import static old.mame.driverH.GAME_NOT_WORKING;
+import static old.mame.driverH.GAME_NO_COCKTAIL;
+import static old.mame.driverH.GAME_NO_SOUND;
+import static old.mame.driverH.GAME_REQUIRES_16BIT;
+import static old.mame.driverH.GAME_UNEMULATED_PROTECTION;
+import static old.mame.driverH.GAME_WRONG_COLORS;
+import static old.mame.driverH.MAX_CPU;
+import static old.mame.driverH.MAX_SOUND;
+import static old.mame.driverH.NOT_A_DRIVER;
 import static old.mame.driverH.ORIENTATION_FLIP_X;
 import static old.mame.driverH.ORIENTATION_FLIP_Y;
 import static old.mame.driverH.ORIENTATION_SWAP_XY;
+import static old.mame.driverH.SOUND_SUPPORTS_STEREO;
+import static old.mame.driverH.VIDEO_MODIFIES_PALETTE;
 import static old.mame.driverH.VIDEO_PIXEL_ASPECT_RATIO_1_2;
 import static old.mame.driverH.VIDEO_PIXEL_ASPECT_RATIO_MASK;
 import static old.mame.driverH.VIDEO_TYPE_VECTOR;
@@ -1877,315 +1898,286 @@ public class usrintrf {
 /*TODO*///	return 0;
 /*TODO*///}
 /*TODO*///
-/*TODO*///static int displaygameinfo(struct osd_bitmap *bitmap,int selected)
-/*TODO*///{
-/*TODO*///	int i;
-/*TODO*///	char buf[2048];
-/*TODO*///	char buf2[32];
-/*TODO*///	int sel;
-/*TODO*///
-/*TODO*///
-/*TODO*///	sel = selected - 1;
-/*TODO*///
-/*TODO*///
-/*TODO*///	sprintf(buf,"%s\n%s %s\n\n%s:\n",Machine->gamedrv->description,Machine->gamedrv->year,Machine->gamedrv->manufacturer,
-/*TODO*///		ui_getstring (UI_cpu));
-/*TODO*///	i = 0;
-/*TODO*///	while (i < MAX_CPU && Machine->drv->cpu[i].cpu_type)
-/*TODO*///	{
-/*TODO*///
-/*TODO*///		if (Machine->drv->cpu[i].cpu_clock >= 1000000)
-/*TODO*///			sprintf(&buf[strlen(buf)],"%s %d.%06d MHz",
-/*TODO*///					cputype_name(Machine->drv->cpu[i].cpu_type),
-/*TODO*///					Machine->drv->cpu[i].cpu_clock / 1000000,
-/*TODO*///					Machine->drv->cpu[i].cpu_clock % 1000000);
-/*TODO*///		else
-/*TODO*///			sprintf(&buf[strlen(buf)],"%s %d.%03d kHz",
-/*TODO*///					cputype_name(Machine->drv->cpu[i].cpu_type),
-/*TODO*///					Machine->drv->cpu[i].cpu_clock / 1000,
-/*TODO*///					Machine->drv->cpu[i].cpu_clock % 1000);
-/*TODO*///
-/*TODO*///		if (Machine->drv->cpu[i].cpu_type & CPU_AUDIO_CPU)
-/*TODO*///		{
-/*TODO*///			sprintf (buf2, " (%s)", ui_getstring (UI_sound_lc));
-/*TODO*///			strcat(buf, buf2);
-/*TODO*///		}
-/*TODO*///
-/*TODO*///		strcat(buf,"\n");
-/*TODO*///
-/*TODO*///		i++;
-/*TODO*///	}
-/*TODO*///
-/*TODO*///	sprintf (buf2, "\n%s", ui_getstring (UI_sound));
-/*TODO*///	strcat (buf, buf2);
-/*TODO*///	if (Machine->drv->sound_attributes & SOUND_SUPPORTS_STEREO)
-/*TODO*///		sprintf(&buf[strlen(buf)]," (%s)", ui_getstring (UI_stereo));
-/*TODO*///	strcat(buf,":\n");
-/*TODO*///
-/*TODO*///	i = 0;
-/*TODO*///	while (i < MAX_SOUND && Machine->drv->sound[i].sound_type)
-/*TODO*///	{
-/*TODO*///		if (sound_num(&Machine->drv->sound[i]))
-/*TODO*///			sprintf(&buf[strlen(buf)],"%dx",sound_num(&Machine->drv->sound[i]));
-/*TODO*///
-/*TODO*///		sprintf(&buf[strlen(buf)],"%s",sound_name(&Machine->drv->sound[i]));
-/*TODO*///
-/*TODO*///		if (sound_clock(&Machine->drv->sound[i]))
-/*TODO*///		{
-/*TODO*///			if (sound_clock(&Machine->drv->sound[i]) >= 1000000)
-/*TODO*///				sprintf(&buf[strlen(buf)]," %d.%06d MHz",
-/*TODO*///						sound_clock(&Machine->drv->sound[i]) / 1000000,
-/*TODO*///						sound_clock(&Machine->drv->sound[i]) % 1000000);
-/*TODO*///			else
-/*TODO*///				sprintf(&buf[strlen(buf)]," %d.%03d kHz",
-/*TODO*///						sound_clock(&Machine->drv->sound[i]) / 1000,
-/*TODO*///						sound_clock(&Machine->drv->sound[i]) % 1000);
-/*TODO*///		}
-/*TODO*///
-/*TODO*///		strcat(buf,"\n");
-/*TODO*///
-/*TODO*///		i++;
-/*TODO*///	}
-/*TODO*///
-/*TODO*///	if (Machine->drv->video_attributes & VIDEO_TYPE_VECTOR)
-/*TODO*///		sprintf(&buf[strlen(buf)],"\n%s\n", ui_getstring (UI_vectorgame));
-/*TODO*///	else
-/*TODO*///	{
-/*TODO*///		int pixelx,pixely,tmax,tmin,rem;
-/*TODO*///
-/*TODO*///		pixelx = 4 * (Machine->visible_area.max_y - Machine->visible_area.min_y + 1);
-/*TODO*///		pixely = 3 * (Machine->visible_area.max_x - Machine->visible_area.min_x + 1);
-/*TODO*///
-/*TODO*///		/* calculate MCD */
-/*TODO*///		if (pixelx >= pixely)
-/*TODO*///		{
-/*TODO*///			tmax = pixelx;
-/*TODO*///			tmin = pixely;
-/*TODO*///		}
-/*TODO*///		else
-/*TODO*///		{
-/*TODO*///			tmax = pixely;
-/*TODO*///			tmin = pixelx;
-/*TODO*///		}
-/*TODO*///		while ( (rem = tmax % tmin) )
-/*TODO*///		{
-/*TODO*///			tmax = tmin;
-/*TODO*///			tmin = rem;
-/*TODO*///		}
-/*TODO*///		/* tmin is now the MCD */
-/*TODO*///
-/*TODO*///		pixelx /= tmin;
-/*TODO*///		pixely /= tmin;
-/*TODO*///
-/*TODO*///		sprintf(&buf[strlen(buf)],"\n%s:\n", ui_getstring (UI_screenres));
-/*TODO*///		sprintf(&buf[strlen(buf)],"%d x %d (%s) %f Hz\n",
-/*TODO*///				Machine->visible_area.max_x - Machine->visible_area.min_x + 1,
-/*TODO*///				Machine->visible_area.max_y - Machine->visible_area.min_y + 1,
-/*TODO*///				(Machine->gamedrv->flags & ORIENTATION_SWAP_XY) ? "V" : "H",
-/*TODO*///				Machine->drv->frames_per_second);
-/*TODO*///#if 0
-/*TODO*///		sprintf(&buf[strlen(buf)],"pixel aspect ratio %d:%d\n",
-/*TODO*///				pixelx,pixely);
-/*TODO*///		sprintf(&buf[strlen(buf)],"%d colors ",Machine->drv->total_colors);
-/*TODO*///		if (Machine->gamedrv->flags & GAME_REQUIRES_16BIT)
-/*TODO*///			strcat(buf,"(16-bit required)\n");
-/*TODO*///		else if (Machine->drv->video_attributes & VIDEO_MODIFIES_PALETTE)
-/*TODO*///			strcat(buf,"(dynamic)\n");
-/*TODO*///		else strcat(buf,"(static)\n");
-/*TODO*///#endif
-/*TODO*///	}
-/*TODO*///
-/*TODO*///
-/*TODO*///	if (sel == -1)
-/*TODO*///	{
-/*TODO*///		/* startup info, print MAME version and ask for any key */
-/*TODO*///
-/*TODO*///		sprintf (buf2, "\n\t%s ", ui_getstring (UI_mame));	/* \t means that the line will be centered */
-/*TODO*///		strcat(buf, buf2);
-/*TODO*///
-/*TODO*///		strcat(buf,build_version);
-/*TODO*///		sprintf (buf2, "\n\t%s", ui_getstring (UI_anykey));
-/*TODO*///		strcat(buf,buf2);
-/*TODO*///		ui_drawbox(bitmap,0,0,Machine->uiwidth,Machine->uiheight);
-/*TODO*///		ui_displaymessagewindow(bitmap,buf);
-/*TODO*///
-/*TODO*///		sel = 0;
-/*TODO*///		if (code_read_async() != CODE_NONE)
-/*TODO*///			sel = -1;
-/*TODO*///	}
-/*TODO*///	else
-/*TODO*///	{
-/*TODO*///		/* menu system, use the normal menu keys */
-/*TODO*///		strcat(buf,"\n\t");
-/*TODO*///		strcat(buf,ui_getstring (UI_lefthilight));
-/*TODO*///		strcat(buf," ");
-/*TODO*///		strcat(buf,ui_getstring (UI_returntomain));
-/*TODO*///		strcat(buf," ");
-/*TODO*///		strcat(buf,ui_getstring (UI_righthilight));
-/*TODO*///
-/*TODO*///		ui_displaymessagewindow(bitmap,buf);
-/*TODO*///
-/*TODO*///		if (input_ui_pressed(IPT_UI_SELECT))
-/*TODO*///			sel = -1;
-/*TODO*///
-/*TODO*///		if (input_ui_pressed(IPT_UI_CANCEL))
-/*TODO*///			sel = -1;
-/*TODO*///
-/*TODO*///		if (input_ui_pressed(IPT_UI_CONFIGURE))
-/*TODO*///			sel = -2;
-/*TODO*///	}
-/*TODO*///
-/*TODO*///	if (sel == -1 || sel == -2)
-/*TODO*///	{
-/*TODO*///		/* tell updatescreen() to clean after us */
-/*TODO*///		need_to_clear_bitmap = 1;
-/*TODO*///	}
-/*TODO*///
-/*TODO*///	return sel + 1;
-/*TODO*///}
-/*TODO*///
-/*TODO*///
-/*TODO*///int showgamewarnings(struct osd_bitmap *bitmap)
-/*TODO*///{
-/*TODO*///	int i;
-/*TODO*///	char buf[2048];
-/*TODO*///
-/*TODO*///	if (Machine->gamedrv->flags &
-/*TODO*///			(GAME_NOT_WORKING | GAME_UNEMULATED_PROTECTION | GAME_WRONG_COLORS | GAME_IMPERFECT_COLORS |
-/*TODO*///			  GAME_NO_SOUND | GAME_IMPERFECT_SOUND | GAME_NO_COCKTAIL))
-/*TODO*///	{
-/*TODO*///		int done;
-/*TODO*///
-/*TODO*///		strcpy(buf, ui_getstring (UI_knownproblems));
-/*TODO*///		strcat(buf, "\n\n");
-/*TODO*///
-/*TODO*///		if (Machine->gamedrv->flags & GAME_COMPUTER)
-/*TODO*///		{
-/*TODO*///			strcpy(buf, ui_getstring (UI_comp1));
-/*TODO*///			strcat(buf, "\n\n");
-/*TODO*///			strcat(buf, ui_getstring (UI_comp2));
-/*TODO*///			strcat(buf, "\n");
-/*TODO*///		}
-/*TODO*///
-/*TODO*///		if (Machine->gamedrv->flags & GAME_IMPERFECT_COLORS)
-/*TODO*///		{
-/*TODO*///			strcat(buf, ui_getstring (UI_imperfectcolors));
-/*TODO*///			strcat(buf, "\n");
-/*TODO*///		}
-/*TODO*///
-/*TODO*///		if (Machine->gamedrv->flags & GAME_WRONG_COLORS)
-/*TODO*///		{
-/*TODO*///			strcat(buf, ui_getstring (UI_wrongcolors));
-/*TODO*///			strcat(buf, "\n");
-/*TODO*///		}
-/*TODO*///
-/*TODO*///		if (Machine->gamedrv->flags & GAME_IMPERFECT_SOUND)
-/*TODO*///		{
-/*TODO*///			strcat(buf, ui_getstring (UI_imperfectsound));
-/*TODO*///			strcat(buf, "\n");
-/*TODO*///		}
-/*TODO*///
-/*TODO*///		if (Machine->gamedrv->flags & GAME_NO_SOUND)
-/*TODO*///		{
-/*TODO*///			strcat(buf, ui_getstring (UI_nosound));
-/*TODO*///			strcat(buf, "\n");
-/*TODO*///		}
-/*TODO*///
-/*TODO*///		if (Machine->gamedrv->flags & GAME_NO_COCKTAIL)
-/*TODO*///		{
-/*TODO*///			strcat(buf, ui_getstring (UI_nococktail));
-/*TODO*///			strcat(buf, "\n");
-/*TODO*///		}
-/*TODO*///
-/*TODO*///		if (Machine->gamedrv->flags & (GAME_NOT_WORKING | GAME_UNEMULATED_PROTECTION))
-/*TODO*///		{
-/*TODO*///			const struct GameDriver *maindrv;
-/*TODO*///			int foundworking;
-/*TODO*///
-/*TODO*///			if (Machine->gamedrv->flags & GAME_NOT_WORKING)
-/*TODO*///			{
-/*TODO*///				strcpy(buf, ui_getstring (UI_brokengame));
-/*TODO*///				strcat(buf, "\n");
-/*TODO*///			}
-/*TODO*///			if (Machine->gamedrv->flags & GAME_UNEMULATED_PROTECTION)
-/*TODO*///			{
-/*TODO*///				strcat(buf, ui_getstring (UI_brokenprotection));
-/*TODO*///				strcat(buf, "\n");
-/*TODO*///			}
-/*TODO*///
-/*TODO*///			if (Machine->gamedrv->clone_of && !(Machine->gamedrv->clone_of->flags & NOT_A_DRIVER))
-/*TODO*///				maindrv = Machine->gamedrv->clone_of;
-/*TODO*///			else maindrv = Machine->gamedrv;
-/*TODO*///
-/*TODO*///			foundworking = 0;
-/*TODO*///			i = 0;
-/*TODO*///			while (drivers[i])
-/*TODO*///			{
-/*TODO*///				if (drivers[i] == maindrv || drivers[i]->clone_of == maindrv)
-/*TODO*///				{
-/*TODO*///					if ((drivers[i]->flags & (GAME_NOT_WORKING | GAME_UNEMULATED_PROTECTION)) == 0)
-/*TODO*///					{
-/*TODO*///						if (foundworking == 0)
-/*TODO*///						{
-/*TODO*///							strcat(buf,"\n\n");
-/*TODO*///							strcat(buf, ui_getstring (UI_workingclones));
-/*TODO*///							strcat(buf,"\n\n");
-/*TODO*///						}
-/*TODO*///						foundworking = 1;
-/*TODO*///
-/*TODO*///						sprintf(&buf[strlen(buf)],"%s\n",drivers[i]->name);
-/*TODO*///					}
-/*TODO*///				}
-/*TODO*///				i++;
-/*TODO*///			}
-/*TODO*///		}
-/*TODO*///
-/*TODO*///		strcat(buf,"\n\n");
-/*TODO*///		strcat(buf,ui_getstring (UI_typeok));
-/*TODO*///
-/*TODO*///		ui_displaymessagewindow(bitmap,buf);
-/*TODO*///
-/*TODO*///		done = 0;
-/*TODO*///		do
-/*TODO*///		{
-/*TODO*///			update_video_and_audio();
-/*TODO*///			if (input_ui_pressed(IPT_UI_CANCEL))
-/*TODO*///				return 1;
-/*TODO*///			if (code_pressed_memory(KEYCODE_O) ||
-/*TODO*///					input_ui_pressed(IPT_UI_LEFT))
-/*TODO*///				done = 1;
-/*TODO*///			if (done == 1 && (code_pressed_memory(KEYCODE_K) ||
-/*TODO*///					input_ui_pressed(IPT_UI_RIGHT)))
-/*TODO*///				done = 2;
-/*TODO*///		} while (done < 2);
-/*TODO*///	}
-/*TODO*///
-/*TODO*///
-/*TODO*///	osd_clearbitmap(bitmap);
-/*TODO*///
-/*TODO*///	/* clear the input memory */
-/*TODO*///	while (code_read_async() != CODE_NONE) {};
-/*TODO*///
-/*TODO*///	while (displaygameinfo(bitmap,0) == 1)
-/*TODO*///	{
-/*TODO*///		update_video_and_audio();
-/*TODO*///	}
-/*TODO*///
-/*TODO*///	while (displayimageinfo(bitmap,0) == 1)
-/*TODO*///	{
-/*TODO*///		update_video_and_audio();
-/*TODO*///	}
-/*TODO*///
-/*TODO*///	osd_clearbitmap(bitmap);
-/*TODO*///	/* make sure that the screen is really cleared, in case autoframeskip kicked in */
-/*TODO*///	update_video_and_audio();
-/*TODO*///	update_video_and_audio();
-/*TODO*///	update_video_and_audio();
-/*TODO*///	update_video_and_audio();
-/*TODO*///
-/*TODO*///	return 0;
-/*TODO*///}
-/*TODO*///
+    public static int displaygameinfo(osd_bitmap bitmap, int selected) {
+        int i;
+        String buf = "";
+        String buf2 = "";
+        int sel;
+
+        sel = selected - 1;
+
+        buf = sprintf("%s\n%s %s\n\n%s:\n", Machine.gamedrv.description, Machine.gamedrv.year, Machine.gamedrv.manufacturer,
+                ui_getstring(UI_cpu));
+        i = 0;
+        while (i < MAX_CPU && Machine.drv.cpu[i].cpu_type != 0) {
+            if (Machine.drv.cpu[i].cpu_clock >= 1000000) {
+                buf += sprintf("%s %d.%06d MHz",
+                        cputype_name(Machine.drv.cpu[i].cpu_type),
+                        Machine.drv.cpu[i].cpu_clock / 1000000,
+                        Machine.drv.cpu[i].cpu_clock % 1000000);
+            } else {
+                buf += sprintf("%s %d.%03d kHz",
+                        cputype_name(Machine.drv.cpu[i].cpu_type),
+                        Machine.drv.cpu[i].cpu_clock / 1000,
+                        Machine.drv.cpu[i].cpu_clock % 1000);
+            }
+
+            if ((Machine.drv.cpu[i].cpu_type & CPU_AUDIO_CPU) != 0) {
+                buf2 = sprintf(" (%s)", ui_getstring(UI_sound_lc));
+                buf += buf2;
+            }
+
+            buf += "\n";
+
+            i++;
+        }
+        buf2 = sprintf("\n%s", ui_getstring(UI_sound));
+        buf += buf2;
+        if ((Machine.drv.sound_attributes & SOUND_SUPPORTS_STEREO) != 0) {
+            buf += sprintf(" (%s)", ui_getstring(UI_stereo));
+        }
+        buf += ":\n";
+
+        i = 0;
+        while (i < MAX_SOUND && Machine.drv.sound[i].sound_type != 0) {
+            if (sound_num(Machine.drv.sound[i]) != 0) {
+                buf += sprintf("%dx", sound_num(Machine.drv.sound[i]));
+            }
+
+            buf += sprintf("%s", sound_name(Machine.drv.sound[i]));
+
+            if (sound_clock(Machine.drv.sound[i]) != 0) {
+                if (sound_clock(Machine.drv.sound[i]) >= 1000000) {
+                    buf += sprintf(" %d.%06d MHz",
+                            sound_clock(Machine.drv.sound[i]) / 1000000,
+                            sound_clock(Machine.drv.sound[i]) % 1000000);
+                } else {
+                    buf += sprintf(" %d.%03d kHz",
+                            sound_clock(Machine.drv.sound[i]) / 1000,
+                            sound_clock(Machine.drv.sound[i]) % 1000);
+                }
+            }
+            buf += "\n";
+
+            i++;
+        }
+
+        if ((Machine.drv.video_attributes & VIDEO_TYPE_VECTOR) != 0) {
+            buf += sprintf("\n%s\n", ui_getstring(UI_vectorgame));
+        } else {
+            int pixelx, pixely, tmax, tmin, rem;
+
+            pixelx = 4 * (Machine.visible_area.max_y - Machine.visible_area.min_y + 1);
+            pixely = 3 * (Machine.visible_area.max_x - Machine.visible_area.min_x + 1);
+
+            /* calculate MCD */
+            if (pixelx >= pixely) {
+                tmax = pixelx;
+                tmin = pixely;
+            } else {
+                tmax = pixely;
+                tmin = pixelx;
+            }
+            while ((rem = tmax % tmin) != 0) {
+                tmax = tmin;
+                tmin = rem;
+            }
+            /* tmin is now the MCD */
+
+            pixelx /= tmin;
+            pixely /= tmin;
+
+            buf += sprintf("\n%s:\n", ui_getstring(UI_screenres));
+            buf += sprintf("%d x %d (%s) %f Hz\n",
+                    Machine.visible_area.max_x - Machine.visible_area.min_x + 1,
+                    Machine.visible_area.max_y - Machine.visible_area.min_y + 1,
+                    (Machine.gamedrv.flags & ORIENTATION_SWAP_XY) != 0 ? "V" : "H",
+                    Machine.drv.frames_per_second);
+//#if 0
+            buf += sprintf("pixel aspect ratio %d:%d\n",
+                    pixelx, pixely);
+            buf += sprintf("%d colors ", Machine.drv.total_colors);
+            if ((Machine.gamedrv.flags & GAME_REQUIRES_16BIT) != 0) {
+                buf += "(16-bit required)\n";
+            } else if ((Machine.drv.video_attributes & VIDEO_MODIFIES_PALETTE) != 0) {
+                buf += "(dynamic)\n";
+            } else {
+                buf += "(static)\n";
+            }
+//#endif
+        }
+
+        if (sel == -1) {
+            /* startup info, print MAME version and ask for any key */
+
+            buf2 = sprintf("\n\t%s ", "Arcadeflex"/*ui_getstring (UI_mame)*/);
+            /* \t means that the line will be centered */
+            buf += buf2;
+
+            buf += build_version;
+            buf2 = sprintf("\n\t%s", ui_getstring(UI_anykey));
+            buf += buf2;
+            ui_drawbox(bitmap, 0, 0, Machine.uiwidth, Machine.uiheight);
+            ui_displaymessagewindow(bitmap, buf);
+
+            sel = 0;
+            if (code_read_async() != CODE_NONE) {
+                sel = -1;
+            }
+        } else {
+            /* menu system, use the normal menu keys */
+            buf += "\n\t";
+            buf += ui_getstring(UI_lefthilight);
+            buf += " ";
+            buf += ui_getstring(UI_returntomain);
+            buf += " ";
+            buf += ui_getstring(UI_righthilight);
+
+            ui_displaymessagewindow(bitmap, buf);
+
+            if (input_ui_pressed(IPT_UI_SELECT) != 0) {
+                sel = -1;
+            }
+
+            if (input_ui_pressed(IPT_UI_CANCEL) != 0) {
+                sel = -1;
+            }
+
+            if (input_ui_pressed(IPT_UI_CONFIGURE) != 0) {
+                sel = -2;
+            }
+        }
+
+        if (sel == -1 || sel == -2) {
+            /* tell updatescreen() to clean after us */
+            need_to_clear_bitmap = 1;
+        }
+
+        return sel + 1;
+    }
+
+    public static int showgamewarnings(osd_bitmap bitmap) {
+        int i;
+        String buf = "";
+
+        if ((Machine.gamedrv.flags
+                & (GAME_NOT_WORKING | GAME_UNEMULATED_PROTECTION | GAME_WRONG_COLORS | GAME_IMPERFECT_COLORS
+                | GAME_NO_SOUND | GAME_IMPERFECT_SOUND | GAME_NO_COCKTAIL)) != 0) {
+            int done;
+
+            buf = ui_getstring(UI_knownproblems);
+            buf += "\n\n";
+            if ((Machine.gamedrv.flags & GAME_COMPUTER) != 0) {
+                buf += ui_getstring(UI_comp1);
+                buf += "\n\n";
+                buf += ui_getstring(UI_comp2);
+                buf += "\n";
+            }
+            if ((Machine.gamedrv.flags & GAME_IMPERFECT_COLORS) != 0) {
+                buf += ui_getstring(UI_imperfectcolors);
+                buf += "\n";
+            }
+
+            if ((Machine.gamedrv.flags & GAME_WRONG_COLORS) != 0) {
+                buf += ui_getstring(UI_wrongcolors);
+                buf += "\n";
+            }
+
+            if ((Machine.gamedrv.flags & GAME_IMPERFECT_SOUND) != 0) {
+                buf += ui_getstring(UI_imperfectsound);
+                buf += "\n";
+            }
+            if ((Machine.gamedrv.flags & GAME_NO_SOUND) != 0) {
+                buf += ui_getstring(UI_nosound);
+                buf += "\n";
+            }
+
+            if ((Machine.gamedrv.flags & GAME_NO_COCKTAIL) != 0) {
+                buf += ui_getstring(UI_nococktail);
+                buf += "\n";
+            }
+
+            if ((Machine.gamedrv.flags & (GAME_NOT_WORKING | GAME_UNEMULATED_PROTECTION)) != 0) {
+                messH.GameDriver maindrv;
+                int foundworking;
+
+                if ((Machine.gamedrv.flags & GAME_NOT_WORKING) != 0) {
+                    buf += ui_getstring(UI_brokengame);
+                    buf += "\n";
+                }
+                if ((Machine.gamedrv.flags & GAME_UNEMULATED_PROTECTION) != 0) {
+                    buf += ui_getstring(UI_brokenprotection);
+                    buf += "\n";
+                }
+                if (Machine.gamedrv.clone_of != null && (Machine.gamedrv.clone_of.flags & NOT_A_DRIVER) == 0) {
+                    maindrv = Machine.gamedrv.clone_of;
+                } else {
+                    maindrv = Machine.gamedrv;
+                }
+
+                foundworking = 0;
+                i = 0;
+                while (drivers[i] != null) {
+                    if (drivers[i] == maindrv || drivers[i].clone_of == maindrv) {
+                        if ((drivers[i].flags & (GAME_NOT_WORKING | GAME_UNEMULATED_PROTECTION)) == 0) {
+                            if (foundworking == 0) {
+                                buf += "\n\n";
+                                buf += ui_getstring(UI_workingclones);
+                                buf += "\n\n";
+                            }
+                            foundworking = 1;
+
+                            buf += sprintf("%s\n", drivers[i].name);
+                        }
+                    }
+                    i++;
+                }
+            }
+
+            buf += "\n\n";
+            buf += ui_getstring(UI_typeok);
+
+            ui_displaymessagewindow(bitmap, buf);
+            done = 0;
+            do {
+                update_video_and_audio();
+                if (input_ui_pressed(IPT_UI_CANCEL) != 0) {
+                    return 1;
+                }
+                if (code_pressed_memory(KEYCODE_O) != 0
+                        || input_ui_pressed(IPT_UI_LEFT) != 0) {
+                    done = 1;
+                }
+                if (done == 1 && (code_pressed_memory(KEYCODE_K) != 0
+                        || input_ui_pressed(IPT_UI_RIGHT) != 0)) {
+                    done = 2;
+                }
+            } while (done < 2);
+        }
+
+        osd_clearbitmap(bitmap);
+
+        /* clear the input memory */
+        while (code_read_async() != CODE_NONE) {
+        }
+
+        while (displaygameinfo(bitmap, 0) == 1) {
+            update_video_and_audio();
+        }
+        while (displayimageinfo(bitmap, 0) == 1) {
+            update_video_and_audio();
+        }
+
+        osd_clearbitmap(bitmap);
+        /* make sure that the screen is really cleared, in case autoframeskip kicked in */
+        update_video_and_audio();
+        update_video_and_audio();
+        update_video_and_audio();
+        update_video_and_audio();
+
+        return 0;
+    }
+
     /* Word-wraps the text in the specified buffer to fit in maxwidth characters per line.
     The contents of the buffer are modified.
     Known limitations: Words longer than maxwidth cause the function to fail. */
@@ -2548,10 +2540,10 @@ public class usrintrf {
 /*TODO*///			case UI_CALIBRATE:
 /*TODO*///				res = calibratejoysticks(bitmap, sel >> SEL_BITS);
 /*TODO*///				break;
-			case UI_IMAGEINFO:
-				res = displayimageinfo(bitmap, sel >> SEL_BITS);
-				break;
-/*TODO*///			case UI_FILEMANAGER:
+                case UI_IMAGEINFO:
+                    res = displayimageinfo(bitmap, sel >> SEL_BITS);
+                    break;
+                /*TODO*///			case UI_FILEMANAGER:
 /*TODO*///				res = filemanager(bitmap, sel >> SEL_BITS);
 /*TODO*///				break;
 /*TODO*///			case UI_TAPECONTROL:
@@ -2629,45 +2621,41 @@ public class usrintrf {
         return sel + 1;
     }
 
-    /*TODO*///
-/*TODO*///
-/*TODO*////*********************************************************************
-/*TODO*///
-/*TODO*///  start of On Screen Display handling
-/*TODO*///
-/*TODO*///*********************************************************************/
-/*TODO*///
-/*TODO*///static void displayosd(struct osd_bitmap *bitmap,const char *text,int percentage,int default_percentage)
-/*TODO*///{
-/*TODO*///	struct DisplayText dt[2];
-/*TODO*///	int avail;
-/*TODO*///
-/*TODO*///
-/*TODO*///	avail = (Machine->uiwidth / Machine->uifontwidth) * 19 / 20;
-/*TODO*///
-/*TODO*///	ui_drawbox(bitmap,(Machine->uiwidth - Machine->uifontwidth * avail) / 2,
-/*TODO*///			(Machine->uiheight - 7*Machine->uifontheight/2),
-/*TODO*///			avail * Machine->uifontwidth,
-/*TODO*///			3*Machine->uifontheight);
-/*TODO*///
-/*TODO*///	avail--;
-/*TODO*///
-/*TODO*///	drawbar(bitmap,(Machine->uiwidth - Machine->uifontwidth * avail) / 2,
-/*TODO*///			(Machine->uiheight - 3*Machine->uifontheight),
-/*TODO*///			avail * Machine->uifontwidth,
-/*TODO*///			Machine->uifontheight,
-/*TODO*///			percentage,default_percentage);
-/*TODO*///
-/*TODO*///	dt[0].text = text;
-/*TODO*///	dt[0].color = UI_COLOR_NORMAL;
-/*TODO*///	dt[0].x = (Machine->uiwidth - Machine->uifontwidth * strlen(text)) / 2;
-/*TODO*///	dt[0].y = (Machine->uiheight - 2*Machine->uifontheight) + 2;
-/*TODO*///	dt[1].text = 0; /* terminate array */
-/*TODO*///	displaytext(bitmap,dt,0,0);
-/*TODO*///}
-/*TODO*///
-/*TODO*///
-/*TODO*///
+    /**
+     * *******************************************************************
+     *
+     * start of On Screen Display handling
+     *
+     ********************************************************************
+     */
+    public static void displayosd(osd_bitmap bitmap, String text, int percentage, int default_percentage) {
+        DisplayText[] dt = DisplayText.create(2);
+        int avail;
+
+        avail = (Machine.uiwidth / Machine.uifontwidth) * 19 / 20;
+
+        ui_drawbox(bitmap, (Machine.uiwidth - Machine.uifontwidth * avail) / 2,
+                (Machine.uiheight - 7 * Machine.uifontheight / 2),
+                avail * Machine.uifontwidth,
+                3 * Machine.uifontheight);
+
+        avail--;
+
+        drawbar(bitmap, (Machine.uiwidth - Machine.uifontwidth * avail) / 2,
+                (Machine.uiheight - 3 * Machine.uifontheight),
+                avail * Machine.uifontwidth,
+                Machine.uifontheight,
+                percentage, default_percentage);
+
+        dt[0].text = text;
+        dt[0].color = UI_COLOR_NORMAL;
+        dt[0].x = (Machine.uiwidth - Machine.uifontwidth * strlen(text)) / 2;
+        dt[0].y = (Machine.uiheight - 2 * Machine.uifontheight) + 2;
+        dt[1].text = null;
+        /* terminate array */
+        displaytext(bitmap, dt, 0, 0);
+    }
+
     public static onscrd_fncPtr onscrd_volume = new onscrd_fncPtr() {
         public void handler(osd_bitmap bitmap, int increment, int arg) {
             String buf;
