@@ -90,9 +90,11 @@ public class spectrum
         public static class quick_struct {
             public String name;
             public short addr;
-            public int u8_data;
-            public int lenght;
+            public UBytePtr data= new UBytePtr();
+            public int length=0;
         };
+        
+        public static quick_struct quick = new quick_struct();
 	
 	public static InitMachinePtr spectrum_init_machine = new InitMachinePtr() { 
             public void handler() 
@@ -176,10 +178,6 @@ public class spectrum
 					osd_fread(file, data, datasize);
 					osd_fclose(file);
                                         
-                                        System.out.println(device_filename(IO_SNAPSHOT, id));
-                                        System.out.println(strlen(device_filename(IO_SNAPSHOT, id) ));
-                                        System.out.println(device_filename(IO_SNAPSHOT, id).substring(device_filename(IO_SNAPSHOT, id).length()-4));
-	
 					//if (!stricmp(device_filename(IO_SNAPSHOT, id) + strlen(device_filename(IO_SNAPSHOT, id) ) - 4, ".sna"))
                                         if (stricmp(device_filename(IO_SNAPSHOT, id).substring(device_filename(IO_SNAPSHOT, id).length()-4), ".sna")==0)
                                         {
@@ -208,7 +206,7 @@ public class spectrum
 	
 	static void spectrum_rom_exit(int id)
 	{
-		System.out.println("ROM EXIT");
+		
                 if (pSnapshotData != null)
 		{
 			/* free snapshot/tape data */
@@ -466,8 +464,7 @@ public class spectrum
 	/* Page in the 48K Basic ROM. Used when running 48K snapshots on a 128K machine. */
 	static void spectrum_page_basicrom()
 	{
-		System.out.println("spectrum_page_basicrom");
-                
+		
                 if (spectrum_128_port_7ffd_data == -1)
 			return;
 		spectrum_128_port_7ffd_data |= 0x10;
@@ -785,7 +782,7 @@ public class spectrum
                 //pSnapshotData.offset=0;
 	
 		is48ksnap = is48k_z80snapshot(pSnapshotData, SnapshotDataSize);
-                System.out.println(is48ksnap);
+                System.out.println("is48ksnap: "+is48ksnap);
                 pSnapshotData.offset=0;
                 
 		//if ((spectrum_128_port_7ffd_data == -1) && !is48ksnap)
@@ -796,7 +793,7 @@ public class spectrum
 		}
 	
                 //z80.Z80_Regs regs = (z80.Z80_Regs) cpu.get(0).intf.get_context();
-                System.out.println("go spectrum_setup_z80!!!!");
+                
 		/* AF */
 		hi = pSnapshot.read(0) & 0x0ff;
 		lo = pSnapshot.read(1) & 0x0ff;
@@ -1218,59 +1215,79 @@ public class spectrum
                 
 	}
 	
-	int spec_quick_init(int id)
-	{
-		/*TODO*/////FILE *fp;
+	//int spec_quick_init(int id)
+        public static io_initPtr spec_quick_init = new io_initPtr() {
+            public int handler(int id) {
+		
+                Object fp = null;
 		int read;
-	
-		/*TODO*/////memset(&quick, 0, sizeof (quick));
+                
+		quick = new quick_struct();
 	
 		if (device_filename(IO_QUICKLOAD, id) == null)
 			return INIT_OK;
-	
+                
 	/*	quick.name = name; */
 	
-		/*TODO*/////fp = image_fopen(IO_QUICKLOAD, id, OSD_FILETYPE_IMAGE_R, 0);
-		/*TODO*/////if (!fp)
-		/*TODO*/////	return INIT_FAILED;
-	
-		/*TODO*/////quick.length = osd_fsize(fp);
-		/*TODO*/////quick.addr = 0x4000;
-	
-		/*TODO*/////if ((quick.data = malloc(quick.length)) == NULL)
-		/*TODO*/////{
-		/*TODO*/////	osd_fclose(fp);
-		/*TODO*/////	return INIT_FAILED;
-		/*TODO*/////}
-		/*TODO*/////read = osd_fread(fp, quick.data, quick.length);
-		/*TODO*/////osd_fclose(fp);
-		/*TODO*/////return read != quick.length;
+		fp = image_fopen(IO_QUICKLOAD, id, OSD_FILETYPE_IMAGE_R, 0);
                 
-                // REMEBER REMOVE THIS WHEN FINISH TODOs!!!!!
-                return 0;
-	}
+		if (fp == null)
+			return INIT_FAILED;
 	
-	void spec_quick_exit(int id)
-	{
-		/*TODO*/////if (quick.data != null)
-		/*TODO*/////	free(quick.data);
-	}
+		quick.length = osd_fsize(fp);
+		quick.addr = 0x4000;
+                                
+                quick.data=new UBytePtr(quick.length);
+                	
+		//if ((quick.data = malloc(quick.length)) == NULL)
+                /*if (quick.data == null)
+		{
+			osd_fclose(fp);
+			return INIT_FAILED;
+		}*/
+		read = osd_fread(fp, quick.data, quick.length);
+		osd_fclose(fp);
+                int ret = 1;
+                if (read != quick.length)
+                    ret = 0;
+                
+                // load
+                //spectrum.spec_quick_open.handler(id, 0, null);
+                
+		return ret;          
+               
+	}};
+	
+	//void spec_quick_exit(int id)
+        public static io_exitPtr spec_quick_exit = new io_exitPtr() {
+            public int handler(int id) {
+	
+		if (quick.data != null)
+			quick.data=null;
+                
+                return 1;
+	}};
 	
 	//static int spec_quick_open(int id, int mode, void arg)
-        static int spec_quick_open(int id, int mode)
-	{
-		/*TODO*/////int i;
-	
-		/*TODO*/////if (quick.data == null)
-		/*TODO*/////	return 1;
-	
-		/*TODO*/////for (i = 0; i < quick.length; i++)
-		/*TODO*/////{
-		/*TODO*/////	cpu_writemem16(i + quick.addr, quick.data[i]);
-		/*TODO*/////}
-		/*TODO*/////logerror("quick loading %s at %.4x size:%.4x\n",
-		/*TODO*/////		 device_filename(IO_QUICKLOAD, id), quick.addr, quick.length);
+        //static int spec_quick_open(int id, int mode)
+        public static io_openPtr spec_quick_open = new io_openPtr() {
+            public int handler(int id, int mode, Object arg) {
+		int i;
+	System.out.println("spec_quick_open");
+        
+        
+		if (quick.data == null)
+			return 1;
+                quick.data.offset=0;
+		for (i = 0; i < quick.length; i++)
+		{
+			cpu_writemem16(i + quick.addr, quick.data.read(i));
+                        System.out.println(quick.data.read(i));
+		}
+		logerror("quick loading %s at %.4x size:%.4x\n",
+		
+                device_filename(IO_QUICKLOAD, id), quick.addr, quick.length);
 	
 		return 0;
-	}
+	}};
 }
