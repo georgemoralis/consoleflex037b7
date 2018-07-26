@@ -135,11 +135,12 @@ public class spectrum
 	--------------------------------------------------*/
 	
 	static int PreviousFE = 0;
+        
+        public static int quickload = 0;
 	
 	public static void spectrum_port_fe_w (int offset,int data)
 	{
-		//unsigned char Changed;
-                int Changed;
+		int Changed;
 	
 		Changed = PreviousFE^data;
 	
@@ -1567,19 +1568,20 @@ public class spectrum
 	
 	public static InterruptPtr spec_interrupt = new InterruptPtr() { public int handler() 
 	{
-                int quickload = 0;
-	
+                	
 			//if (!quickload && (readinputport(16) & 0x8000))
                         if ( (quickload!=1) && ((readinputport(16) & 0x8000)!=0))
 			{
-					/*TODO*/////spec_quick_open (0, 0, null);
+					spec_quick_open.handler(0, 0, null);
+                                        
 					quickload = 1;
+                                        //return quickload;
 			}
 			else
 					quickload = 0;
 	
-			//return interrupt ();
-                        return interrupt.handler();
+			return interrupt.handler();
+                        
 	} };
 	
 	static  Speaker_interface spectrum_speaker_interface= new Speaker_interface
@@ -1602,9 +1604,9 @@ public class spectrum
 			new MachineCPU(
 				CPU_Z80|CPU_16BIT_PORT,
 				3500000,		/* 3.5 Mhz */
-							spectrum_readmem,spectrum_writemem,
+				spectrum_readmem,spectrum_writemem,
 				spectrum_readport,spectrum_writeport,
-							spec_interrupt,1
+				spec_interrupt,1
 			),
 		},
 		50, 2500,		/* frames per second, vblank duration */
@@ -1615,7 +1617,7 @@ public class spectrum
 		/* video hardware */
 		SPEC_SCREEN_WIDTH,			/* screen width */
 		SPEC_SCREEN_HEIGHT, 			/* screen height */
-			new rectangle( 0, SPEC_SCREEN_WIDTH-1, 0, SPEC_SCREEN_HEIGHT-1),  /* visible_area */
+		new rectangle( 0, SPEC_SCREEN_WIDTH-1, 0, SPEC_SCREEN_HEIGHT-1),  /* visible_area */
 		spectrum_gfxdecodeinfo, 			 /* graphics decode info */
 		16, 256,					/* colors used for the characters */
 		spectrum_init_palette,				 /* initialise palette */
@@ -1651,16 +1653,16 @@ public class spectrum
 		new MachineCPU[] {
 			new MachineCPU(
 				CPU_Z80|CPU_16BIT_PORT,
-							3546900,		/* 3.54690 Mhz */
-							spectrum_128_readmem,spectrum_128_writemem,
-							spectrum_128_readport,spectrum_128_writeport,
-							spec_interrupt,1
+                                3546900,		/* 3.54690 Mhz */
+                                spectrum_128_readmem,spectrum_128_writemem,
+                                spectrum_128_readport,spectrum_128_writeport,
+                                spec_interrupt,1
 			),
 		},
 		50, 2500,		/* frames per second, vblank duration */
 		1,
-			spectrum_128_init_machine,
-			spectrum_128_exit_machine,
+                spectrum_128_init_machine,
+                spectrum_128_exit_machine,
 	
 		/* video hardware */
 		SPEC_SCREEN_WIDTH,				/* screen width */
@@ -1986,25 +1988,28 @@ public class spectrum
 	ROM_END(); }}; 
 	
         
-	/*TODO*/////#define IODEVICE_SPEC_QUICK \
-	/*TODO*/////{\
-	/*TODO*/////   IO_QUICKLOAD,	   /* type */\
-	/*TODO*/////   1,				   /* count */\
-	/*TODO*/////   "scr\0",            /* file extensions */\
-	/*TODO*/////   IO_RESET_ALL,	   /* reset if file changed */\
-	/*TODO*/////   null,			   /* id */\
-	/*TODO*/////   spec_quick_init,    /* init */\
-	/*TODO*/////   spec_quick_exit,    /* exit */\
-	/*TODO*/////   null,			   /* info */\
-	/*TODO*/////   spec_quick_open,    /* open */\
-	/*TODO*/////  null,			   /* close */\
-	/*TODO*/////   null,			   /* status */\
-	/*TODO*/////   null,			   /* seek */\
-	/*TODO*/////   null,			   /* input */\
-	/*TODO*/////   null,			   /* output */\
-	/*TODO*/////   null,			   /* input_chunk */\
-	/*TODO*/////   null 			   /* output_chunk */\
-	/*TODO*/////}
+	static IODevice IODEVICE_SPEC_QUICK = 
+            new IODevice(
+                    IO_QUICKLOAD,		/* type */
+                    1,					/* count */
+                    "scr\0",       /* file extensions */
+                    IO_RESET_ALL,		/* reset if file changed */
+                    null,	/* id */
+                    spec_quick_init,	/* init */
+                    spec_quick_exit, /* exit */
+                    null, /* info */
+                    spec_quick_open, /* open */
+                    null, /* close */
+                    null, /* status */
+                    null, /* seek */
+                    null, /* tell */
+                    null, /* input */
+                    null, /* output */
+                    null, /* input_chunk */
+                    null /* output_chunk */                
+                );
+                
+        
         
         static IODevice io_spectrum[] = {
             new IODevice(
@@ -2026,10 +2031,10 @@ public class spectrum
                 null, /* output */
                 null, /* input_chunk */
                 null /* output_chunk */
-                /*TODO*/////),
-                /*TODO*/////IODEVICE_SPEC_QUICK,
+                ),
+                IODEVICE_SPEC_QUICK,
 		/*TODO*/////IO_CASSETTE_WAVE(1,"wav\0tap\0", null,spectrum_cassette_init, spectrum_cassette_exit),
-            ),
+            /*TODO*/////),
                 new IODevice(IO_END)
         };
 	
