@@ -29,6 +29,8 @@ import static arcadeflex.libc.cstring.memset;
 import static mess.machine.flopdrv.*;
 import static WIP.arcadeflex.libc.memcpy.*;
 
+import static mess.machine.flopdrv.*;
+
 public class dsk 
 {
 	/* disk image and extended disk image support code */
@@ -82,30 +84,29 @@ public class dsk
             }
             
         };
-	/*TODO*/////floppy_interface dsk_floppy_interface=
-	/*TODO*/////{
-	/*TODO*/////	dsk_seek_callback,
-	/*TODO*/////	dsk_get_sectors_per_track,
-	/*TODO*/////	dsk_get_id_callback,
-	/*TODO*/////	dsk_read_sector_data_into_buffer,
-	/*TODO*/////	dsk_write_sector_data_from_buffer,
-	/*TODO*/////	null
-	/*TODO*/////};
+	
 	
 	/*TODO*/////static void dsk_disk_image_init(dsk_drive *);
 	
 	static dsk_drive[] drives = new dsk_drive[dsk_NUM_DRIVES]; /* the drives */
+        
+        /*static {
+          for (int i=0;i<dsk_NUM_DRIVES;i++)
+              drives[i]=new dsk_drive();
+        };*/
 	
 	/* load image */
 	//int dsk_load(int type, int id, UBytePtr ptr)
         public static io_initPtr dsk_load = new io_initPtr() {
             public int handler(int id) {
-	
+                 System.out.println("dsk_load");
 		//void *file;
                 Object file=null;
 	
 		//file = image_fopen(IO_SNAPSHOT, id, OSD_FILETYPE_IMAGE_RW, OSD_FOPEN_READ);
                 file = image_fopen(IO_FLOPPY, id, OSD_FILETYPE_IMAGE_R, 0);
+                
+                System.out.println("file: "+file);
                 
 		//if (file != 0)
                 if (file != null)
@@ -115,6 +116,8 @@ public class dsk
 	
 			/* get file size */
 			datasize = osd_fsize(file);
+                        
+                        System.out.println("size: "+datasize);
 	
 			if (datasize!=0)
 			{
@@ -128,19 +131,31 @@ public class dsk
 	
 					//ptr = data;
                                         diskimage_data = data;
+                                        
+                                        System.out.println("data: "+diskimage_data);
 	
 					/* close file */
 					osd_fclose(file);
+                                        
+                                        System.out.println("Sale");
 	
 					/* ok! */
-					return 1;
+					//return INIT_OK;
+                                        drives[id]=new dsk_drive();
+                                        drives[id].data=data;
+                                        
+                                        
+                                        //flopdrv.drives[id].f_interface=dsk_floppy_interface;
+                                        
+                                        return 1;
 				}
 				osd_fclose(file);
 	
 			}
 		}
 	
-		return 0;
+		//return INIT_FAILED;
+                return 0;
 	}};
 	
 	
@@ -148,7 +163,9 @@ public class dsk
 	//int dsk_floppy_load(int id)
         public static io_initPtr dsk_floppy_load = new io_initPtr() {
             public int handler(int id) {
+                System.out.println("dsk_floppy_load "+id);
 		dsk_drive thedrive = drives[id];
+                System.out.println("thedrive "+thedrive);
 	
 		/* load disk image */
 		//if (dsk_load(IO_FLOPPY,id,thedrive.data) != 0)
@@ -168,7 +185,8 @@ public class dsk
 	
 	public static int dsk_save(int type, int id, UBytePtr ptr)
 	{
-		Object file = image_fopen(type, id, OSD_FILETYPE_IMAGE_RW, 0);
+		System.out.println("dsk_save");
+                Object file = image_fopen(type, id, OSD_FILETYPE_IMAGE_RW, 0);
 	
 		if (file != null)
 		{
@@ -202,15 +220,20 @@ public class dsk
 	
 	public static io_idPtr dsk_floppy_id = new io_idPtr() {
             public int handler(int id) {
+                System.out.println("dsk_floppy_id "+id);
                 int valid;
 		//UBytePtr diskimage_data;
 	
-		valid = 0;
+		valid = ID_FAILED;
 	
 		/* load disk image */
 		//if (dsk_load(IO_FLOPPY, id, diskimage_data))
-                if (dsk_load.handler(id) != 0)
+                System.out.println("Trying to load disk "+id);
+                if (dsk_load.handler(id) == ID_OK)
 		{
+                        System.out.println("Loading disk "+id);
+                        System.out.println("data "+diskimage_data);
+                        
 			/* disk image loaded */
 			if (diskimage_data != null)
 			{
@@ -221,16 +244,21 @@ public class dsk
 					(memcmp(diskimage_data.memory, 0, "EXTENDED", 8)==0)
 					)
 				{
-					valid = 1;
+                                    System.out.println("OK!");
+                                    valid = ID_OK;
 	
-				}
+				} else {
+                                    System.out.println("NOT OK :(");
+                                }
 			}
 	
 			/* free the file */
 			//free(diskimage_data);
                         diskimage_data =null;
-		}
-	
+		} else {
+                    System.out.println("NOT Loading disk "+id);
+                }
+                System.out.println("Retorno: "+valid); 
 		return valid;
             }
         };
@@ -239,7 +267,7 @@ public class dsk
 	//void dsk_floppy_exit(int id)
         public static io_exitPtr dsk_floppy_exit = new io_exitPtr() {
             public int handler(int id) {
-	
+                System.out.println("dsk_floppy_exit");
 		dsk_drive thedrive = drives[id];
 	
 		if (thedrive.data!=null)
@@ -258,7 +286,8 @@ public class dsk
 	
 	public static void dsk_dsk_init_track_offsets(dsk_drive thedrive)
 	{
-		int track_offset;
+		System.out.println("dsk_dsk_init_track_offsets");
+                int track_offset;
 		int i;
 		int track_size;
 		int tracks, sides;
@@ -302,7 +331,8 @@ public class dsk
 	
 	public static void dsk_dsk_init_sector_offsets(dsk_drive thedrive,int track,int side)
 	{
-		int track_offset;
+		System.out.println("dsk_dsk_init_sector_offsets");
+                int track_offset;
 	
 		side = side & 0x01;
 	
@@ -340,7 +370,8 @@ public class dsk
 	
 	public static void dsk_extended_dsk_init_track_offsets(dsk_drive thedrive)
 	{
-		int track_offset;
+		System.out.println("dsk_extended_dsk_init_track_offsets");
+                int track_offset;
 		int i;
 		int track_size;
 		int tracks, sides;
@@ -390,7 +421,8 @@ public class dsk
 	
 	public static void dsk_extended_dsk_init_sector_offsets(dsk_drive thedrive,int track,int side)
 	{
-		int track_offset;
+		System.out.println("dsk_extended_dsk_init_sector_offsets");
+                int track_offset;
 	
 		side = side & 0x01;
 	
@@ -431,13 +463,14 @@ public class dsk
 	
 	public static void dsk_disk_image_init(dsk_drive thedrive)
 	{
-		/*-----------------27/02/00 11:26-------------------
+		System.out.println("dsk_disk_image_init");
+                /*-----------------27/02/00 11:26-------------------
 		 clear offsets
 		--------------------------------------------------*/
-                /*TODO*///// CHECK sizeof(unsigned long)!!!!!!
-		/*TODO*/////memset(thedrive.track_offsets[0], 0, dsk_MAX_TRACKS*dsk_MAX_SIDES*sizeof(unsigned long));
+                // CHECK sizeof(unsigned long)!!!!!!
+		//memset(thedrive.track_offsets[0], 0, dsk_MAX_TRACKS*dsk_MAX_SIDES*sizeof(unsigned long));
                 memset(thedrive.data, thedrive.track_offsets[0], 0, dsk_MAX_TRACKS*dsk_MAX_SIDES);
-		/*TODO*/////memset(thedrive.sector_offsets[0], 0, 20*sizeof(unsigned long));
+		//memset(thedrive.sector_offsets[0], 0, 20*sizeof(unsigned long));
                 memset(thedrive.data, thedrive.sector_offsets[0], 0, 20);
 	
 		if (memcmp(thedrive.data.memory,0, "MV - CPC",8)==0)
@@ -461,13 +494,15 @@ public class dsk
 	
 	public static void dsk_seek_callback(int drive, int physical_track)
 	{
-		drive = drive & 0x03;
+		System.out.println("dsk_seek_callback "+physical_track);
+                drive = drive & 0x03;
 		drives[drive].current_track = physical_track;
 	}
 	
 	static int get_track_offset(int drive, int side)
 	{
-		dsk_drive thedrive;
+		System.out.println("dsk_track_offset");
+                dsk_drive thedrive;
 	
 		drive = drive & 0x03;
 		side = side & 0x01;
@@ -479,13 +514,15 @@ public class dsk
 	
 	static UBytePtr get_floppy_data(int drive)
 	{
-		drive = drive & 0x03;
+		System.out.println("get_floppy_data");
+                drive = drive & 0x03;
 		return drives[drive].data;
 	}
 	
 	public static void dsk_get_id_callback(int drive, chrn_id id, int id_index, int side)
 	{
-		int id_offset;
+		System.out.println("dsk_get_id_callback");
+                int id_offset;
 		int track_offset;
 		UBytePtr track_header;
 		UBytePtr data;
@@ -531,7 +568,8 @@ public class dsk
 	//char[] dsk_get_sector_ptr_callback(int drive, int sector_index, int side)
         public static UBytePtr dsk_get_sector_ptr_callback(int drive, int sector_index, int side)
 	{
-		int track_offset;
+		System.out.println("dsk_get_sector_ptr_callback");
+                int track_offset;
 		int sector_offset;
 		int track;
 		dsk_drive thedrive;
@@ -581,7 +619,8 @@ public class dsk
 	
 	public static void dsk_write_sector_data_from_buffer(int drive, int side, int index1, char[] ptr, int length)
 	{
-		UBytePtr pSectorData;
+		System.out.println("dsk_write_sector_data_from_buffer");
+                UBytePtr pSectorData;
 		
 	        pSectorData = dsk_get_sector_ptr_callback(drive, index1, side);
 		
@@ -593,7 +632,8 @@ public class dsk
 	
 	public static void dsk_read_sector_data_into_buffer(int drive, int side, int index1, char[] ptr, int length)
 	{
-		UBytePtr pSectorData;
+		System.out.println("dsk_read_sector_data_into_buffer");
+                UBytePtr pSectorData;
 	
 	        pSectorData = dsk_get_sector_ptr_callback(drive, index1, side);
 	
@@ -605,7 +645,8 @@ public class dsk
 	
 	public static int dsk_get_sectors_per_track(int drive, int side)
 	{
-		int track_offset;
+		System.out.println("dsk_get_sectors_per_track");
+                int track_offset;
 		UBytePtr track_header;
 		UBytePtr data;
 	
