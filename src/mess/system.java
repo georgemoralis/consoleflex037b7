@@ -325,6 +325,10 @@ public class system {
         driver_specpl3e,
         //	DRIVER( specpls4 )	/*
         driver_specpls4,
+        //	DRIVER( scorpio )	/*
+        driver_scorpion,
+        //	DRIVER( pentagon )	/*
+        driver_pentagon,
         /*TODO*///#endif
         /*TODO*///
         /*TODO*///	/* ASCII & MICROSOFT */
