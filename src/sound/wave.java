@@ -584,8 +584,12 @@ public class wave extends snd_interface {
 /*TODO*///	wave_close(id);
 /*TODO*///}
 /*TODO*///
-/*TODO*///int wave_status(int id, int newstatus)
-/*TODO*///{
+    public static io_statusPtr wave_status = new io_statusPtr(){
+
+        public int handler(int id, int newststatus)
+        {
+            System.out.println("Unimplemented wave_status fucntion");//TODO
+            return 0;//TOBE REMOVED
 /*TODO*///	/* wave status has the following bitfields:
 /*TODO*///	 *
 /*TODO*///	 *  Bit 2:  Inhibit Motor (1=inhibit 0=noinhibit)
@@ -627,8 +631,8 @@ public class wave extends snd_interface {
 /*TODO*///	}
 /*TODO*///	return (w->timer ? WAVE_STATUS_MOTOR_ENABLE : 0) |
 /*TODO*///		(w->status & WAVE_STATUS_MOTOR_INHIBIT ? w->status : w->status & ~WAVE_STATUS_MOTOR_ENABLE);
-/*TODO*///}
-/*TODO*///
+}
+    };
     public static io_openPtr wave_open = new io_openPtr() {
 
         public int handler(int id, int mode, Object args) {
