@@ -37,7 +37,6 @@ import WIP.sound._5220intf;
 import WIP.sound.k007232;
 import sound.ym2413;
 import sound._3812intf;
-import sound.wave;
 
 
 import static WIP.arcadeflex.fucPtr.ReadHandlerPtr;
@@ -736,7 +735,7 @@ public class sndintrf {
                 new Dummy_snd(),//new qsound()  
                 new Dummy_snd(),
                 new speaker(),
-                new wave(),
+                new Dummy_snd(),
                 new Dummy_snd()
             };
 
