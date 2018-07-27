@@ -100,27 +100,17 @@ public class spectrum
             public void handler() 
             {
 		if (pSnapshotData != null)
-		{
-                        //memorycontextswap(activecpu);
-                        
+		{                 
 			if (SPECTRUM_SNAPSHOT_TYPE == SPECTRUM_TAPEFILE_TAP)
 			{
-				//logerror(".TAP file support enabled\n") ;
-				//cpu_setOPbaseoverride(0, spectrum_tape_opbaseoverride);
+				logerror(".TAP file support enabled\n") ;
+				cpu_setOPbaseoverride(0, spectrum_tape_opbaseoverride);
 			}
                         else
                         {
                             cpu_setOPbaseoverride(0, spectrum_opbaseoverride);
-                            
-                            /*if (SPECTRUM_SNAPSHOT_TYPE == SPECTRUM_SNAPSHOT_SNA)
-                                spectrum_setup_sna(pSnapshotData, SnapshotDataSize);
-                            
-                            else 
-                                spectrum_setup_z80(pSnapshotData, SnapshotDataSize);
-                            */
                         }
                         
-                        //SPECTRUM_SNAPSHOT_TYPE = SPECTRUM_SNAPSHOT_NONE;
 		}
             } 
             
@@ -288,6 +278,11 @@ public class spectrum
 	 *      load routine so things get rather messy!
 	 *
 	 *******************************************************************/
+        public static opbase_handlerPtr spectrum_tape_opbaseoverride=new opbase_handlerPtr() {          
+            public int handler (int address){
+                System.out.println("Unimplemented spectrum_tape_opbaseoverride function");//TODO
+                return 0;//placehandler tobe removed
+                
         //static OPBASE_HANDLER(spectrum_tape_opbaseoverride)
         /*TODO*/////public static opbase_handlerPtr spectrum_tape_opbaseoverride=new opbase_handlerPtr() {
         /*TODO*/////    public int handler (int address){
@@ -428,7 +423,8 @@ public class spectrum
 	/*TODO*/////		   ((return_addr != 0x00e5) && (return_addr < 0x01aa) && (ts2068_port_f4_data != -1)));
 	/*TODO*/////	logerror("Load return address=%04x, SP=%04x\n", return_addr, sp_reg);
 	/*TODO*/////	return return_addr;
-	/*TODO*/////}
+            }
+	};
 	
 	/*******************************************************************
 	 *
@@ -1124,6 +1120,7 @@ public class spectrum
 	--------------------------------------------------*/
     public static io_initPtr spectrum_cassette_init = new io_initPtr() {
         public int handler(int id) {
+            System.out.println("unhandleded spectrum_cassette_init function");
             /*TODO*/////	void *file;
 
             /*TODO*/////	if ((device_filename(IO_CASSETTE, id) != null) &&
