@@ -387,8 +387,8 @@ public class spectrum
 	{
 			if ((readinputport(16) & 0x20) != 0)
 					return 0xff;
-                        else{
-                            System.out.println("Devuelvo Dato NEC");
+                        else {
+                            
 					return nec765_data_r.handler(0);
                         }
             
@@ -591,8 +591,6 @@ public class spectrum
 			}
 			else
 			{
-					System.out.println("ESPECIAL PAGING");
-					//int []memory_selection=spectrum_plus3_memory_selections;
 					int MemorySelection;
 					UBytePtr ram_data;
 	
