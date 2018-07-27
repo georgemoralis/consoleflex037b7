@@ -637,9 +637,8 @@ public class nec765
 		{
 			fdc.nec765_flags |= NEC765_INT;
 		}
-                //System.out.println(fdc);
-                //System.out.println(nec765_iface);
-		//if ((nec765_iface.interrupt) != 0)
+                
+                    //if ((nec765_iface.interrupt) != 0)
 			nec765_iface.interrupt((fdc.nec765_flags & NEC765_INT));
 	}
 	
@@ -659,8 +658,7 @@ public class nec765
 	
 	public static void nec765_init(nec765_interface iface, int version)
 	{
-		System.out.println("nec765_init "+iface);
-                floppy_drives_init();
+		floppy_drives_init();
                 fdc.version = version;
                 fdc.timer = null;	//timer_set(TIME_NEVER, 0, nec765_timer_callback);
 		fdc.seek_timer = null;
@@ -2061,7 +2059,7 @@ public class nec765
 	
 	public static void nec765_reset(int offset)
 	{
-		System.out.println("nec765_reset");
+		
                 /* nec765 in idle state - ready to accept commands */
 		nec765_idle();
 	
