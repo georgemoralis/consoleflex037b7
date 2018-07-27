@@ -158,6 +158,10 @@ public class cpuintrf {
     /*TODO*///	#define SETPC(index,val)				((*cpu_old[index].intf.set_pc)(val))
 /*TODO*///	#define GETSP(index)					((*cpu_old[index].intf.get_sp)())
 /*TODO*///	#define SETSP(index,val)				((*cpu_old[index].intf.set_sp)(val))
+    static void SETSP(int index,int val)
+    {
+        cpu.get(index).intf.set_sp(val);
+    }
     static int GETREG(int index, int regnum) {
         return cpu.get(index).intf.get_reg(regnum);
     }
@@ -671,12 +675,12 @@ public class cpuintrf {
 /*TODO*///		return GETSP(cpunum);
 /*TODO*///	}
 /*TODO*///	
-/*TODO*///	void cpu_set_sp(unsigned val)
-/*TODO*///	{
-/*TODO*///		int cpunum = (activecpu < 0) ? 0 : activecpu;
-/*TODO*///		SETSP(cpunum,val);
-/*TODO*///	}
-/*TODO*///	
+    public static void cpu_set_sp(int val)
+	{
+		int cpunum = (activecpu < 0) ? 0 : activecpu;
+		SETSP(cpunum,val);
+	}
+	
     /* these are available externally, for the timer system */
     public static int cycles_currently_ran() {
         int cpunum = (activecpu < 0) ? 0 : activecpu;

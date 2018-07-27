@@ -116,6 +116,8 @@ import static mess.eventlst.*;
 import static mess.eventlstH.*;
 import static sound.speaker.*;
 import sound.speakerH.Speaker_interface;
+import static sound.wave.*;
+import static sound.waveH.*;
 
 import static mess.machine.nec765.*;
 import static mess.includes.nec765H.*;
@@ -1748,12 +1750,11 @@ public class spectrum
 	 new int[]{50}
         );
 	
-	/*TODO*/////static struct Wave_interface spectrum_wave_interface=
-	/*TODO*/////{
-	/*TODO*/////	1,	  /* number of cassette drives = number of waves to mix */
-	/*TODO*/////	{25},	/* default mixing level */
-	
-	/*TODO*/////};
+	static Wave_interface spectrum_wave_interface= new Wave_interface
+	(
+		1,	  /* number of cassette drives = number of waves to mix */
+		new int[]{25}	/* default mixing level */
+        );
 	
 	static MachineDriver machine_driver_spectrum = new MachineDriver
 	(
@@ -1793,14 +1794,14 @@ public class spectrum
 					new MachineSound(
 							SOUND_SPEAKER,
 							spectrum_speaker_interface
+					),
+					/*-----------------27/02/00 10:40-------------------
+					 cassette wave interface
+					--------------------------------------------------*/
+					new MachineSound(
+							SOUND_WAVE,
+							spectrum_wave_interface
 					)
-			/*TODO*/////		/*-----------------27/02/00 10:40-------------------
-			/*TODO*/////		 cassette wave interface
-			/*TODO*/////		--------------------------------------------------*/
-			/*TODO*/////		new MachineSound(
-			/*TODO*/////				SOUND_WAVE,
-			/*TODO*/////				spectrum_wave_interface,
-			/*TODO*/////		)
 			}
                         
 	);
@@ -1960,14 +1961,14 @@ public class spectrum
 					new MachineSound(
 							SOUND_SPEAKER,
 							spectrum_speaker_interface
+					),
+					/*-----------------27/02/00 10:40-------------------
+					 cassette wave interface
+					--------------------------------------------------*/
+					new MachineSound(
+							SOUND_WAVE,
+							spectrum_wave_interface
 					)
-			/*TODO*/////		/*-----------------27/02/00 10:40-------------------
-			/*TODO*/////		 cassette wave interface
-			/*TODO*/////		--------------------------------------------------*/
-			/*TODO*/////		new MachineSound(
-			/*TODO*/////				SOUND_WAVE,
-			/*TODO*/////				spectrum_wave_interface,
-			/*TODO*/////		)
                            
 			}
                         
@@ -2016,14 +2017,14 @@ public class spectrum
                                 new MachineSound(
                                                 SOUND_SPEAKER,
                                                 spectrum_speaker_interface
-                                )
-                /*TODO*/////                /*-----------------27/02/00 10:40-------------------
-                /*TODO*/////                 cassette wave interface
-                /*TODO*/////                --------------------------------------------------*/
-                /*TODO*/////                new MachineSound(
-                /*TODO*/////                                SOUND_WAVE,
-                /*TODO*/////                                spectrum_wave_interface,
-                /*TODO*/////                )
+                                ),
+                                /*-----------------27/02/00 10:40-------------------
+                                 cassette wave interface
+                                --------------------------------------------------*/
+                                new MachineSound(
+                                                SOUND_WAVE,
+                                                spectrum_wave_interface
+                               )
                 }
                 
 	);
@@ -2072,13 +2073,13 @@ public class spectrum
                                                 SOUND_SPEAKER,
                                                 spectrum_speaker_interface
                                 ),
-                /*TODO*/////                /*-----------------27/02/00 10:40-------------------
-                /*TODO*/////                 cassette wave interface
-                /*TODO*/////               --------------------------------------------------*/
-                /*TODO*/////                new MachineSound(
-                /*TODO*/////                                SOUND_WAVE,
-                /*TODO*/////                                spectrum_wave_interface,
-                /*TODO*/////                )
+                                /*-----------------27/02/00 10:40-------------------
+                                 cassette wave interface
+                               --------------------------------------------------*/
+                                new MachineSound(
+                                                SOUND_WAVE,
+                                                spectrum_wave_interface
+                                )
                 }
 	);
 	
@@ -2120,14 +2121,14 @@ public class spectrum
                                 new MachineSound(
                                                 SOUND_SPEAKER,
                                                 spectrum_speaker_interface
-                               )
+                               ),
                                 /*-----------------27/02/00 10:40-------------------
                                  cassette wave interface
                                 --------------------------------------------------*/
-                /*TODO*/////                new MachineSound(
-                /*TODO*/////                               SOUND_WAVE,
-                /*TODO*/////                                spectrum_wave_interface,
-                /*TODO*/////                )
+                                new MachineSound(
+                                               SOUND_WAVE,
+                                                spectrum_wave_interface
+                                )
                 }
 	);
         
@@ -2603,8 +2604,7 @@ public class spectrum
 		IO_RESET_ALL,		/* reset if file changed */
 		spectrum_rom_id,	/* id */
 		spectrum_rom_load,	/* init */
-		//spectrum_rom_exit,	/* exit */
-                null, /* exit */
+		spectrum_rom_exit,	/* exit */
                 null, /* info */
                 null, /* open */
                 null, /* close */
@@ -2617,8 +2617,25 @@ public class spectrum
                 null /* output_chunk */
                 ),
                 IODEVICE_SPEC_QUICK,
-		/*TODO*/////IO_CASSETTE_WAVE(1,"wav\0tap\0", null,spectrum_cassette_init, spectrum_cassette_exit),
-            /*TODO*/////),
+		new IODevice(
+                IO_CASSETTE,		/* type */
+		1,					/* count */
+		"wav\0tap\0",       /* file extensions */
+		IO_RESET_NONE,		/* reset if file changed */
+		null,	/* id */
+		spectrum_cassette_init,	/* init */
+		spectrum_cassette_exit,	/* exit */
+                wave_info,			/* info */						
+                wave_open,			/* open */						
+                wave_close, 		/* close */ 					
+                wave_status,		/* status */					
+                wave_seek,			/* seek */						
+                wave_tell,			/* tell */						
+                wave_input, 		/* input */ 					
+                wave_output,		/* output */					
+                wave_input_chunk,	/* input_chunk */				
+                wave_output_chunk	/* output_chunk */
+                ),
                 new IODevice(IO_END)
         };
 	
@@ -2646,7 +2663,25 @@ public class spectrum
                         null /* output_chunk */
                 ),
 			IODEVICE_SPEC_QUICK,
-			/*TODO*/////IO_CASSETTE_WAVE(1,"wav\0tap\0", null,spectrum_cassette_init, spectrum_cassette_exit),
+			new IODevice(
+                IO_CASSETTE,		/* type */
+		1,					/* count */
+		"wav\0tap\0",       /* file extensions */
+		IO_RESET_NONE,		/* reset if file changed */
+		null,	/* id */
+		spectrum_cassette_init,	/* init */
+		spectrum_cassette_exit,	/* exit */
+                wave_info,			/* info */						
+                wave_open,			/* open */						
+                wave_close, 		/* close */ 					
+                wave_status,		/* status */					
+                wave_seek,			/* seek */						
+                wave_tell,			/* tell */						
+                wave_input, 		/* input */ 					
+                wave_output,		/* output */					
+                wave_input_chunk,	/* input_chunk */				
+                wave_output_chunk	/* output_chunk */
+                ),
 		new IODevice(
 			IO_FLOPPY,			/* type */
 			2,					/* count */

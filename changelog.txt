@@ -3,6 +3,7 @@
 -Finished most of usrintf work for mess (0.37b7 version)
 -ZX Spectrum Plus 3 models work
 -NECT765 responds state and control functions
+-Intial work on wave sound interface
 
 26/07/2018
 ==========
