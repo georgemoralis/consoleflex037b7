@@ -17,7 +17,6 @@ import old.arcadeflex.software_gfx;
 import static old.arcadeflex.video_old.*;
 import static old.arcadeflex.video.*;
 import static old.mame.driverH.*;
-import static old.mame.usrintrf.*;
 import static WIP.mame.mame.*;
 import static mame.usrintrf.set_ui_visarea;
 
