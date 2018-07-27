@@ -387,8 +387,10 @@ public class spectrum
 	{
 			if ((readinputport(16) & 0x20) != 0)
 					return 0xff;
-			else
+                        else{
+                            System.out.println("Devuelvo Dato NEC");
 					return nec765_data_r.handler(0);
+                        }
             // REMOVE IT!!!!!
             //return 0;
 	}
@@ -529,7 +531,8 @@ public class spectrum
 	
 	public static void spectrum_plus3_update_memory()
 	{
-			if ((spectrum_128_port_7ffd_data & 8) != 0)
+			                        
+                        if ((spectrum_128_port_7ffd_data & 8) != 0)
 			{
 					logerror("+3 SCREEN 1: BLOCK 7\n");
 					spectrum_128_screen_location = new UBytePtr(spectrum_128_ram, (7<<14));
@@ -545,11 +548,10 @@ public class spectrum
 					int ram_page;
 					UBytePtr ram_data;
 	
-					/* ROM switching */
+					
 					UBytePtr ChosenROM;
-					int ROMSelection;
+					int ROMSelection=0;
 	
-					/* select ram at 0x0c000-0x0ffff */
 					ram_page = spectrum_128_port_7ffd_data & 0x07;
 					ram_data = new UBytePtr(spectrum_128_ram, (ram_page<<14));
 	
@@ -558,21 +560,29 @@ public class spectrum
 	
 					logerror("RAM at 0xc000: %02x\n",ram_page);
 	
-					/* Reset memory between 0x4000 - 0xbfff in case extended paging was being used */
-					/* Bank 5 in 0x4000 - 0x7fff */
 					cpu_setbank(2, new UBytePtr(spectrum_128_ram, (5<<14)));
 					cpu_setbank(6, new UBytePtr(spectrum_128_ram, (5<<14)));
 	
-					/* Bank 2 in 0x8000 - 0xbfff */
 					cpu_setbank(3, new UBytePtr(spectrum_128_ram, (2<<14)));
 					cpu_setbank(7, new UBytePtr(spectrum_128_ram, (2<<14)));
 	
 	
-					ROMSelection = ((spectrum_128_port_7ffd_data>>4) & 0x01) |
-						((spectrum_plus3_port_1ffd_data>>1) & 0x02);
-	
-					/* rom 0 is editor, rom 1 is syntax, rom 2 is DOS, rom 3 is 48 BASIC */
-	
+					// Select active ROM
+                                        switch ((spectrum_128_port_7ffd_data & 0x10) | (spectrum_plus3_port_1ffd_data & 0x04)) {
+                                            case 0x00:
+                                                    ROMSelection = 0;
+                                                    break;
+                                            case 0x10:
+                                                    ROMSelection = 1;
+                                                    break;
+                                            case 0x04:
+                                                    ROMSelection = 2;
+                                                    break;
+                                            case 0x14:
+                                                    ROMSelection = 3;
+                                                    break;
+                                        }
+					
 					ChosenROM = new UBytePtr(memory_region(REGION_CPU1), 0x010000 + (ROMSelection<<14));
 	
 					cpu_setbank(1, ChosenROM);
@@ -582,36 +592,30 @@ public class spectrum
 			}
 			else
 			{
-					/* Extended memory paging */
-	
-					//int *memory_selection;
-                                        int memory_selection;
+					System.out.println("ESPECIAL PAGING");
+					//int []memory_selection=spectrum_plus3_memory_selections;
 					int MemorySelection;
 					UBytePtr ram_data;
 	
 					MemorySelection = (spectrum_plus3_port_1ffd_data>>1) & 0x03;
 	
-					memory_selection = spectrum_plus3_memory_selections[(MemorySelection<<2)];
+					spectrum_plus3_memory_selections[0] = spectrum_plus3_memory_selections[(MemorySelection<<2)];
 	
-					//ram_data = spectrum_128_ram + (memory_selection[0]<<14);
-                                        ram_data = new UBytePtr(spectrum_128_ram, (spectrum_plus3_memory_selections[0]<<14));
-                                        cpu_setbank(1, ram_data);
+					ram_data = new UBytePtr(spectrum_128_ram, (spectrum_plus3_memory_selections[0]<<14));
+					cpu_setbank(1, ram_data);
 					cpu_setbank(5, ram_data);
-					/* allow writes to 0x0000-0x03fff */
-					cpu_setbankhandler_w(5, MWA_BANK5);
+					
+                                        cpu_setbankhandler_w(5, MWA_BANK5);
 	
-					//ram_data = spectrum_128_ram + (memory_selection[1]<<14);
-                                        ram_data = new UBytePtr(spectrum_128_ram, (spectrum_plus3_memory_selections[1]<<14));
+					ram_data = new UBytePtr(spectrum_128_ram, (spectrum_plus3_memory_selections[1]<<14));
 					cpu_setbank(2, ram_data);
 					cpu_setbank(6, ram_data);
 	
-					//ram_data = spectrum_128_ram + (memory_selection[2]<<14);
-                                        ram_data = new UBytePtr(spectrum_128_ram, (spectrum_plus3_memory_selections[2]<<14));
+					ram_data = new UBytePtr(spectrum_128_ram, (spectrum_plus3_memory_selections[2]<<14));
 					cpu_setbank(3, ram_data);
 					cpu_setbank(7, ram_data);
 	
-					//ram_data = spectrum_128_ram + (memory_selection[3]<<14);
-                                        ram_data = new UBytePtr(spectrum_128_ram, (spectrum_plus3_memory_selections[3]<<14));
+					ram_data = new UBytePtr(spectrum_128_ram, (spectrum_plus3_memory_selections[3]<<14));
 					cpu_setbank(4, ram_data);
 					cpu_setbank(8, ram_data);
 	
@@ -1150,29 +1154,49 @@ public class spectrum
 	//READ_HANDLER ( spectrum_plus3_port_r )
         public static ReadHandlerPtr spectrum_plus3_port_r = new ReadHandlerPtr() {
             public int handler(int offset) {
-		 if ((offset & 1)==0)
-		 {
-			 return spectrum_port_fe_r(offset);
-		 }
-	
-		 /* KT: the following is not decoded exactly, need to check what
-		 is correct */
-		 if ((offset & 2)==0)
-		 {
-			 switch ((offset>>8) & 0xff)
-			 {
-					case 0xff: return spectrum_128_port_fffd_r(offset);
-					case 0x2f: return spectrum_plus3_port_2ffd_r(offset);
-					case 0x3f: return spectrum_plus3_port_3ffd_r(offset);
-					case 0x1f: return spectrum_port_1f_r(offset);
-					case 0x7f: return spectrum_port_7f_r(offset);
-					case 0xdf: return spectrum_port_df_r(offset);
-			 }
-		 }
+		if ((offset & 1)==0)
+                {
+                        return spectrum_port_fe_r(offset);
+                }
+
+                if ((offset & 2)==0)
+                {
+                        switch ((offset>>14) & 0x03)
+                        {
+                               /* +3 fdc,memory,centronics */
+                               case 0:
+                               {
+                                       switch ((offset>>12) & 0x03)
+                                       {
+                                               /* +3 centronics */
+                                               case 0:
+                                                       break;
+
+                                               /* +3 fdc status */
+                                               case 2:
+                                                       return spectrum_plus3_port_2ffd_r(offset);
+                                               /* +3 fdc data */
+                                               case 3:
+                                                       return spectrum_plus3_port_3ffd_r(offset);
+
+                                               default:
+                                                       break;
+                                       }
+                               }
+                               break;
+
+                               /* 128k AY data */
+                               case 3:
+                                       return spectrum_128_port_fffd_r(offset);
+
+                               default:
+                                       break;
+                        }
+                }
 	
 		 logerror("Read from +3 port: %04x\n", offset);
 	
-		 return 0xff;
+		 return (cpu_getscanline()<193)?spectrum_128_screen_location.read(0x1800|(cpu_getscanline()&0xf8)<<2):0xff;
 	}};
 	
 	//WRITE_HANDLER ( spectrum_128_port_w )
@@ -1208,37 +1232,63 @@ public class spectrum
 	//WRITE_HANDLER ( spectrum_plus3_port_w )
         public static WriteHandlerPtr spectrum_plus3_port_w = new WriteHandlerPtr() {
         public void handler(int offset, int data) {
-			if ((offset & 1)==0)
-					spectrum_port_fe_w(offset,data);
-	
-			/* the following is not decoded exactly, need to check
-			what is correct! */
-			else if ((offset & 2)==0)
+                if ((offset & 1)==0)
+                    spectrum_port_fe_w(offset,data);
+
+		/* the following is not decoded exactly, need to check
+		what is correct! */
+		
+		if ((offset & 2)==0)
+		{
+			switch ((offset>>14) & 0x03)
 			{
-					switch ((offset>>8) & 0xf0)
+				/* +3 fdc,memory,centronics */
+				case 0:
+				{
+					switch ((offset>>12) & 0x03)
 					{
-							case 0x70:
-									spectrum_plus3_port_7ffd_w(offset, data);
-									break;
-							case 0xb0:
-									spectrum_128_port_bffd_w(offset, data);
-									break;
-							case 0xf0:
-									spectrum_128_port_fffd_w(offset, data);
-									break;
-							case 0x10:
-									spectrum_plus3_port_1ffd_w(offset, data);
-									break;
-							case 0x30:
-									spectrum_plus3_port_3ffd_w(offset, data);
-							default:
-									logerror("Write %02x to +3 port: %04x\n", data, offset);
+						/* +3 centronics */
+						case 0:
+						{
+
+
+						}
+						break;
+
+						/* +3 memory */
+						case 1:
+							spectrum_plus3_port_1ffd_w(offset, data);
+							break;
+							
+						/* +3 fdc data */
+						case 3:
+							spectrum_plus3_port_3ffd_w(offset,data);
+							break;
+
+						default:
+							break;
 					}
+				}
+				break;
+
+				/* 128k memory */
+				case 1:
+					spectrum_plus3_port_7ffd_w(offset, data);
+					break;
+
+				/* 128k AY data */
+				case 2:
+					spectrum_128_port_bffd_w(offset, data);
+					break;
+
+				/* 128K AY register */
+				case 3:
+					spectrum_128_port_fffd_w(offset, data);
+			
+				default:
+					break;
 			}
-			else
-			{
-				logerror("Write %02x to +3 port: %04x\n", data, offset);
-			}
+		}
 	}};
 	
 	//READ_HANDLER ( ts2068_port_r )
@@ -1709,10 +1759,10 @@ public class spectrum
 		new MachineCPU[] {
 			new MachineCPU(
 				CPU_Z80|CPU_16BIT_PORT,
-							3546900,		/* 3.54690 Mhz */
-							spectrum_128_readmem,spectrum_128_writemem,
-							spectrum_plus3_readport,spectrum_plus3_writeport,
-							spec_interrupt,1
+                                3546900,		/* 3.54690 Mhz */
+                                spectrum_128_readmem,spectrum_128_writemem,
+                                spectrum_plus3_readport,spectrum_plus3_writeport,
+                                spec_interrupt,1
 			),
 		},
 		50, 2500,		/* frames per second, vblank duration */
@@ -2061,7 +2111,7 @@ public class spectrum
                         null, /* input_chunk */
                         null /* output_chunk */
                 ),
-			/*TODO*/////IODEVICE_SPEC_QUICK,
+			IODEVICE_SPEC_QUICK,
 			/*TODO*/////IO_CASSETTE_WAVE(1,"wav\0tap\0", null,spectrum_cassette_init, spectrum_cassette_exit),
 		new IODevice(
 			IO_FLOPPY,			/* type */
@@ -2109,7 +2159,7 @@ public class spectrum
         public static GameDriver driver_spectrum = new GameDriver("1982", "spectrum", "spectrum.java", rom_spectrum, null, machine_driver_spectrum, input_ports_spectrum, null, io_spectrum, "Sinclair Research", "ZX Spectrum");
         
         // COMPX( 2000, specpls4, spectrum, spectrum,		 spectrum, 0,			 "Amstrad plc",          "ZX Spectrum +4", GAME_COMPUTER_MODIFIED );
-        public static GameDriver driver_specpls4 = new GameDriver("2000", "specpls4", "spectrum.java", rom_specpls4, null, machine_driver_spectrum_plus3, input_ports_spectrum, null, io_specpls3, "Amstrad plc", "ZX Spectrum +4");
+        public static GameDriver driver_specpls4 = new GameDriver("2000", "specpls4", "spectrum.java", rom_specpls4, null, machine_driver_spectrum, input_ports_spectrum, null, io_spectrum, "Amstrad plc", "ZX Spectrum +4");
 		
 	//COMPX( 1994, specbusy, spectrum, spectrum,		 spectrum, 0,			 "Amstrad plc",          "ZX Spectrum (BusySoft Upgrade)", GAME_COMPUTER_MODIFIED )
 	public static GameDriver driver_specbusy = new GameDriver("1994", "specbusy", "spectrum.java", rom_specbusy, null, machine_driver_spectrum, input_ports_spectrum, null, io_spectrum, "Amstrad plc", "ZX Spectrum (BusySoft Upgrade)");
