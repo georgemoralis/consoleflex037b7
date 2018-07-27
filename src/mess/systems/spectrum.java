@@ -391,8 +391,7 @@ public class spectrum
                             System.out.println("Devuelvo Dato NEC");
 					return nec765_data_r.handler(0);
                         }
-            // REMOVE IT!!!!!
-            //return 0;
+            
 	}
 	
 	
