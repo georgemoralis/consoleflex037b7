@@ -33,6 +33,7 @@ import static mess.includes.nec765H.*;
 import static mess.includes.flopdrvH.*;
 import static mess.machine.flopdrv.*;
 
+
 public class nec765  
 {	
         public static final int NEC765_COMMAND_PHASE_FIRST_BYTE = 0;
@@ -131,9 +132,9 @@ public class nec765
 		int command;
 	
 		//void *seek_timer;
-                int seek_timer;
+                timer_entry seek_timer;
 		//void *timer;
-                int timer;
+                timer_entry timer;
 		int timer_type;
 	};
 	
@@ -307,107 +308,109 @@ public class nec765
 		fdc.nec765_flags &= ~NEC765_SEEK_ACTIVE;
 	}
 	
-	/*TODO*/////public static timer_callback nec765_seek_timer_callback = new timer_callback() { public void handler(int param) 
-	/*TODO*/////{
+	
+        public static timer_callback nec765_seek_timer_callback = new timer_callback() { public void handler(int param) 
+	{
 			/* seek complete */
-			/*TODO*/////nec765_seek_complete();
+			nec765_seek_complete();
 	
-			/*TODO*/////if (fdc.seek_timer)
-			/*TODO*/////{
-			/*TODO*/////	timer_reset(fdc.seek_timer, TIME_NEVER);
-			/*TODO*/////}
-	/*TODO*/////} };
-	/*TODO*/////public static timer_callback nec765_timer_callback = new timer_callback() { public void handler(int param) 
-	/*TODO*/////{
+			if ((fdc.seek_timer) != null)
+			{
+				timer_reset(fdc.seek_timer, TIME_NEVER);
+			}
+	} };
+	
+        public static timer_callback nec765_timer_callback = new timer_callback() { public void handler(int param) 
+	{
 		/* type 0 = data transfer mode in execution phase */
-		/*TODO*/////if (fdc.timer_type==0)
-		/*TODO*/////{
+		if (fdc.timer_type==0)
+		{
 			/* set data request */
-		/*TODO*/////	nec765_set_data_request();
+			nec765_set_data_request();
 	
-		/*TODO*/////	fdc.timer_type = 4;
+			fdc.timer_type = 4;
 			
-		/*TODO*/////	if (!((fdc.nec765_flags !=0) & (NEC765_DMA_MODE != 0)))
-		/*TODO*/////	{
-				/*TODO*/////if (fdc.timer)
-				/*TODO*/////{
+			if (!((fdc.nec765_flags !=0) & (NEC765_DMA_MODE != 0)))
+			{
+				if ((fdc.timer) != null)
+				{
 					// for pcw
-				/*TODO*/////	timer_reset(fdc.timer, TIME_IN_USEC(27));
-				/*TODO*/////}
-		/*TODO*/////	}
-		/*TODO*/////	else
-		/*TODO*/////	{
-		/*TODO*/////		nec765_timer_callback(fdc.timer_type);
-		/*TODO*/////	}
-		/*TODO*/////}
-		/*TODO*/////else
-		/*TODO*/////if (fdc.timer_type==2)
-		/*TODO*/////{
+					timer_reset(fdc.timer, TIME_IN_USEC(27));
+				}
+			}
+			else
+			{
+				nec765_timer_callback.handler(fdc.timer_type);
+			}
+		}
+		else
+		if (fdc.timer_type==2)
+		{
 			/* result phase begin */
 	
 			/* generate a int for specific commands */
-		/*TODO*/////	switch (fdc.command)
-		/*TODO*/////	{
+			switch (fdc.command)
+			{
 				/* read a track */
-		/*TODO*/////		case 2:
+				case 2:
 				/* write data */
-		/*TODO*/////		case 5:
+				case 5:
 				/* read data */
-		/*TODO*/////		case 6:
+				case 6:
 				/* write deleted data */
-		/*TODO*/////		case 9:
+				case 9:
 				/* read id */
-		/*TODO*/////		case 10:
+				case 10:
 				/* read deleted data */
-		/*TODO*/////		case 12:
+				case 12:
 				/* format at track */
-		/*TODO*/////		case 13:
+				case 13:
 				/* scan equal */
-		/*TODO*/////		case 17:
+				case 17:
 				/* scan low or equal */
-		/*TODO*/////		case 19:
+				case 19:
 				/* scan high or equal */
-		/*TODO*/////		case 29:
-		/*TODO*/////		{
-					/*TODO*/////nec765_set_int(1);
-		/*TODO*/////		}
-		/*TODO*/////		break;
+				case 29:
+				{
+					nec765_set_int(1);
+				}
+				break;
 	
-		/*TODO*/////		default:
-		/*TODO*/////			break;
-		/*TODO*/////	}
+				default:
+					break;
+			}
 	
-		/*TODO*/////	nec765_set_data_request();
+			nec765_set_data_request();
 	
-			/*TODO*/////if (fdc.timer)
-			/*TODO*/////{
-			/*TODO*/////	timer_reset(fdc.timer, TIME_NEVER);
-			/*TODO*/////}
-		/*TODO*/////}
-		/*TODO*/////else
-		/*TODO*/////if (fdc.timer_type == 4)
-		/*TODO*/////{
+			if ((fdc.timer)!=null)
+			{
+				timer_reset(fdc.timer, TIME_NEVER);
+			}
+		}
+		else
+		if (fdc.timer_type == 4)
+		{
 			/* if in dma mode, a int is not generated per byte. If not in  DMA mode
 			a int is generated per byte */
-		/*TODO*/////	if ((fdc.nec765_flags != 0) & (NEC765_DMA_MODE != 0))
-		/*TODO*/////	{
-		/*TODO*/////		nec765_set_dma_drq(1);
-		/*TODO*/////	}
-		/*TODO*/////	else
-		/*TODO*/////	{
-				/*TODO*/////if (fdc.FDC_main & (1<<7))
-				/*TODO*/////{
+			if ((fdc.nec765_flags != 0) & (NEC765_DMA_MODE != 0))
+			{
+				nec765_set_dma_drq(1);
+			}
+			else
+			{
+				if ((fdc.FDC_main & (1<<7)) != 0)
+				{
 					/* set int to indicate data is ready */
-				/*TODO*/////	nec765_set_int(1);
-				/*TODO*/////}
-		/*TODO*/////	}
+					nec765_set_int(1);
+				}
+			}
 	
-			/*TODO*/////if (fdc.timer)
-			/*TODO*/////{
-			/*TODO*/////	timer_reset(fdc.timer, TIME_NEVER);
-			/*TODO*/////}
-		/*TODO*/////}
-	/*TODO*/////} };
+			if ((fdc.timer) != null)
+			{
+				timer_reset(fdc.timer, TIME_NEVER);
+			}
+		}
+	} };
 	
 	/* after (32-27) the DRQ is set, then 27 us later, the int is set.
 	I don't know if this is correct, but it is required for the PCW driver.
@@ -420,20 +423,20 @@ public class nec765
 	{
 		/* setup timer to trigger in NEC765_DATA_RATE us */
 		fdc.timer_type = 0;
-		if ((fdc.timer) !=0)
+		if ((fdc.timer) !=null)
 		{
 			/* disable the timer */
 			timer_remove(fdc.timer);	//timer_enable(fdc.timer, 0);
-			fdc.timer = 0;
+			fdc.timer = null;
 		}
 	
 		if (!((fdc.nec765_flags != 0) & (NEC765_DMA_MODE == 1)))
 		{
-			/*TODO*/////fdc.timer = timer_set(TIME_IN_USEC(32-27)	/*NEC765_DATA_RATE)*bytes*/, 0, nec765_timer_callback);
+			fdc.timer = timer_set(TIME_IN_USEC(32-27)	/*NEC765_DATA_RATE)*bytes*/, 0, nec765_timer_callback);
 		}
 		else
 		{
-			/*TODO*/////nec765_timer_callback(fdc.timer_type);
+			nec765_timer_callback.handler(fdc.timer_type);
 		}
 	}
 	
@@ -441,19 +444,19 @@ public class nec765
 	static void nec765_setup_timed_result_data_request()
 	{
 		fdc.timer_type = 2;
-		if ((fdc.timer) !=0)
+		if ((fdc.timer) !=null)
 		{
 			/* disable the timer */
 			timer_remove(fdc.timer);
-			fdc.timer = 0;
+			fdc.timer = null;
 		}
 		if (!((fdc.nec765_flags != 0) & (NEC765_DMA_MODE != 0)))
 		{
-		/*TODO*/////	fdc.timer = timer_set(TIME_IN_USEC(NEC765_DATA_RATE)*2, 0, nec765_timer_callback);
+			fdc.timer = timer_set(TIME_IN_USEC(NEC765_DATA_RATE)*2, 0, nec765_timer_callback);
 		}
 		else
 		{
-		/*TODO*/////	nec765_timer_callback(fdc.timer_type);
+			nec765_timer_callback.handler(fdc.timer_type);
 		}
 	}
 	
@@ -461,15 +464,15 @@ public class nec765
 	/* sets up a timer to issue a seek complete in signed_tracks time */
 	static void nec765_setup_timed_int(int signed_tracks)
 	{
-		if ((fdc.seek_timer) !=0)
+		if ((fdc.seek_timer) !=null)
 		{
 			/* disable the timer */
 			timer_remove(fdc.seek_timer);	
-			fdc.seek_timer = 0;
+			fdc.seek_timer = null;
 		}
 	
 		/* setup timer to signal after seek time is complete */
-		/*TODO*/////fdc.seek_timer = timer_pulse(TIME_IN_MSEC(fdc.srt_in_ms*abs(signed_tracks)), 0, nec765_seek_timer_callback);
+		fdc.seek_timer = timer_pulse(TIME_IN_MSEC(fdc.srt_in_ms*Math.abs(signed_tracks)), 0, nec765_seek_timer_callback);
 	}
 	
 	static void nec765_seek_setup(int is_recalibrate)
@@ -659,8 +662,8 @@ public class nec765
 		System.out.println("nec765_init "+iface);
                 floppy_drives_init();
                 fdc.version = version;
-                fdc.timer = 0;	//timer_set(TIME_NEVER, 0, nec765_timer_callback);
-		fdc.seek_timer = 0;
+                fdc.timer = null;	//timer_set(TIME_NEVER, 0, nec765_timer_callback);
+		fdc.seek_timer = null;
 		//memset(&nec765_iface, 0, sizeof(nec765_interface));
                 	
 	        if (iface != null)
@@ -698,12 +701,12 @@ public class nec765
 			if ((fdc.nec765_flags & NEC765_TC)!=0)
 			{
 				/* yes */
-				if ((fdc.timer) != 0)
+				if ((fdc.timer) != null)
 				{
 					if (fdc.timer_type==0)
 					{
 						timer_remove(fdc.timer);
-						fdc.timer = 0;
+						fdc.timer = null;
 					}
 				}
 	
