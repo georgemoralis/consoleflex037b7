@@ -66,7 +66,7 @@ public class funcPtr {
 
     public static abstract interface io_outputPtr {
 
-        public abstract int handler(int id, int data);
+        public abstract void handler(int id, int data);
     }
 
     public static abstract interface io_input_chunkPtr {
@@ -76,7 +76,7 @@ public class funcPtr {
 
     public static abstract interface io_output_chunkPtr {
 
-        public abstract int handler(int id, Object dst, int chunks);
+        public abstract void handler(int id, Object dst, int chunks);
     }
 
     public static abstract interface io_partialcrcPtr {
