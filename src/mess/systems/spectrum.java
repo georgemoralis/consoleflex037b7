@@ -107,6 +107,7 @@ import static WIP.mame.memory.*;
 import static WIP.mame.sndintrfH.*;
 
 import consoleflex.funcPtr.*;
+import cpu.z80.z80H;
 
 import static mess.includes.spectrumH.*;
 import static mess.vidhrdw.spectrum.*;
@@ -121,6 +122,8 @@ import static mess.includes.nec765H.*;
 import static mess.includes.flopdrvH.*;
 import static mess.machine.flopdrv.*;
 import static mess.machine.dsk.*;
+
+/*TODO*/////import static mess.machine.wd17xx.h.*;
 
 public class spectrum
 {
@@ -226,7 +229,7 @@ public class spectrum
 
                 scorpion_update_memory();
 
-                /*TODO*/////betadisk_init();
+                betadisk_init();
         }};
         
 	public static InitMachinePtr spectrum_128_init_machine = new InitMachinePtr() { public void handler() 
@@ -249,31 +252,10 @@ public class spectrum
 			cpu_setbankhandler_w(8, MWA_BANK8);
 	
                         /* Bank 5 is always in 0x4000 - 0x7fff */
-                        //cpu_setbank(1, new UBytePtr(_nes.rom, bank * 0x8000 + 0x10000));
-			//cpu_setbank(2, spectrum_128_ram + (5<<14));
-                        //spectrum_128_ram.offset = (5<<14);
-                        //UBytePtr bank2 = new UBytePtr(0x4000);
-                        //memcpy(bank2, spectrum_128_ram, (5<<14), 0x4000);
-                        //cpu_setbank(2, bank2);
                         cpu_setbank(2, new UBytePtr(spectrum_128_ram, (5<<14)));
-
-//memcpy(spectrum_128_screen_location, spectrum_128_ram, (7<<14), 0x4000);
-                        //spectrum_128_screen_location=bank2;
-			
-                        //cpu_setbank(6, spectrum_128_ram + (5<<14));
-                        //cpu_setbank(6, bank2);
-                           cpu_setbank(6, new UBytePtr(spectrum_128_ram, (5<<14)));
+                        cpu_setbank(6, new UBytePtr(spectrum_128_ram, (5<<14)));
                            
-			/* Bank 2 is always in 0x8000 - 0xbfff */
-                        //cpu_setbank(3, spectrum_128_ram + (2<<14));
-                        //spectrum_128_ram.offset = (2<<14);
-                        /*UBytePtr bank3 = new UBytePtr(0x4000);
-                        memcpy(bank3, spectrum_128_ram, (2<<14), 0x4000);
-                        
-                        cpu_setbank(3, bank3);
-			
-                        cpu_setbank(7, bank3);*/
-                        
+			/* Bank 2 is always in 0x8000 - 0xbfff */                        
                         cpu_setbank(3, new UBytePtr(spectrum_128_ram, (2<<14)));
                         cpu_setbank(7, new UBytePtr(spectrum_128_ram, (2<<14)));
 	
@@ -921,29 +903,9 @@ public class spectrum
 					/* no */
 					spectrum_plus3_update_memory();
 			}
-	}
-	
-	//static ADDRESS_MAP_START (scorpion_io, ADDRESS_SPACE_IO, 8)
-	//AM_RANGE(0x0000, 0xffff) AM_READWRITE(scorpion_port_r, scorpion_port_w)
-        //ADDRESS_MAP_END
-        static MemoryReadAddress scorpio_readmem[] ={
-            //new MemoryReadAddress( 0x0000, 0xffff, scorpion_port_r ),
-            new MemoryReadAddress( 0x0000, 0x3fff, MRA_BANK1 ),
-            new MemoryReadAddress( 0x4000, 0x7fff, MRA_BANK2 ),
-            new MemoryReadAddress( 0x8000, 0xbfff, MRA_BANK3 ),
-            new MemoryReadAddress( 0xc000, 0xffff, MRA_BANK4 ),
-            new MemoryReadAddress( -1 )	/* end of table */ 
-        };
-        
-        static MemoryWriteAddress scorpio_writemem[] ={
-                //new MemoryReadAddress( 0x0000, 0xffff, scorpion_port_w ),
-                new MemoryWriteAddress( 0x0000, 0x3fff, MWA_BANK5 ),
-                new MemoryWriteAddress( 0x4000, 0x7fff, MWA_BANK6 ),
-                new MemoryWriteAddress( 0x8000, 0xbfff, MWA_BANK7 ),
-                new MemoryWriteAddress( 0xc000, 0xffff, MWA_BANK8 ),
-		new MemoryWriteAddress( -1 )	/* end of table */
 	};
 	
+        
 	static MemoryReadAddress spectrum_readmem[] ={
 		new MemoryReadAddress( 0x0000, 0x3fff, MRA_ROM ),
 		new MemoryReadAddress( 0x4000, 0x57ff, spectrum_characterram_r ),
@@ -1009,6 +971,24 @@ public class spectrum
 	static MemoryWriteAddress tc2048_writemem[] ={
 		new MemoryWriteAddress( 0x0000, 0x3fff, MWA_ROM ),
 			new MemoryWriteAddress( 0x4000, 0xffff, MWA_BANK2 ),
+		new MemoryWriteAddress( -1 )	/* end of table */
+	};
+        
+        static MemoryReadAddress scorpio_readmem[] ={
+            /*TODO*/////new MemoryReadAddress( 0x0000, 0xffff, scorpion_port_r ),
+            new MemoryReadAddress( 0x0000, 0x3fff, MRA_BANK1 ),
+            new MemoryReadAddress( 0x4000, 0x7fff, MRA_BANK2 ),
+            new MemoryReadAddress( 0x8000, 0xbfff, MRA_BANK3 ),
+            new MemoryReadAddress( 0xc000, 0xffff, MRA_BANK4 ),
+            new MemoryReadAddress( -1 )	/* end of table */ 
+        };
+        
+        static MemoryWriteAddress scorpio_writemem[] ={
+                /*TODO*/////new MemoryReadAddress(0, 255, scorpion_port_w),
+                new MemoryWriteAddress( 0x0000, 0x3fff, MWA_BANK5 ),
+                new MemoryWriteAddress( 0x4000, 0x7fff, MWA_BANK6 ),
+                new MemoryWriteAddress( 0x8000, 0xbfff, MWA_BANK7 ),
+                new MemoryWriteAddress( 0xc000, 0xffff, MWA_BANK8 ),
 		new MemoryWriteAddress( -1 )	/* end of table */
 	};
 	
@@ -1392,29 +1372,31 @@ public class spectrum
                                         case 0xdf: return spectrum_port_df_r(offset);
                          }
                  }
-        //#if 0
+ 
                  switch (offset & 0x0ff)
                  {
                         case 0x01f:
                                 /*TODO*/////return wd179x_status_r(offset);
+                                return 0xff;
                         case 0x03f:
                                 /*TODO*/////return wd179x_track_r(offset);
+                                return 0xff;
                         case 0x05f:
                                 /*TODO*/////return wd179x_sector_r(offset);
+                                return 0xff;
                         case 0x07f:
                                 /*TODO*/////return wd179x_data_r(offset);
+                                return 0xff;
                         case 0x0ff:
-                                /*TODO*/////return betadisk_status;
+                                return betadisk_status;
                  }
-        //#endif
+
                  logerror("Read from scorpion port: %04x\n", offset);
 
                  return 0xff;
         }};
 
 
-        /* not sure if decoding is full or partial on scorpion */
-        /* TO BE CHECKED! */
         //static WRITE8_HANDLER(scorpion_port_w)
         public static WriteHandlerPtr scorpion_port_w = new WriteHandlerPtr() {
             public void handler(int offset, int data) {
@@ -1468,7 +1450,7 @@ public class spectrum
 	
 	//WRITE_HANDLER ( tc2048_port_w )
         public static WriteHandlerPtr tc2048_port_w = new WriteHandlerPtr() {
-        public void handler(int offset, int data) {
+            public void handler(int offset, int data) {
 			if ((offset & 1)==0)
 					spectrum_port_fe_w(offset,data);
 			else if ((offset & 0xff)==0xff)
@@ -2150,6 +2132,119 @@ public class spectrum
 	);
         
         /****************************************************************************************************/
+        /* BETADISK/TR-DOS disc controller emulation */
+        /* microcontroller KR1818VG93 is a russian wd179x clone */
+        
+        /*
+        DRQ (D6) and INTRQ (D7).
+        DRQ - signal showing request of data by microcontroller
+        INTRQ - signal of completion of execution of command.
+        */
+
+        static int betadisk_status;
+        static int betadisk_active;
+        
+        /*TODO*/////static void (*betadisk_memory_update)(void);
+
+        //static OPBASE_HANDLER(betadisk_opbase_handler)
+        public static opbase_handlerPtr betadisk_opbase_handler=new opbase_handlerPtr() {            
+            public int handler (int address){
+
+                int pc;
+
+                //pc = activecpu_get_pc();
+                pc = cpu_get_reg(z80H.Z80_PC);
+
+                if ((pc & 0xc000)!=0x0000)
+                {
+                        /* outside rom area */
+                        betadisk_active = 0;
+
+                        /*TODO*/////betadisk_memory_update();
+                }
+                else
+                {
+                        /* inside rom area, switch on betadisk */
+                //	betadisk_active = 1;
+
+                //	betadisk_memory_update();
+                }
+
+
+                return pc & 0x0ffff;
+        }};
+
+        static void betadisk_wd179x_callback(int state)
+        {
+                /*TODO*/////switch (state)
+                /*TODO*/////{
+                /*TODO*/////        case WD179X_DRQ_SET:
+                /*TODO*/////        {
+                /*TODO*/////                betadisk_status |= (1<<6);
+                /*TODO*/////        }
+                /*TODO*/////        break;
+
+                /*TODO*/////        case WD179X_DRQ_CLR:
+                /*TODO*/////        {
+                /*TODO*/////                betadisk_status &=~(1<<6);
+                /*TODO*/////        }
+                /*TODO*/////        break;
+
+                /*TODO*/////        case WD179X_IRQ_SET:
+                /*TODO*/////        {
+                /*TODO*/////                betadisk_status |= (1<<7);
+                /*TODO*/////        }
+                /*TODO*/////        break;
+
+                /*TODO*/////        case WD179X_IRQ_CLR:
+                /*TODO*/////        {
+                /*TODO*/////                betadisk_status &=~(1<<7);
+                /*TODO*/////        }
+                /*TODO*/////        break;
+                /*TODO*/////}
+        }
+
+        /* these are active only when betadisk is enabled */
+        //static WRITE8_HANDLER(betadisk_w)
+        public static WriteHandlerPtr betadisk_w = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+        
+
+                if ((betadisk_active) != 0)
+                {
+
+                }
+        }};
+
+
+        /* these are active only when betadisk is enabled */
+        //static  READ8_HANDLER(betadisk_r)
+        public static ReadHandlerPtr betadisk_r = new ReadHandlerPtr() {
+            public int handler(int offset) {
+                if ((betadisk_active) != 0)
+                {
+                        /* decoding of these ports might be wrong - to be checked! */
+                        if ((offset & 0x01f)==0x01f)
+                        {
+                                switch (offset & 0x0ff)
+                                {
+
+                                }
+                        }
+
+                }
+
+                return 0x0ff;
+        }};
+
+        static void betadisk_init()
+        {
+                betadisk_active = 0;
+                betadisk_status = 0x03f;
+                /*TODO*/////wd179x_init(WD_TYPE_179X,&betadisk_wd179x_callback);
+        }
+        
+        /****************************************************************************************************/
         /* Zs Scorpion 256 */
 
         /*
@@ -2177,15 +2272,17 @@ public class spectrum
 
         /* rom 0=zx128, 1=zx48, 2 = service monitor, 3=tr-dos */
 
-        static int scorpion_256_port_1ffd_data = 0;
+        public static int scorpion_256_port_1ffd_data = 0;
 
         static void scorpion_update_memory()
         {
                 UBytePtr ChosenROM;
                 int ROMSelection=0;
                 
-                ReadHandlerPtr rh;
-                WriteHandlerPtr wh;
+                /*TODO*/////ReadHandlerPtr rh;
+                /*TODO*/////WriteHandlerPtr wh;
+                int rh;
+                int wh;
 
                 if ((spectrum_128_port_7ffd_data & 8) != 0)
                 {
@@ -2199,18 +2296,18 @@ public class spectrum
                 }
 
                 /* select ram at 0x0c000-0x0ffff */
-                {
-                        int ram_page;
-                        UBytePtr ram_data;
+                
+                int ram_page;
+                UBytePtr ram_data;
 
-                        ram_page = (spectrum_128_port_7ffd_data & 0x07) | ((scorpion_256_port_1ffd_data & (1<<4))>>1);
-                        ram_data = new UBytePtr(spectrum_128_ram, (ram_page<<14));
+                ram_page = (spectrum_128_port_7ffd_data & 0x07) | ((scorpion_256_port_1ffd_data & (1<<4))>>1);
+                ram_data = new UBytePtr(spectrum_128_ram, (ram_page<<14));
 
-                        cpu_setbank(4, ram_data);
-                        cpu_setbank(8, ram_data);
+                cpu_setbank(4, ram_data);
+                cpu_setbank(8, ram_data);
 
-                        logerror("RAM at 0xc000: %02x\n",ram_page);
-                }
+                logerror("RAM at 0xc000: %02x\n",ram_page);
+                
 
                 if ((scorpion_256_port_1ffd_data & (1<<0)) != 0)
                 {
@@ -2218,8 +2315,8 @@ public class spectrum
                         logerror("RAM at 0x0000\n");
 
                         /* connect page 0 of ram to 0x0000 */
-                        //rh = MRA_BANK1;
-                        /*TODO*/////wh = MWA_BANK5;
+                        rh = MRA_BANK1;
+                        wh = MWA_BANK5;
                         cpu_setbank(1, new UBytePtr(spectrum_128_ram,(8<<14)));
                         cpu_setbank(5, new UBytePtr(spectrum_128_ram,(8<<14)));
                 }
@@ -2229,8 +2326,8 @@ public class spectrum
                         logerror("ROM at 0x0000\n");
 
                         /* connect page 0 of rom to 0x0000 */
-                        /*TODO*/////rh = MRA_BANK1;
-                        /*TODO*/////wh = MWA_NOP;
+                        rh = MRA_BANK1;
+                        wh = MWA_NOP;
 
                         if ((scorpion_256_port_1ffd_data & (1<<1)) != 0)
                         {
@@ -2251,7 +2348,9 @@ public class spectrum
                         logerror("rom switch: %02x\n", ROMSelection);
                 }
                 /*TODO*/////memory_install_read8_handler(0, ADDRESS_SPACE_PROGRAM, 0x0000, 0x3fff, 0, 0, rh);
+                cpu_setbankhandler_r(1, rh);
                 /*TODO*/////memory_install_write8_handler(0, ADDRESS_SPACE_PROGRAM, 0x0000, 0x3fff, 0, 0, wh);
+                cpu_setbankhandler_w(1, wh);
         }
 
 
@@ -2269,7 +2368,7 @@ public class spectrum
 
                 /* update memory */
                 scorpion_update_memory();
-        };
+        }
 
         //static WRITE8_HANDLER(scorpion_port_1ffd_w)
         public static void scorpion_port_1ffd_w(int offset, int data){
@@ -2283,7 +2382,7 @@ public class spectrum
                 {
                         scorpion_update_memory();
                 }
-        };
+        }
 
         /****************************************************************************************************/
         /* pentagon */
@@ -2326,7 +2425,7 @@ public class spectrum
                 cpu_setbank(3, new UBytePtr(spectrum_128_ram, (2<<14)));
                 cpu_setbank(7, new UBytePtr(spectrum_128_ram, (2<<14)));
 
-                /*TODO*/////betadisk_init();
+                betadisk_init();
         }};
 
         /****************************************************************************************************/
