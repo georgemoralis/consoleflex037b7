@@ -205,7 +205,30 @@ public class spectrum
             }
         };
 	
-	
+	//static MACHINE_RESET( scorpion )
+        public static InitMachinePtr scorpion_init_machine = new InitMachinePtr() { public void handler() 
+	{
+                spectrum_128_ram = new UBytePtr(256*1024);
+                
+                if(spectrum_128_ram==null) return;
+                memset(spectrum_128_ram, 0, 256*1024);
+
+                /* Bank 5 is always in 0x4000 - 0x7fff */
+                cpu_setbank(2, new UBytePtr(spectrum_128_ram, (5<<14)));
+                cpu_setbank(6, new UBytePtr(spectrum_128_ram, (5<<14)));
+
+                /* Bank 2 is always in 0x8000 - 0xbfff */
+                cpu_setbank(3, new UBytePtr(spectrum_128_ram, (2<<14)));
+                cpu_setbank(7, new UBytePtr(spectrum_128_ram, (2<<14)));
+
+                spectrum_128_port_7ffd_data = 0;
+                scorpion_256_port_1ffd_data = 0;
+
+                scorpion_update_memory();
+
+                /*TODO*/////betadisk_init();
+        }};
+        
 	public static InitMachinePtr spectrum_128_init_machine = new InitMachinePtr() { public void handler() 
 	{
 			//spectrum_128_ram = (UBytePtr )malloc(128*1024);
@@ -900,7 +923,26 @@ public class spectrum
 			}
 	}
 	
-	
+	//static ADDRESS_MAP_START (scorpion_io, ADDRESS_SPACE_IO, 8)
+	//AM_RANGE(0x0000, 0xffff) AM_READWRITE(scorpion_port_r, scorpion_port_w)
+        //ADDRESS_MAP_END
+        static MemoryReadAddress scorpio_readmem[] ={
+            //new MemoryReadAddress( 0x0000, 0xffff, scorpion_port_r ),
+            new MemoryReadAddress( 0x0000, 0x3fff, MRA_BANK1 ),
+            new MemoryReadAddress( 0x4000, 0x7fff, MRA_BANK2 ),
+            new MemoryReadAddress( 0x8000, 0xbfff, MRA_BANK3 ),
+            new MemoryReadAddress( 0xc000, 0xffff, MRA_BANK4 ),
+            new MemoryReadAddress( -1 )	/* end of table */ 
+        };
+        
+        static MemoryWriteAddress scorpio_writemem[] ={
+                //new MemoryReadAddress( 0x0000, 0xffff, scorpion_port_w ),
+                new MemoryWriteAddress( 0x0000, 0x3fff, MWA_BANK5 ),
+                new MemoryWriteAddress( 0x4000, 0x7fff, MWA_BANK6 ),
+                new MemoryWriteAddress( 0x8000, 0xbfff, MWA_BANK7 ),
+                new MemoryWriteAddress( 0xc000, 0xffff, MWA_BANK8 ),
+		new MemoryWriteAddress( -1 )	/* end of table */
+	};
 	
 	static MemoryReadAddress spectrum_readmem[] ={
 		new MemoryReadAddress( 0x0000, 0x3fff, MRA_ROM ),
@@ -1102,7 +1144,7 @@ public class spectrum
 	/* KT: Changed it to this because the ports are not decoded fully.
 	The function decodes the ports appropriately */
 	static IOReadPort spectrum_readport[] ={
-			new IOReadPort(0x0000, 0xffff, spectrum_port_r),
+		new IOReadPort(0x0000, 0xffff, spectrum_port_r),
 		new IOReadPort( -1 )
 	};
 	
@@ -1328,6 +1370,83 @@ public class spectrum
 							logerror("Write %02x to Port: %04x\n", data, offset);
 			}
 	}};
+        
+        //static  READ8_HANDLER(scorpion_port_r)
+        public static ReadHandlerPtr scorpion_port_r = new ReadHandlerPtr() {
+            public int handler(int offset) {
+            
+                 if ((offset & 1)==0)
+                 {
+                         return spectrum_port_fe_r(offset);
+                 }
+
+                 /* KT: the following is not decoded exactly, need to check what
+                 is correct */
+                 if ((offset & 2)==0)
+                 {
+                         switch ((offset>>8) & 0xff)
+                         {
+                                        case 0xff: return spectrum_128_port_fffd_r(offset);
+                                        case 0x1f: return spectrum_port_1f_r(offset);
+                                        case 0x7f: return spectrum_port_7f_r(offset);
+                                        case 0xdf: return spectrum_port_df_r(offset);
+                         }
+                 }
+        //#if 0
+                 switch (offset & 0x0ff)
+                 {
+                        case 0x01f:
+                                /*TODO*/////return wd179x_status_r(offset);
+                        case 0x03f:
+                                /*TODO*/////return wd179x_track_r(offset);
+                        case 0x05f:
+                                /*TODO*/////return wd179x_sector_r(offset);
+                        case 0x07f:
+                                /*TODO*/////return wd179x_data_r(offset);
+                        case 0x0ff:
+                                /*TODO*/////return betadisk_status;
+                 }
+        //#endif
+                 logerror("Read from scorpion port: %04x\n", offset);
+
+                 return 0xff;
+        }};
+
+
+        /* not sure if decoding is full or partial on scorpion */
+        /* TO BE CHECKED! */
+        //static WRITE8_HANDLER(scorpion_port_w)
+        public static WriteHandlerPtr scorpion_port_w = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+        
+                if ((offset & 1)==0)
+                        spectrum_port_fe_w(offset,data);
+
+                else if ((offset & 2)==0)
+                {
+                                switch ((offset>>8) & 0xf0)
+                                {
+                                        case 0x70:
+                                                        scorpion_port_7ffd_w(offset, data);
+                                                        break;
+                                        case 0xb0:
+                                                        spectrum_128_port_bffd_w(offset, data);
+                                                        break;
+                                        case 0xf0:
+                                                        spectrum_128_port_fffd_w(offset, data);
+                                                        break;
+                                        case 0x10:
+                                                        scorpion_port_1ffd_w(offset, data);
+                                                        break;
+                                        default:
+                                                        logerror("Write %02x to scorpion port: %04x\n", data, offset);
+                                }
+                }
+                else
+                {
+                        logerror("Write %02x to scorpion port: %04x\n", data, offset);
+                }
+        }};
 	
 	//READ_HANDLER ( tc2048_port_r )
         public static ReadHandlerPtr tc2048_port_r = new ReadHandlerPtr() {
@@ -1404,6 +1523,16 @@ public class spectrum
 	static IOWritePort tc2048_writeport[] ={
 			new IOWritePort(0x0000, 0x0ffff, tc2048_port_w),
 		new IOWritePort( -1 )
+	};
+        
+        static IOReadPort scorpion_readport[] ={
+			new IOReadPort(0x0000, 0xffff, scorpion_port_r),
+			new IOReadPort( -1 )
+	};
+	
+	static IOWritePort scorpion_writeport[] ={
+			new IOWritePort(0x0000, 0xffff, scorpion_port_w),
+			new IOWritePort( -1 )
 	};
 	
 	static AY8910interface spectrum_128_ay_interface = new AY8910interface
@@ -1693,6 +1822,118 @@ public class spectrum
 			}
                         
 	);
+        
+        static MachineDriver machine_driver_scorpio = new MachineDriver
+	(
+		/* basic machine hardware */
+		new MachineCPU[] {
+			new MachineCPU(
+				CPU_Z80|CPU_16BIT_PORT,
+                                3546900,		/* 3.54690 Mhz */
+                                scorpio_readmem,scorpio_writemem,
+                                scorpion_readport,scorpion_writeport,
+                                spec_interrupt,1
+			),
+		},
+		50, 2500,		/* frames per second, vblank duration */
+		1,
+                scorpion_init_machine,
+                spectrum_128_exit_machine,
+	
+		/* video hardware */
+		SPEC_SCREEN_WIDTH,				/* screen width */
+		SPEC_SCREEN_HEIGHT, 			/* screen height */
+		new rectangle( 0, SPEC_SCREEN_WIDTH-1, 0, SPEC_SCREEN_HEIGHT-1),  /* visible_area */
+		spectrum_gfxdecodeinfo, 			 /* graphics decode info */
+		16, 256,							 /* colors used for the characters */
+		spectrum_init_palette,				 /* initialise palette */
+	
+		VIDEO_TYPE_RASTER,
+                spectrum_eof_callback,
+                spectrum_128_vh_start,
+                spectrum_128_vh_stop,
+                spectrum_128_vh_screenrefresh,
+	
+		/* sound hardware */
+		0,0,0,0,
+			new MachineSound[] {
+					/* +3 Ay-3-8912 sound */
+					new MachineSound(
+							SOUND_AY8910,
+							spectrum_128_ay_interface
+					),
+					/* standard spectrum buzzer sound */
+					new MachineSound(
+							SOUND_SPEAKER,
+							spectrum_speaker_interface
+					)
+			/*TODO*/////		/*-----------------27/02/00 10:40-------------------
+			/*TODO*/////		 cassette wave interface
+			/*TODO*/////		--------------------------------------------------*/
+			/*TODO*/////		new MachineSound(
+			/*TODO*/////				SOUND_WAVE,
+			/*TODO*/////				spectrum_wave_interface,
+			/*TODO*/////		)
+                           
+			}
+                        
+	);
+
+        static MachineDriver machine_driver_pentagon = new MachineDriver
+	(
+		/* basic machine hardware */
+		new MachineCPU[] {
+			new MachineCPU(
+				CPU_Z80|CPU_16BIT_PORT,
+                                3546900,		/* 3.54690 Mhz */
+                                spectrum_128_readmem,spectrum_128_writemem,
+                                spectrum_128_readport,spectrum_128_writeport,
+                                spec_interrupt,1
+			),
+		},
+		50, 2500,		/* frames per second, vblank duration */
+		1,
+                spectrum_128_init_machine,
+                spectrum_128_exit_machine,
+	
+		/* video hardware */
+		SPEC_SCREEN_WIDTH,				/* screen width */
+		SPEC_SCREEN_HEIGHT, 			/* screen height */
+		new rectangle( 0, SPEC_SCREEN_WIDTH-1, 0, SPEC_SCREEN_HEIGHT-1),  /* visible_area */
+		spectrum_gfxdecodeinfo, 			 /* graphics decode info */
+		16, 256,							 /* colors used for the characters */
+		spectrum_init_palette,				 /* initialise palette */
+	
+		VIDEO_TYPE_RASTER,
+                spectrum_eof_callback,
+                spectrum_128_vh_start,
+                spectrum_128_vh_stop,
+                spectrum_128_vh_screenrefresh,
+	
+		/* sound hardware */
+		0,0,0,0,
+			new MachineSound[] {
+					/* +3 Ay-3-8912 sound */
+					new MachineSound(
+							SOUND_AY8910,
+							spectrum_128_ay_interface
+					),
+					/* standard spectrum buzzer sound */
+					new MachineSound(
+							SOUND_SPEAKER,
+							spectrum_speaker_interface
+					)
+			/*TODO*/////		/*-----------------27/02/00 10:40-------------------
+			/*TODO*/////		 cassette wave interface
+			/*TODO*/////		--------------------------------------------------*/
+			/*TODO*/////		new MachineSound(
+			/*TODO*/////				SOUND_WAVE,
+			/*TODO*/////				spectrum_wave_interface,
+			/*TODO*/////		)
+                           
+			}
+                        
+	);
 	
 	static MachineDriver machine_driver_spectrum_128 = new MachineDriver
 	(
@@ -1907,6 +2148,188 @@ public class spectrum
                 /*TODO*/////                )
                 }
 	);
+        
+        /****************************************************************************************************/
+        /* Zs Scorpion 256 */
+
+        /*
+        port 7ffd. full compatibility with Zx spectrum 128. digits are:
+
+        D0-D2 - number of RAM page to put in C000-FFFF
+        D3    - switch of address for RAM of screen. 0 - 4000, 1 - c000
+        D4    - switch of ROM : 0-zx128, 1-zx48
+        D5    - 1 in this bit will block further output in port 7FFD, until reset.
+        */
+
+        /*
+        port 1ffd - additional port for resources of computer.
+
+        D0    - block of ROM in 0-3fff. when set to 1 - allows read/write page 0 of RAM
+        D1    - selects ROM expansion. this rom contains main part of service monitor.
+        D2    - not used
+        D3    - used for output in RS-232C
+        D4    - extended RAM. set to 1 - connects RAM page with number 8-15 in
+                C000-FFFF. number of page is given in gidits D0-D2 of port 7FFD
+        D5    - signal of strobe for interface centronics. to form the strobe has to be
+                set to 1.
+        D6-D7 - not used. ( yet ? )
+        */
+
+        /* rom 0=zx128, 1=zx48, 2 = service monitor, 3=tr-dos */
+
+        static int scorpion_256_port_1ffd_data = 0;
+
+        static void scorpion_update_memory()
+        {
+                UBytePtr ChosenROM;
+                int ROMSelection=0;
+                
+                ReadHandlerPtr rh;
+                WriteHandlerPtr wh;
+
+                if ((spectrum_128_port_7ffd_data & 8) != 0)
+                {
+                        logerror("SCREEN 1: BLOCK 7\n");
+                        spectrum_128_screen_location = new UBytePtr(spectrum_128_ram, (7<<14));
+                }
+                else
+                {
+                        logerror("SCREEN 0: BLOCK 5\n");
+                        spectrum_128_screen_location = new UBytePtr(spectrum_128_ram, (5<<14));
+                }
+
+                /* select ram at 0x0c000-0x0ffff */
+                {
+                        int ram_page;
+                        UBytePtr ram_data;
+
+                        ram_page = (spectrum_128_port_7ffd_data & 0x07) | ((scorpion_256_port_1ffd_data & (1<<4))>>1);
+                        ram_data = new UBytePtr(spectrum_128_ram, (ram_page<<14));
+
+                        cpu_setbank(4, ram_data);
+                        cpu_setbank(8, ram_data);
+
+                        logerror("RAM at 0xc000: %02x\n",ram_page);
+                }
+
+                if ((scorpion_256_port_1ffd_data & (1<<0)) != 0)
+                {
+                        /* ram at 0x0000 */
+                        logerror("RAM at 0x0000\n");
+
+                        /* connect page 0 of ram to 0x0000 */
+                        //rh = MRA_BANK1;
+                        /*TODO*/////wh = MWA_BANK5;
+                        cpu_setbank(1, new UBytePtr(spectrum_128_ram,(8<<14)));
+                        cpu_setbank(5, new UBytePtr(spectrum_128_ram,(8<<14)));
+                }
+                else
+                {
+                        /* rom at 0x0000 */
+                        logerror("ROM at 0x0000\n");
+
+                        /* connect page 0 of rom to 0x0000 */
+                        /*TODO*/////rh = MRA_BANK1;
+                        /*TODO*/////wh = MWA_NOP;
+
+                        if ((scorpion_256_port_1ffd_data & (1<<1)) != 0)
+                        {
+                                ROMSelection = 2;
+                        }
+                        else
+                        {
+
+                                /* ROM switching */
+                                ROMSelection = ((spectrum_128_port_7ffd_data>>4) & 0x01);
+                        }
+
+                        /* rom 0 is 128K rom, rom 1 is 48 BASIC */
+                        ChosenROM = new UBytePtr(memory_region(REGION_CPU1), 0x010000 + (ROMSelection<<14));
+
+                        cpu_setbank(1, ChosenROM);
+
+                        logerror("rom switch: %02x\n", ROMSelection);
+                }
+                /*TODO*/////memory_install_read8_handler(0, ADDRESS_SPACE_PROGRAM, 0x0000, 0x3fff, 0, 0, rh);
+                /*TODO*/////memory_install_write8_handler(0, ADDRESS_SPACE_PROGRAM, 0x0000, 0x3fff, 0, 0, wh);
+        }
+
+
+        //static WRITE8_HANDLER(scorpion_port_7ffd_w)
+        public static void scorpion_port_7ffd_w(int offset, int data){
+            
+                logerror("scorpion 7ffd w: %02x\n", data);
+
+                /* disable paging? */
+                if ((spectrum_128_port_7ffd_data & 0x20) != 0)
+                        return;
+
+                /* store new state */
+                spectrum_128_port_7ffd_data = data;
+
+                /* update memory */
+                scorpion_update_memory();
+        };
+
+        //static WRITE8_HANDLER(scorpion_port_1ffd_w)
+        public static void scorpion_port_1ffd_w(int offset, int data){
+                        
+                logerror("scorpion 1ffd w: %02x\n", data);
+
+                scorpion_256_port_1ffd_data = data;
+
+                /* disable paging? */
+                if ((spectrum_128_port_7ffd_data & 0x20)==0)
+                {
+                        scorpion_update_memory();
+                }
+        };
+
+        /****************************************************************************************************/
+        /* pentagon */
+
+        //static  READ8_HANDLER(pentagon_port_r)
+        public static ReadHandlerPtr pentagon_port_r = new ReadHandlerPtr() {
+            public int handler(int offset) {
+                    return 0x0ff;
+        }};
+
+
+        //static WRITE8_HANDLER(pentagon_port_w)
+        public static WriteHandlerPtr pentagon_port_w = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+        }};
+
+        static IOReadPort pentagon_readport[] ={
+		new IOReadPort(0x0000, 0xffff, pentagon_port_r),
+		new IOReadPort( -1 )
+	};
+	
+	static IOWritePort pentagon_writeport[] ={
+		new IOWritePort(0x0000, 0xffff, pentagon_port_w),
+		new IOWritePort( -1 )
+	};
+
+        //static MACHINE_RESET( pentagon )
+        public static InitMachinePtr pentagon_init_machine = new InitMachinePtr() { public void handler() 
+	{
+                spectrum_128_ram = new UBytePtr(128*1024);
+                
+                if(spectrum_128_ram==null) return;
+                memset(spectrum_128_ram, 0, 128*1024);
+
+                /* Bank 5 is always in 0x4000 - 0x7fff */
+                cpu_setbank(2, new UBytePtr(spectrum_128_ram, (5<<14)));
+                cpu_setbank(6, new UBytePtr(spectrum_128_ram, (5<<14)));
+
+                /* Bank 2 is always in 0x8000 - 0xbfff */
+                cpu_setbank(3, new UBytePtr(spectrum_128_ram, (2<<14)));
+                cpu_setbank(7, new UBytePtr(spectrum_128_ram, (2<<14)));
+
+                /*TODO*/////betadisk_init();
+        }};
+
+        /****************************************************************************************************/
 	
 	
 	/***************************************************************************
@@ -2032,7 +2455,22 @@ public class spectrum
                         ROM_LOAD("roma-en.rom",0x10000,0x8000, 0x2d533344);
 			//ROM_LOAD("romb.bin",0x18000,0x8000, 0x4a700c7e);
                         ROM_LOAD("romb-en.rom",0x18000,0x8000, 0xef8d5d92);
-	ROM_END(); }}; 
+	ROM_END(); }};
+                
+        static RomLoadPtr rom_scorpio = new RomLoadPtr(){ public void handler(){
+                        ROM_REGION(0x020000, REGION_CPU1);
+                        ROM_LOAD("scorp0.rom",0x010000, 0x4000, 0x0eb40a09);
+                        ROM_LOAD("scorp1.rom",0x014000, 0x4000, 0x9d513013);
+                        ROM_LOAD("scorp2.rom",0x018000, 0x4000, 0xfd0d3ce1);
+                        ROM_LOAD("scorp3.rom",0x01c000, 0x4000, 0x1fe1d003);
+                        //ROM_CART_LOAD(0, "rom\0", 0x0000, 0x4000, ROM_NOCLEAR | ROM_NOMIRROR | ROM_OPTIONAL);
+	ROM_END(); }};
+
+        static RomLoadPtr rom_pentagon = new RomLoadPtr(){ public void handler(){
+                        ROM_REGION(0x020000, REGION_CPU1);
+                        ROM_LOAD("pentagon.rom",0x010000, 0x8000, 0xaa1ce4bd);
+                        //ROM_CART_LOAD(0, "rom\0", 0x0000, 0x4000, ROM_NOCLEAR | ROM_NOMIRROR | ROM_OPTIONAL);
+        ROM_END(); }};
 	
         
 	static IODevice IODEVICE_SPEC_QUICK = 
@@ -2131,6 +2569,8 @@ public class spectrum
                 ),
 		new IODevice(IO_END)
 	};
+        
+        
 	
 	/*#define io_spec128	io_spectrum
 	#define io_spec128s io_spectrum
@@ -2207,4 +2647,9 @@ public class spectrum
         
         //COMPX( 2000, specpl3e, spec128,  spectrum_plus3, spectrum, 0,			 "Amstrad plc",          "ZX Spectrum +3e" , GAME_NOT_WORKING|GAME_COMPUTER_MODIFIED )
 	public static GameDriver driver_specpl3e = new GameDriver("2000", "specpl3e", "spectrum.java", rom_specpl3e, null, machine_driver_spectrum_plus3, input_ports_spectrum, null, io_specpls3, "Amstrad plc", "ZX Spectrum +3e");
+        
+        //COMP( ????, scorpion, 0,		 0,		scorpion,		spectrum,	0,		specpls3,	"Zonov and Co.",		"Zs Scorpion 256", GAME_NOT_WORKING)
+        public static GameDriver driver_scorpion = new GameDriver("????", "scorpio", "spectrum.java", rom_scorpio, null, machine_driver_scorpio, input_ports_spectrum, null, io_spectrum, "Zonov and Co.", "Zs Scorpion 256");
+        //COMP( ????, pentagon, spectrum, 0,		pentagon,		spectrum,	0,		specpls3,	"???",		"Pentagon", GAME_NOT_WORKING)
+        public static GameDriver driver_pentagon = new GameDriver("????", "pentagon", "spectrum.java", rom_pentagon, null, machine_driver_pentagon, input_ports_spectrum, null, io_spectrum, "???", "Pentagon");
 }
