@@ -1801,7 +1801,8 @@ public class spectrum
 					new MachineSound(
 							SOUND_WAVE,
 							spectrum_wave_interface
-					)
+					)                                                
+                                        
 			}
                         
 	);
@@ -1849,14 +1850,15 @@ public class spectrum
 					new MachineSound(
 							SOUND_SPEAKER,
 							spectrum_speaker_interface
+					),
+                                        /*-----------------27/02/00 10:40-------------------
+					 cassette wave interface
+					--------------------------------------------------*/
+					new MachineSound(
+							SOUND_WAVE,
+							spectrum_wave_interface
 					)
-			/*TODO*/////		/*-----------------27/02/00 10:40-------------------
-			/*TODO*/////		 cassette wave interface
-			/*TODO*/////		--------------------------------------------------*/
-			/*TODO*/////		new MachineSound(
-			/*TODO*/////				SOUND_WAVE,
-			/*TODO*/////				spectrum_wave_interface,
-			/*TODO*/////		)
+                                                
                            
 			}
                         
@@ -1905,14 +1907,14 @@ public class spectrum
 					new MachineSound(
 							SOUND_SPEAKER,
 							spectrum_speaker_interface
+					),
+                                        /*-----------------27/02/00 10:40-------------------
+					 cassette wave interface
+					--------------------------------------------------*/
+					new MachineSound(
+							SOUND_WAVE,
+							spectrum_wave_interface
 					)
-			/*TODO*/////		/*-----------------27/02/00 10:40-------------------
-			/*TODO*/////		 cassette wave interface
-			/*TODO*/////		--------------------------------------------------*/
-			/*TODO*/////		new MachineSound(
-			/*TODO*/////				SOUND_WAVE,
-			/*TODO*/////				spectrum_wave_interface,
-			/*TODO*/////		)
                            
 			}
                         
@@ -1962,7 +1964,7 @@ public class spectrum
 							SOUND_SPEAKER,
 							spectrum_speaker_interface
 					),
-					/*-----------------27/02/00 10:40-------------------
+                                        /*-----------------27/02/00 10:40-------------------
 					 cassette wave interface
 					--------------------------------------------------*/
 					new MachineSound(
@@ -2018,13 +2020,13 @@ public class spectrum
                                                 SOUND_SPEAKER,
                                                 spectrum_speaker_interface
                                 ),
-                                /*-----------------27/02/00 10:40-------------------
-                                 cassette wave interface
-                                --------------------------------------------------*/
-                                new MachineSound(
-                                                SOUND_WAVE,
-                                                spectrum_wave_interface
-                               )
+                                        /*-----------------27/02/00 10:40-------------------
+					 cassette wave interface
+					--------------------------------------------------*/
+					new MachineSound(
+							SOUND_WAVE,
+							spectrum_wave_interface
+					)
                 }
                 
 	);
@@ -2075,7 +2077,7 @@ public class spectrum
                                 ),
                                 /*-----------------27/02/00 10:40-------------------
                                  cassette wave interface
-                               --------------------------------------------------*/
+                                --------------------------------------------------*/
                                 new MachineSound(
                                                 SOUND_WAVE,
                                                 spectrum_wave_interface
@@ -2123,11 +2125,11 @@ public class spectrum
                                                 spectrum_speaker_interface
                                ),
                                 /*-----------------27/02/00 10:40-------------------
-                                 cassette wave interface
+                                cassette wave interface
                                 --------------------------------------------------*/
                                 new MachineSound(
                                                SOUND_WAVE,
-                                                spectrum_wave_interface
+                                               spectrum_wave_interface
                                 )
                 }
 	);
@@ -2604,7 +2606,8 @@ public class spectrum
 		IO_RESET_ALL,		/* reset if file changed */
 		spectrum_rom_id,	/* id */
 		spectrum_rom_load,	/* init */
-		spectrum_rom_exit,	/* exit */
+		//spectrum_rom_exit,	/* exit */
+                null, /* exit */
                 null, /* info */
                 null, /* open */
                 null, /* close */
