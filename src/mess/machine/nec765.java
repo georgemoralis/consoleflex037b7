@@ -164,6 +164,7 @@ public class nec765
 	
 	static void nec765_setup_drive_and_side()
 	{
+                //System.out.println("nec765_setup_drive_and_side");
 		// drive index nec765 sees
 		fdc.drive = fdc.nec765_command_bytes[1] & 0x03;
 		// side index nec765 sees
@@ -174,6 +175,7 @@ public class nec765
 	/* setup status register 0 based on data in status register 1 and 2 */
 	static void nec765_setup_st0()
 	{
+                //System.out.println("nec765_setup_st0");
 		/* clear completition status bits, drive bits and side bits */
 		fdc.nec765_status[0] &= ~((1<<7) | (1<<6) | (1<<2) | (1<<1) | (1<<0));
 		/* fill in drive */
@@ -192,7 +194,8 @@ public class nec765
 	
 	static int nec765_n_to_bytes(int n)
 	{
-		/* 0. 128 bytes, 1.256 bytes, 2.512 bytes etc */
+            //System.out.println("nec765_n_to_bytes");
+            /* 0. 128 bytes, 1.256 bytes, 2.512 bytes etc */
 	    /* data_size = ((1<<(N+7)) */
 	    return 1<<(n+7);
 	}
@@ -209,7 +212,8 @@ public class nec765
 	
 	static void nec765_seek_complete()
 	{
-			/* tested on Amstrad CPC */
+			//System.out.println("nec765_seek_complete");
+                        /* tested on Amstrad CPC */
 	
 			/* if a seek is done without drive connected: */
 			/*  abnormal termination of command,
@@ -311,7 +315,8 @@ public class nec765
 	
         public static timer_callback nec765_seek_timer_callback = new timer_callback() { public void handler(int param) 
 	{
-			/* seek complete */
+			//System.out.println("nec765_seek_timer_callback");
+                        /* seek complete */
 			nec765_seek_complete();
 	
 			if ((fdc.seek_timer) != null)
@@ -322,7 +327,8 @@ public class nec765
 	
         public static timer_callback nec765_timer_callback = new timer_callback() { public void handler(int param) 
 	{
-		/* type 0 = data transfer mode in execution phase */
+		//System.out.println("nec765_timer_callback");
+                /* type 0 = data transfer mode in execution phase */
 		if (fdc.timer_type==0)
 		{
 			/* set data request */
@@ -421,7 +427,8 @@ public class nec765
 	/* setup data request */
 	static void nec765_setup_timed_data_request(int bytes)
 	{
-		/* setup timer to trigger in NEC765_DATA_RATE us */
+		//System.out.println("nec765_setup_timed_data_request");
+                /* setup timer to trigger in NEC765_DATA_RATE us */
 		fdc.timer_type = 0;
 		if ((fdc.timer) !=null)
 		{
@@ -443,7 +450,8 @@ public class nec765
 	/* setup result data request */
 	static void nec765_setup_timed_result_data_request()
 	{
-		fdc.timer_type = 2;
+		//System.out.println("nec765_setup_timed_result_data_request");
+                fdc.timer_type = 2;
 		if ((fdc.timer) !=null)
 		{
 			/* disable the timer */
@@ -464,7 +472,8 @@ public class nec765
 	/* sets up a timer to issue a seek complete in signed_tracks time */
 	static void nec765_setup_timed_int(int signed_tracks)
 	{
-		if ((fdc.seek_timer) !=null)
+		//System.out.println("nec765_setup_timed_int");
+                if ((fdc.seek_timer) !=null)
 		{
 			/* disable the timer */
 			timer_remove(fdc.seek_timer);	
@@ -477,7 +486,8 @@ public class nec765
 	
 	static void nec765_seek_setup(int is_recalibrate)
 	{
-		int signed_tracks=0;
+		//System.out.println("nec765_seek_setup");
+                int signed_tracks=0;
 		
 		fdc.nec765_flags |= NEC765_SEEK_ACTIVE;
 		fdc.FDC_main |= (1<<fdc.drive);
@@ -571,7 +581,8 @@ public class nec765
 	
 	static void nec765_setup_execution_phase_read(char[] ptr, int size)
 	{
-	//        fdc.FDC_main |=0x080;                       /* DRQ */
+                System.out.println("nec765_setup_execution_phase_read");
+        //        fdc.FDC_main |=0x080;                       /* DRQ */
 	        fdc.FDC_main |= 0x040;                     /* FDC.CPU */
 	//		fdc.flags |= NEC765_FLAGS_DATA_TRANSFER_STARTED;
 	
@@ -589,6 +600,7 @@ public class nec765
 	
 	static void nec765_setup_execution_phase_write(char[] ptr, int size)
 	{
+                //System.out.println("nec765_setup_execution_phase_write");
 	//        fdc.FDC_main |=0x080;                       /* DRQ */
 	        fdc.FDC_main &= ~0x040;                     /* FDC.CPU */
 	
@@ -604,7 +616,8 @@ public class nec765
 	
 	static void nec765_setup_result_phase(int byte_count)
 	{
-		//fdc.nec765_flags &= ~NEC765_TC;
+		//System.out.println("nec765_setup_result_phase");
+                //fdc.nec765_flags &= ~NEC765_TC;
 	
 			fdc.FDC_main |= 0x040;                     /* FDC.CPU */
 	        fdc.FDC_main &= ~0x020;                    /* not execution phase */
@@ -618,6 +631,7 @@ public class nec765
 	
 	public static void nec765_idle()
 	{
+            //System.out.println("nec765_idle");    
 		//fdc.nec765_flags &= ~NEC765_TC;
 	
 	    fdc.FDC_main &= ~0x040;                     /* CPU.FDC */
@@ -658,6 +672,7 @@ public class nec765
 	
 	public static void nec765_init(nec765_interface iface, int version)
 	{
+                //System.out.println("nec765_init");
 		floppy_drives_init();
                 fdc.version = version;
                 fdc.timer = null;	//timer_set(TIME_NEVER, 0, nec765_timer_callback);
@@ -733,6 +748,7 @@ public class nec765
 	
 	static int nec765_read_skip_sector()
 	{
+                //System.out.println("nec765_read_skip_sector");    
 		/* skip set? */
 		if ((fdc.nec765_command_bytes[0] & (1<<5))!=0)
 		{
@@ -776,7 +792,8 @@ public class nec765
 	
 	public static void nec765_get_next_id(chrn_id id)
 	{
-		/* get next id from disc */
+		//System.out.println("nec765_get_next_id");    
+                /* get next id from disc */
 		floppy_drive_get_next_id(fdc.drive, fdc.side,id);
 	
 		fdc.sector_id = id.data_id;
@@ -791,6 +808,7 @@ public class nec765
 	
 	static int nec765_get_matching_sector()
 	{
+                //System.out.println("nec765_get_matching_sector");    
 		/* number of times we have seen index hole */
 		int index_count = 0;
 	
@@ -863,6 +881,7 @@ public class nec765
 	
 	static void nec765_read_complete()
 	{
+            //System.out.println("nec765_read_complete");    
 	
 	/* causes problems!!! - need to fix */
 	//#ifdef NO_END_OF_CYLINDER
@@ -900,6 +919,7 @@ public class nec765
 	
 	static void     nec765_read_data()
 	{
+                System.out.println("nec765_read_data");    
 	
 		if ((floppy_drive_get_flag_state(fdc.drive, FLOPPY_DRIVE_READY)) == 0)
 		{
@@ -978,6 +998,7 @@ public class nec765
 	
 	static void nec765_format_track()
 	{
+                //System.out.println("nec765_format_track");    
 		/* write protected? */
             	if (floppy_drive_get_flag_state(fdc.drive,FLOPPY_DRIVE_DISK_WRITE_PROTECTED) != 0)
 		{
@@ -1002,6 +1023,7 @@ public class nec765
 	
 	static void     nec765_read_a_track()
 	{
+                System.out.println("nec765_read_a_track");    
 		int data_size;
 	
 		/* SKIP not allowed with this command! */
@@ -1039,6 +1061,7 @@ public class nec765
 	
 	static int nec765_just_read_last_sector_on_track()
 	{
+                //System.out.println("nec765_just_read_last_sector_on_track");    
 		if (floppy_drive_get_flag_state(fdc.drive, FLOPPY_DRIVE_INDEX) != 0)
 			return 1;
 	
@@ -1047,7 +1070,8 @@ public class nec765
 	
 	static void nec765_write_complete()
 	{
-		nec765_setup_st0();
+		//System.out.println("nec765_write_complete");    
+                nec765_setup_st0();
 	
 	    fdc.nec765_result_bytes[0] = fdc.nec765_status[0];
 	    fdc.nec765_result_bytes[1] = fdc.nec765_status[1];
@@ -1063,6 +1087,7 @@ public class nec765
 	
 	static void     nec765_write_data()
 	{
+                //System.out.println("nec765_write_data");    
 		if ((floppy_drive_get_flag_state(fdc.drive, FLOPPY_DRIVE_READY))==0)
 		{
                     fdc.nec765_status[0] = 0x0c0 | (1<<4) | fdc.drive | (fdc.side<<2);
@@ -1109,6 +1134,7 @@ public class nec765
 	/* return true if we have read all sectors, false if not */
 	public static int nec765_sector_count_complete()
 	{
+                //System.out.println("nec765_sector_count_complete");    
 	/* this is not correct?? */
 	//#if 1
 		/* if terminal count has been set - yes */
@@ -1245,6 +1271,7 @@ public class nec765
 	
 	static void	nec765_increment_sector()
 	{
+                //System.out.println("nec765_increment_sector");    
 		/* multi-track? */
 		if ((fdc.nec765_command_bytes[0] & 0x080) != 0)
 		{
@@ -1284,6 +1311,7 @@ public class nec765
 	the data is not skipped. The data is read, but the control mark is set and the read is stopped */
 	static int nec765_read_data_stop()
 	{
+                //System.out.println("nec765_read_data_stop");    
 		/* skip not set? */
 		if ((fdc.nec765_command_bytes[0] & (1<<5))==0)
 		{
@@ -1322,6 +1350,7 @@ public class nec765
 	
 	static void     nec765_continue_command()
 	{
+                //System.out.println("nec765_continue_command");    
 		if ((fdc.nec765_phase == NEC765_PHASE.NEC765_EXECUTION_PHASE_READ) ||
 			(fdc.nec765_phase == NEC765_PHASE.NEC765_EXECUTION_PHASE_WRITE))
 		{
@@ -1447,6 +1476,7 @@ public class nec765
 	
 	static int nec765_get_command_byte_count()
 	{
+                //System.out.println("nec765_get_command_byte_count");    
 		fdc.command = fdc.nec765_command_bytes[0] & 0x01f;
 	
 		if (fdc.version==NEC765A)
@@ -1500,6 +1530,7 @@ public class nec765
 	
 	public static void nec765_update_state()
 	{
+            //System.out.println("nec765_update_state");
 	    switch (fdc.nec765_phase)
 	    {
 	         case NEC765_RESULT_PHASE:
@@ -1670,25 +1701,30 @@ public class nec765
 		/* get data we will return */
 	//	data = fdc.nec765_data_reg;
 	
-	
+                System.out.println("nec765_data_r ----------------------- "+offset);
 		if ((fdc.FDC_main & 0x0c0)==0x0c0)
 		{
+                    System.out.println("1");
+                    System.out.println(fdc.nec765_phase);
+                    
 			if (
 				(fdc.nec765_phase == NEC765_PHASE.NEC765_EXECUTION_PHASE_READ) ||
 				(fdc.nec765_phase == NEC765_PHASE.NEC765_EXECUTION_PHASE_WRITE))
 			{
-	
+                                System.out.println("2");
 				/* reading the data byte clears the interrupt */
 				nec765_set_int(0);
+                                System.out.println("3");
 			}
-	
+                        System.out.println("4");
 			/* reset data request */
 			nec765_clear_data_request();
-	
+                        System.out.println("5");
 			/* update state */
 			nec765_update_state();
+                        System.out.println("6");
 		}
-	
+                System.out.println("7");
 	//#ifdef SUPER_VERBOSE
 		logerror("DATA R: %02x\r\n", fdc.nec765_data_reg);
 	//#endif
@@ -1735,6 +1771,7 @@ public class nec765
 	
 	static void     nec765_setup_command()
 	{
+                System.out.println("nec765_setup_command");
 	//	nec765_clear_data_request();
 	
 		/* if not in dma mode set execution phase bit */
@@ -1742,7 +1779,7 @@ public class nec765
 		{
 	        fdc.FDC_main |= 0x020;              /* execution phase */
 		}
-	
+                System.out.println(fdc.nec765_command_bytes[0] & 0x01f);
 	        switch (fdc.nec765_command_bytes[0] & 0x01f)
 	        {
 	            case 0x03:      /* specify */
@@ -2059,6 +2096,7 @@ public class nec765
 	
 	public static void nec765_reset(int offset)
 	{
+                System.out.println("nec765_reset");
 		
                 /* nec765 in idle state - ready to accept commands */
 		nec765_idle();
@@ -2105,6 +2143,7 @@ public class nec765
 	
 	void	nec765_set_reset_state(int state)
 	{
+                //System.out.println("nec765_set_reset_state");
 		int flags;
 	
 		/* get previous reset state */
@@ -2139,6 +2178,7 @@ public class nec765
 	
 	void	nec765_set_ready_state(int state)
 	{
+                //System.out.println("nec765_set_ready_state");
 		/* clear ready state */
 		fdc.nec765_flags &= ~NEC765_FDD_READY;
 	
