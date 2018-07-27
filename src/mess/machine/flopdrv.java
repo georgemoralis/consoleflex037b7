@@ -5,6 +5,7 @@
 package mess.machine;
 
 import static mess.includes.flopdrvH.*;
+import static old.arcadeflex.osdepend.logerror;
 
 public class flopdrv
 {
@@ -16,7 +17,7 @@ public class flopdrv
 	/* init all floppy drives */
 	public static void floppy_drives_init()
 	{
-	System.out.println("floppy_drives_init");
+	logerror("floppy_drives_init");
         /* KT - caused problems with disk missing etc */
 	//        memset(&drives[0], 0, sizeof(floppy_drive));
             drives[0]=new floppy_drive();
@@ -34,9 +35,7 @@ public class flopdrv
 	
 	public static void floppy_drive_set_interface(int index1, floppy_interface iface)
 	{
-		System.out.println("floppy_drive_set_interface(index1): "+index1);
-                System.out.println("floppy_drive_set_interface()iface: "+iface);
-                if ((index1<0) || (index1>=MAX_DRIVES))
+		if ((index1<0) || (index1>=MAX_DRIVES))
 			return;
 	
 		//memcpy(drives[index1].f_interface, iface, sizeof(floppy_interface));
@@ -198,11 +197,7 @@ public class flopdrv
 		{
 			/* single sided, 40 track drive e.g. Amstrad CPC internal 3" drive */
 			case FLOPPY_DRIVE_SS_40:
-			{
-                            System.out.println(drives);
-                            System.out.println(drive);
-                            System.out.println(drives.length);
-                            System.out.println(drives[drive]);
+			{                            
 				drives[drive].max_track = 42;
 				drives[drive].num_sides = 1;
 			}
