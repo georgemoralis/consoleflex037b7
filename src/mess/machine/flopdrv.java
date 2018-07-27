@@ -13,20 +13,25 @@ public class flopdrv
 	public static final int MAX_DRIVES=4;
 	
 	public static floppy_drive[] drives = new floppy_drive[MAX_DRIVES];
+        
+        static {
+            for (int i=0 ; i<MAX_DRIVES ; i++)
+                drives[i] = new floppy_drive();
+        };
 	
 	/* init all floppy drives */
 	public static void floppy_drives_init()
 	{
-	logerror("floppy_drives_init");
+	System.out.println("floppy_drives_init");
         /* KT - caused problems with disk missing etc */
 	//        memset(&drives[0], 0, sizeof(floppy_drive));
-            drives[0]=new floppy_drive();
+            //drives[0]=new floppy_drive();
 	//        memset(&drives[1], 0, sizeof(floppy_drive));
-            drives[1]=new floppy_drive();
+            //drives[1]=new floppy_drive();
 	//        memset(&drives[2], 0, sizeof(floppy_drive));
-            drives[2]=new floppy_drive();
+            //drives[2]=new floppy_drive();
 	//        memset(&drives[3], 0, sizeof(floppy_drive));
-            drives[3]=new floppy_drive();
+            //drives[3]=new floppy_drive();
 	        drives[0].current_track = 10;
 	        drives[1].current_track = 10;
 	        drives[2].current_track = 10;
@@ -35,7 +40,8 @@ public class flopdrv
 	
 	public static void floppy_drive_set_interface(int index1, floppy_interface iface)
 	{
-		if ((index1<0) || (index1>=MAX_DRIVES))
+		System.out.println("floppy_drive_set_interface");
+                if ((index1<0) || (index1>=MAX_DRIVES))
 			return;
 	
 		//memcpy(drives[index1].f_interface, iface, sizeof(floppy_interface));
@@ -45,7 +51,8 @@ public class flopdrv
 	/* set flag state */
 	public static void floppy_drive_set_flag_state(int drive, int flag, int state)
 	{
-		drives[drive].flags &= ~flag;
+		//System.out.println("floppy_drive_set_flag_state");
+                drives[drive].flags &= ~flag;
 	
 		if (state != 0)
 		{
@@ -61,13 +68,15 @@ public class flopdrv
 	
 	public static void floppy_drive_set_motor_state(int drive, int state)
 	{
-		floppy_drive_set_flag_state(drive, FLOPPY_DRIVE_MOTOR_ON, state);
+		//System.out.println("floppy_drive_set_motor_state");
+                floppy_drive_set_flag_state(drive, FLOPPY_DRIVE_MOTOR_ON, state);
 	}
 	
 	
 	public static void floppy_drive_set_ready_state(int drive, int state, int flag)
 	{
-		if (flag != 0)
+		//System.out.println("floppy_drive_set_ready_state");
+                if (flag != 0)
 		{
 			/* set ready only if drive is present, disk is in the drive,
 			and disk motor is on - for Amstrad, Spectrum and PCW*/
@@ -103,7 +112,8 @@ public class flopdrv
 	/* get flag state */
 	public static int floppy_drive_get_flag_state(int drive, int flag)
 	{
-		switch (flag)
+		//System.out.println("floppy_drive_get_flag_state");
+                switch (flag)
 		{
 			case FLOPPY_DRIVE_HEAD_AT_TRACK_0:
 			{
@@ -168,7 +178,8 @@ public class flopdrv
 	//#if 0
 	public void floppy_drive_init()
 	{
-		int i;
+		System.out.println("floppy_drive_init");
+                int i;
 	
 		for (i=0; i<4; i++)
 		{
@@ -193,7 +204,8 @@ public class flopdrv
 	
 	public static void floppy_drive_set_geometry(int drive, floppy_type type)
 	{
-		switch (type)
+		System.out.println("floppy_drive_set_geometry");
+                switch (type)
 		{
 			/* single sided, 40 track drive e.g. Amstrad CPC internal 3" drive */
 			case FLOPPY_DRIVE_SS_40:
@@ -220,7 +232,8 @@ public class flopdrv
 	
 	public static void floppy_drive_seek(int drive, int signed_tracks)
 	{
-		floppy_drive pDrive = drives[drive];
+		//System.out.println("floppy_drive_seek");
+                floppy_drive pDrive = drives[drive];
 	
 		/* update position */
 		pDrive.current_track+=signed_tracks;
@@ -246,15 +259,23 @@ public class flopdrv
 		if ((floppy_drive_get_flag_state(drive, FLOPPY_DRIVE_PRESENT)) != 0)
 		{
 			//if ((drives[drive].f_interface.seek_callback)
-	
-				drives[drive].f_interface.seek_callback(drive, pDrive.current_track);
+                        /*System.out.println(drives);
+                        System.out.println(drives[drive]);
+                        System.out.println("Interface: ");
+                        System.out.println(drives[drive].f_interface);
+                        System.out.println(drive);
+                        System.out.println(pDrive);
+                        System.out.println(pDrive.current_track);*/
+                        
+                        drives[drive].f_interface.seek_callback(drive, pDrive.current_track);
 		}
 	}
 	
 	/* this is not accurate. But it will do for now */
 	public static void floppy_drive_get_next_id(int drive, int side, chrn_id id)
 	{
-		int spt;
+		System.out.println("floppy_drive_get_next_id");
+                int spt;
 	
 		/* get sectors per track */
 		spt = 0;
@@ -293,17 +314,20 @@ public class flopdrv
 	
 	public static int floppy_drive_get_current_track(int drive)
 	{
-		return drives[drive].current_track;
+		System.out.println("floppy_drive_get_current_track");
+                return drives[drive].current_track;
 	}
 	
 	public static void floppy_drive_format_sector(int drive, int side, int sector_index,int c,int h, int r, int n, int filler)
 	{
-		//if (drives[drive].interface.format_sector)
-			drives[drive].f_interface.format_sector(drive, side, sector_index,c, h, r, n, filler);
+                System.out.println("floppy_drive_format_sector");
+                //if (drives[drive].interface.format_sector)
+                    drives[drive].f_interface.format_sector(drive, side, sector_index,c, h, r, n, filler);
 	}
 	
 	public static void floppy_drive_read_sector_data(int drive, int side, int index1, char[] pBuffer, int length)
 	{
+                System.out.println("floppy_drive_read_sector_data");
 		//if (drives[drive].f_interface.read_sector_data_into_buffer)
 	                drives[drive].f_interface.read_sector_data_into_buffer(drive, side, index1, pBuffer,length);
 		
@@ -311,6 +335,7 @@ public class flopdrv
 	
 	public static void floppy_drive_write_sector_data(int drive, int side, int index1, char[] pBuffer,int length)
 	{
+                System.out.println("floppy_drive_write_sector_data");
 		//if (drives[drive].f_interface.write_sector_data_from_buffer)
 	                drives[drive].f_interface.write_sector_data_from_buffer(drive, side, index1, pBuffer,length);
 		
