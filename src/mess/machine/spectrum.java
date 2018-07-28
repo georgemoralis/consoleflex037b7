@@ -411,7 +411,7 @@ public class spectrum
 		sp_reg = (char)cpu_get_reg(Z80_SP);
 		sp_reg += 2;
 		cpu_set_reg(Z80_SP, (sp_reg & 0x0ffff));
-		cpu_set_sp((sp_reg & 0x0ffff));
+		//cpu_set_sp((sp_reg & 0x0ffff));
 	}
 	while (((return_addr != 0x053f) && (return_addr < 0x0605) && (ts2068_port_f4_data == -1)) ||
 		   ((return_addr != 0x00e5) && (return_addr < 0x01aa) && (ts2068_port_f4_data != -1)));
