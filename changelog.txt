@@ -1,3 +1,7 @@
+28/07/2018
+==========
+-Implementation of spectrum_tape_opbaseoverride , spectrum_cassette_init
+
 27/07/2018
 ==========
 -Finished most of usrintf work for mess (0.37b7 version)

@@ -91,9 +91,10 @@ public class messH {
 /*TODO*/// *	images from within the emulation. A driver might use this
 /*TODO*/// *	if both, OSD_FOPEN_RW and OSD_FOPEN_READ modes, failed.
 /*TODO*/// */
-/*TODO*///enum { OSD_FOPEN_READ, OSD_FOPEN_WRITE, OSD_FOPEN_RW, OSD_FOPEN_RW_CREATE };
-/*TODO*///
-/*TODO*///
+    public static final int OSD_FOPEN_READ=0;
+    public static final int OSD_FOPEN_WRITE=1;
+    public static final int OSD_FOPEN_RW=3;
+    public static final int OSD_FOPEN_RW_CREATE=4;
 /*TODO*////* mess.c functions [for external use] */
 /*TODO*///int parse_image_types(char *arg);
 /*TODO*///

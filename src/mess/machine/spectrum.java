@@ -52,7 +52,9 @@ import cpu.z80.z80;
 import static mess.systems.spectrum.*;
 import static mess.includes.spectrumH.*;
 import static old.arcadeflex.osdepend.logerror;
-
+import static old.mame.cpuintrfH.*;
+import static old.mame.cpuintrf.*;
+import static old.mame.inptport.*;
 import static mess.eventlst.*;
 import static mess.eventlstH.*;
 
@@ -278,151 +280,143 @@ public class spectrum
 	 *      load routine so things get rather messy!
 	 *
 	 *******************************************************************/
+        static int data_loaded_tape = 0;			/* Whether any data files (not headers) were loaded */
         public static opbase_handlerPtr spectrum_tape_opbaseoverride=new opbase_handlerPtr() {          
             public int handler (int address){
-                System.out.println("Unimplemented spectrum_tape_opbaseoverride function");//TODO
-                return 0;//placehandler tobe removed
-                
-        //static OPBASE_HANDLER(spectrum_tape_opbaseoverride)
-        /*TODO*/////public static opbase_handlerPtr spectrum_tape_opbaseoverride=new opbase_handlerPtr() {
-        /*TODO*/////    public int handler (int address){
-	/*TODO*/////	int i, tap_block_length, load_length;
-	/*TODO*/////	char lo, hi, a_reg;
-	/*TODO*/////	short load_addr, return_addr, af_reg, de_reg, sp_reg;
-	/*TODO*/////	//static int data_loaded = 0;			/* Whether any data files (not headers) were loaded */
-	
-	/*        logerror("PC=%02x\n", address); */
-	
-		/* It is not always possible to trap the call to the actual load
-		 * routine so trap the LD-EDGE-1 and LD-EDGE-2 routines which
-		 * check the earphone socket.
+            int i, tap_block_length, load_length;
+            int/*unsigned char*/ lo, hi, a_reg;
+            char/*unsigned short*/ load_addr, return_addr, af_reg, de_reg, sp_reg;
+
+/*        logerror("PC=%02x\n", address); */
+
+	/* It is not always possible to trap the call to the actual load
+	 * routine so trap the LD-EDGE-1 and LD-EDGE-2 routines which
+	 * check the earphone socket.
+	 */
+	if (ts2068_port_f4_data == -1)
+	{
+		if ((address < 0x05e3) || (address > 0x0604))
+			return address;
+
+		/* For Spectrum 128/+2/+3 check which rom is paged */
+		if ((spectrum_128_port_7ffd_data != -1) || (spectrum_plus3_port_1ffd_data != -1))
+		{
+			if (spectrum_plus3_port_1ffd_data != -1)
+			{
+				if ((spectrum_plus3_port_1ffd_data & 0x04)==0)
+					return address;
+			}
+			if ((spectrum_128_port_7ffd_data & 0x10)==0)
+				return address;
+		}
+	}
+	else
+	{
+		/* For TS2068 also check that EXROM is paged into bottom 8K.
+		 * Code is not relocatable so don't need to check EXROM in other pages.
 		 */
-	/*TODO*/////	if (ts2068_port_f4_data == -1)
-	/*TODO*/////	{
-	/*TODO*/////		if ((address < 0x05e3) || (address > 0x0604))
-	/*TODO*/////			return address;
-	/*TODO*/////
-			/* For Spectrum 128/+2/+3 check which rom is paged */
-	/*TODO*/////		if ((spectrum_128_port_7ffd_data != -1) || (spectrum_plus3_port_1ffd_data != -1))
-	/*TODO*/////		{
-	/*TODO*/////			if (spectrum_plus3_port_1ffd_data != -1)
-	/*TODO*/////			{
-	/*TODO*/////				if ((spectrum_plus3_port_1ffd_data & 0x04) != 0)
-	/*TODO*/////					return address;
-	/*TODO*/////			}
-	/*TODO*/////			if ((spectrum_128_port_7ffd_data & 0x10) !=0)
-	/*TODO*/////				return address;
-	/*TODO*/////		}
-	/*TODO*/////	}
-	/*TODO*/////	else
-	/*TODO*/////	{
-			/* For TS2068 also check that EXROM is paged into bottom 8K.
-			 * Code is not relocatable so don't need to check EXROM in other pages.
-			 */
-	/*TODO*/////		if (((ts2068_port_f4_data & 0x01)!=0) || ((ts2068_port_ff_data & 0x80)!=0))
-	/*TODO*/////			return address;
-	/*TODO*/////		if ((address < 0x018d) || (address > 0x01aa))
-	/*TODO*/////			return address;
-	/*TODO*/////	}
-	
-	/*TODO*/////	//lo = pSnapshotData[TapePosition] & 0x0ff;
-        /*TODO*/////        pSnapshotData.offset=TapePosition & 0x0ff;
-                
-	/*TODO*/////	hi = pSnapshotData[TapePosition + 1] & 0x0ff;
-	/*TODO*/////	tap_block_length = (hi << 8) | lo;
-	
-		/* By the time that load has been trapped the block type and carry
-		 * flags are in the AF' register. */
-	/*TODO*/////	af_reg = cpu_get_reg(Z80_AF2);
-	/*TODO*/////	a_reg = (af_reg & 0xff00) >> 8;
-	
-	/*TODO*/////	if ((a_reg == pSnapshotData[TapePosition + 2]) && (af_reg & 0x0001))
-	/*TODO*/////	{
-			/* Correct flag byte and carry flag set so try loading */
-	/*TODO*/////		load_addr = cpu_get_reg(Z80_IX);
-	/*TODO*/////		de_reg = cpu_get_reg(Z80_DE);
-	
-	/*TODO*/////		load_length = MIN(de_reg, tap_block_length - 2);
-	/*TODO*/////		load_length = MIN(load_length, 65536 - load_addr);
-			/* Actual number of bytes of block that can be loaded -
-			 * Don't try to load past the end of memory */
-	
-	/*TODO*/////		for (i = 0; i < load_length; i++)
-	/*TODO*/////			cpu_writemem16(load_addr + i, pSnapshotData[TapePosition + i + 3]);
-	/*TODO*/////		cpu_set_reg(Z80_IX, load_addr + load_length);
-	/*TODO*/////		cpu_set_reg(Z80_DE, de_reg - load_length);
-	/*TODO*/////		if (de_reg == (tap_block_length - 2))
-	/*TODO*/////		{
-				/* Successful load - Set carry flag and A to 0 */
-	/*TODO*/////			if ((de_reg != 17) || (a_reg))
-	/*TODO*/////				data_loaded = 1;		/* Non-header file loaded */
-	/*TODO*/////			cpu_set_reg(Z80_AF, (af_reg & 0x00ff) | 0x0001);
-	/*TODO*/////			logerror("Loaded %04x bytes from address %04x onwards (type=%02x) using tape block at offset %ld\n", load_length,
-	/*TODO*/////					 load_addr, a_reg, TapePosition);
-	/*TODO*/////		}
-	/*TODO*/////		else
-	/*TODO*/////		{
-				/* Wrong tape block size - reset carry flag */
-	/*TODO*/////			cpu_set_reg(Z80_AF, af_reg & 0xfffe);
-	/*TODO*/////			logerror("Bad block length %04x bytes wanted starting at address %04x (type=%02x) , Data length of tape block at offset %ld is %04x bytes\n",
-	/*TODO*/////					 de_reg, load_addr, a_reg, TapePosition, tap_block_length - 2);
-	/*TODO*/////		}
-	/*TODO*/////	}
-	/*TODO*/////	else
-	/*TODO*/////	{
-			/* Wrong flag byte or verify selected so reset carry flag to indicate failure */
-	/*TODO*/////		cpu_set_reg(Z80_AF, af_reg & 0xfffe);
-	/*TODO*/////		if ((af_reg & 0x0001) != 0)
-	/*TODO*/////			logerror("Failed to load tape block at offset %ld - type wanted %02x, got type %02x\n", TapePosition, a_reg,
-	/*TODO*/////					 pSnapshotData[TapePosition + 2]);
-	/*TODO*/////		else
-	/*TODO*/////			logerror("Failed to load tape block at offset %ld - verify selected\n", TapePosition);
-	/*TODO*/////	}
-	
-	/*TODO*/////	TapePosition += (tap_block_length + 2);
-	/*TODO*/////	if (TapePosition >= SnapshotDataSize)
-	/*TODO*/////	{
-			/* End of tape - either rewind or disable op base override */
-	/*TODO*/////		if (readinputport(16) & 0x40)
-	/*TODO*/////		{
-	/*TODO*/////			if (data_loaded != 0)
-	/*TODO*/////			{
-	/*TODO*/////				TapePosition = 0;
-	/*TODO*/////				data_loaded = 0;
-	/*TODO*/////				logerror("All tape blocks used! - rewinding tape to start\n");
-	/*TODO*/////			}
-	/*TODO*/////			else
-	/*TODO*/////			{
-					/* Disable .TAP support if no files were loaded to avoid getting caught in infinite loop */
-	/*TODO*/////				cpu_setOPbaseoverride(0, 0);
-	/*TODO*/////				logerror("No valid data loaded! - disabling .TAP support\n");
-	/*TODO*/////			}
-	/*TODO*/////		}
-	/*TODO*/////		else
-	/*TODO*/////		{
-	/*TODO*/////			cpu_setOPbaseoverride(0, 0);
-	/*TODO*/////			logerror("All tape blocks used! - disabling .TAP support\n");
-	/*TODO*/////		}
-	/*TODO*/////	}
-	
-		/* Leave the load routine by removing addresses from the stack
-		 * until one outside the load routine is found.
-		 * eg. SA/LD-RET at address 053f (00e5 on TS2068)
-		 */
-	/*TODO*/////	do
-	/*TODO*/////	{
-	/*TODO*/////		return_addr = cpu_geturnpc();
-	/*TODO*/////		cpu_set_reg(Z80_PC, (return_addr & 0x0ffff));
-	
-	/*TODO*/////		sp_reg = cpu_get_reg(Z80_SP);
-	/*TODO*/////		sp_reg += 2;
-	/*TODO*/////		cpu_set_reg(Z80_SP, (sp_reg & 0x0ffff));
-	/*TODO*/////		cpu_set_sp((sp_reg & 0x0ffff));
-	/*TODO*/////	}
-	/*TODO*/////	while (((return_addr != 0x053f) && (return_addr < 0x0605) && (ts2068_port_f4_data == -1)) ||
-	/*TODO*/////		   ((return_addr != 0x00e5) && (return_addr < 0x01aa) && (ts2068_port_f4_data != -1)));
-	/*TODO*/////	logerror("Load return address=%04x, SP=%04x\n", return_addr, sp_reg);
-	/*TODO*/////	return return_addr;
+		if ((ts2068_port_f4_data & 0x01)==0 || (ts2068_port_ff_data & 0x80)==0)
+			return address;
+		if ((address < 0x018d) || (address > 0x01aa))
+			return address;
+	}
+        pSnapshotData.offset=0; //TODO reset it just in case (shadow)
+	lo = pSnapshotData.read(TapePosition) & 0x0ff;
+	hi = pSnapshotData.read(TapePosition + 1) & 0x0ff;
+	tap_block_length = (hi << 8) | lo;
+
+	/* By the time that load has been trapped the block type and carry
+	 * flags are in the AF' register. */
+	af_reg = (char)cpu_get_reg(Z80_AF2);
+	a_reg = (af_reg & 0xff00) >> 8;
+
+	if ((a_reg == pSnapshotData.read(TapePosition + 2)) && (af_reg & 0x0001)!=0)
+	{
+		/* Correct flag byte and carry flag set so try loading */
+		load_addr = (char)cpu_get_reg(Z80_IX);
+		de_reg = (char)cpu_get_reg(Z80_DE);
+
+		load_length = Math.min(de_reg, tap_block_length - 2);
+		load_length = Math.min(load_length, 65536 - load_addr);
+		/* Actual number of bytes of block that can be loaded -
+		 * Don't try to load past the end of memory */
+
+		for (i = 0; i < load_length; i++)
+			cpu_writemem16(load_addr + i, pSnapshotData.read(TapePosition + i + 3));
+		cpu_set_reg(Z80_IX, load_addr + load_length);
+		cpu_set_reg(Z80_DE, de_reg - load_length);
+		if (de_reg == (tap_block_length - 2))
+		{
+			/* Successful load - Set carry flag and A to 0 */
+			if ((de_reg != 17) || (a_reg)!=0)
+				data_loaded_tape = 1;		/* Non-header file loaded */
+			cpu_set_reg(Z80_AF, (af_reg & 0x00ff) | 0x0001);
+			logerror("Loaded %04x bytes from address %04x onwards (type=%02x) using tape block at offset %ld\n", load_length,
+					 load_addr, a_reg, TapePosition);
+		}
+		else
+		{
+			/* Wrong tape block size - reset carry flag */
+			cpu_set_reg(Z80_AF, af_reg & 0xfffe);
+			logerror("Bad block length %04x bytes wanted starting at address %04x (type=%02x) , Data length of tape block at offset %ld is %04x bytes\n",
+					 de_reg, load_addr, a_reg, TapePosition, tap_block_length - 2);
+		}
+	}
+	else
+	{
+		/* Wrong flag byte or verify selected so reset carry flag to indicate failure */
+		cpu_set_reg(Z80_AF, af_reg & 0xfffe);
+		if ((af_reg & 0x0001)!=0)
+			logerror("Failed to load tape block at offset %ld - type wanted %02x, got type %02x\n", TapePosition, a_reg,
+					 pSnapshotData.read(TapePosition + 2));
+		else
+			logerror("Failed to load tape block at offset %ld - verify selected\n", TapePosition);
+	}
+
+	TapePosition += (tap_block_length + 2);
+	if (TapePosition >= SnapshotDataSize)
+	{
+		/* End of tape - either rewind or disable op base override */
+		if ((readinputport(16) & 0x40)!=0)
+		{
+			if (data_loaded_tape!=0)
+			{
+				TapePosition = 0;
+				data_loaded_tape = 0;
+				logerror("All tape blocks used! - rewinding tape to start\n");
+			}
+			else
+			{
+				/* Disable .TAP support if no files were loaded to avoid getting caught in infinite loop */
+				cpu_setOPbaseoverride(0, null);
+				logerror("No valid data loaded! - disabling .TAP support\n");
+			}
+		}
+		else
+		{
+			cpu_setOPbaseoverride(0, null);
+			logerror("All tape blocks used! - disabling .TAP support\n");
+		}
+	}
+
+	/* Leave the load routine by removing addresses from the stack
+	 * until one outside the load routine is found.
+	 * eg. SA/LD-RET at address 053f (00e5 on TS2068)
+	 */
+	do
+	{
+		return_addr = (char)cpu_geturnpc();
+		cpu_set_reg(Z80_PC, (return_addr & 0x0ffff));
+
+		sp_reg = (char)cpu_get_reg(Z80_SP);
+		sp_reg += 2;
+		cpu_set_reg(Z80_SP, (sp_reg & 0x0ffff));
+		cpu_set_sp((sp_reg & 0x0ffff));
+	}
+	while (((return_addr != 0x053f) && (return_addr < 0x0605) && (ts2068_port_f4_data == -1)) ||
+		   ((return_addr != 0x00e5) && (return_addr < 0x01aa) && (ts2068_port_f4_data != -1)));
+	logerror("Load return address=%04x, SP=%04x\n", return_addr, sp_reg);
+	return return_addr;
             }
 	};
 	
@@ -1120,42 +1114,42 @@ public class spectrum
 	--------------------------------------------------*/
     public static io_initPtr spectrum_cassette_init = new io_initPtr() {
         public int handler(int id) {
-            System.out.println("unhandleded spectrum_cassette_init function");
-            /*TODO*/////	void *file;
-
-            /*TODO*/////	if ((device_filename(IO_CASSETTE, id) != null) &&
-            /*TODO*/////		!stricmp(device_filename(IO_CASSETTE, id) + strlen(device_filename(IO_CASSETTE, id) ) - 4, ".tap"))
-            /*TODO*/////	{
-            /*TODO*/////		int datasize;
-            /*TODO*/////		UBytePtr data;
-            /*TODO*/////		file = image_fopen(IO_CASSETTE, id, OSD_FILETYPE_IMAGE_RW, OSD_FOPEN_READ);
-            /*TODO*/////		logerror(".TAP file found\n");
-            /*TODO*/////		if (file != 0)
-            /*TODO*/////			datasize = osd_fsize(file);
-            /*TODO*/////		else
-            /*TODO*/////			datasize = 0;
-            /*TODO*/////		if (datasize != 0)
-            /*TODO*/////		{
-            /*TODO*/////			data = malloc(datasize);
-            /*TODO*/////
-            /*TODO*/////			if (data != NULL)
-            /*TODO*/////			{
-            /*TODO*/////				pSnapshotData = data;
-            /*TODO*/////				SnapshotDataSize = datasize;
-            /*TODO*/////
-            /*TODO*/////				osd_fread(file, data, datasize);
-            /*TODO*/////				osd_fclose(file);
+            Object file=null;
+            if (stricmp(device_filename(IO_CASSETTE, id).substring(device_filename(IO_CASSETTE, id).length()-4), ".tap")==0)
+            	{
+            		int datasize;
+            		UBytePtr data;
+/*TODO*///            		file = image_fopen(IO_CASSETTE, id, OSD_FILETYPE_IMAGE_RW, OSD_FOPEN_READ);
+                        file = image_fopen(IO_CASSETTE, id, OSD_FILETYPE_IMAGE_R, OSD_FOPEN_READ);//TEMP open for read only mode
+            		logerror(".TAP file found\n");
+            		if (file != null)
+            			datasize = osd_fsize(file);
+            		else
+            			datasize = 0;
+            		if (datasize != 0)
+            		{
+            			data = new UBytePtr(datasize);
+            
+            			if (data != null)
+            			{
+            				pSnapshotData = data;
+            				SnapshotDataSize = datasize;
+            
+            				osd_fread(file, data, datasize);
+            				osd_fclose(file);
             /* Always reset tape position when loading new tapes */
- /*TODO*/////				TapePosition = 0;
-            /*TODO*/////				cpu_setOPbaseoverride(0, spectrum_tape_opbaseoverride);
-            /*TODO*/////				spectrum_snapshot_type = SPECTRUM_TAPEFILE_TAP;
-            /*TODO*/////				logerror(".TAP file successfully loaded\n");
-            /*TODO*/////				return INIT_OK;
-            /*TODO*/////			}
-            /*TODO*/////		}
-            /*TODO*/////		osd_fclose(file);
-            /*TODO*/////		return INIT_FAILED;
-            /*TODO*/////	}
+ 				TapePosition = 0;
+            				cpu_setOPbaseoverride(0, spectrum_tape_opbaseoverride);
+            				SPECTRUM_SNAPSHOT_TYPE = SPECTRUM_TAPEFILE_TAP;
+            				logerror(".TAP file successfully loaded\n");
+            				return INIT_OK;
+            			}
+            		}
+            		osd_fclose(file);
+            		return INIT_FAILED;
+            	}
+                //for start we shouldn't go below this
+                throw new UnsupportedOperationException("TODO implement!");
             /*TODO*/////	file = image_fopen(IO_CASSETTE, id, OSD_FILETYPE_IMAGE_RW, OSD_FOPEN_READ);
             /*TODO*/////	if (file != 0)
             /*TODO*/////	{
@@ -1181,7 +1175,7 @@ public class spectrum
             /*TODO*/////			return INIT_FAILED;
             /*TODO*/////		return INIT_OK;
             /*TODO*/////	}
-            return INIT_FAILED;
+            /*TODO*/////return INIT_FAILED;
         }
     };
     
