@@ -52,6 +52,7 @@ import static old.mame.timerH.*;
 import static old.sound.mixer.*;
 import static old.sound.streams.*;
 import sound.speaker;
+import sound.wave;
 
 public class sndintrf {
 
@@ -735,7 +736,7 @@ public class sndintrf {
                 new Dummy_snd(),//new qsound()  
                 new Dummy_snd(),
                 new speaker(),
-                new Dummy_snd(),
+                new wave(),
                 new Dummy_snd()
             };
 

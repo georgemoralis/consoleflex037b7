@@ -1115,7 +1115,7 @@ public class spectrum
     public static io_initPtr spectrum_cassette_init = new io_initPtr() {
         public int handler(int id) {
             Object file=null;
-            if (stricmp(device_filename(IO_CASSETTE, id).substring(device_filename(IO_CASSETTE, id).length()-4), ".tap")==0)
+            if ((device_filename(IO_CASSETTE, id) != null) &&(stricmp(device_filename(IO_CASSETTE, id).substring(device_filename(IO_CASSETTE, id).length()-4), ".tap")==0))
             	{
             		int datasize;
             		UBytePtr data;
@@ -1148,11 +1148,11 @@ public class spectrum
             		osd_fclose(file);
             		return INIT_FAILED;
             	}
-                //for start we shouldn't go below this
-                throw new UnsupportedOperationException("TODO implement!");
             /*TODO*/////	file = image_fopen(IO_CASSETTE, id, OSD_FILETYPE_IMAGE_RW, OSD_FOPEN_READ);
-            /*TODO*/////	if (file != 0)
-            /*TODO*/////	{
+            file = image_fopen(IO_CASSETTE, id, OSD_FILETYPE_IMAGE_R, OSD_FOPEN_READ);
+            	if (file != null)
+            	{
+                    throw new UnsupportedOperationException("TODO implement!");
             /*TODO*/////		struct wave_args wa =
             /*TODO*/////		{0,};
             /*TODO*/////		wa.file = file;
@@ -1160,7 +1160,7 @@ public class spectrum
             /*TODO*/////		if (device_open(IO_CASSETTE, id, 0, &wa))
             /*TODO*/////			return INIT_FAILED;
             /*TODO*/////		return INIT_OK;
-            /*TODO*/////	}
+            	}
             /* HJB 02/18: no file, create a new file instead */
  /*TODO*/////	file = image_fopen(IO_CASSETTE, id, OSD_FILETYPE_IMAGE_RW, OSD_FOPEN_WRITE);
             /*TODO*/////	if (file != 0)
@@ -1173,7 +1173,7 @@ public class spectrum
             /* open in write mode */
  /*TODO*/////		if (device_open(IO_CASSETTE, id, 1, &wa))
             /*TODO*/////			return INIT_FAILED;
-            /*TODO*/////		return INIT_OK;
+            		return INIT_OK;
             /*TODO*/////	}
             /*TODO*/////return INIT_FAILED;
         }
