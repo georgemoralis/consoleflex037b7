@@ -351,15 +351,15 @@ public class spectrum
 			if ((de_reg != 17) || (a_reg)!=0)
 				data_loaded_tape = 1;		/* Non-header file loaded */
 			cpu_set_reg(Z80_AF, (af_reg & 0x00ff) | 0x0001);
-			logerror("Loaded %04x bytes from address %04x onwards (type=%02x) using tape block at offset %ld\n", load_length,
-					 load_addr, a_reg, TapePosition);
+			logerror("Loaded %04x bytes from address %04x onwards (type=%02x) using tape block at offset %d\n", (int)load_length,
+					 (int)load_addr, (int)a_reg, TapePosition);
 		}
 		else
 		{
 			/* Wrong tape block size - reset carry flag */
 			cpu_set_reg(Z80_AF, af_reg & 0xfffe);
 			logerror("Bad block length %04x bytes wanted starting at address %04x (type=%02x) , Data length of tape block at offset %ld is %04x bytes\n",
-					 de_reg, load_addr, a_reg, TapePosition, tap_block_length - 2);
+					 (int)de_reg, (int)load_addr, (int)a_reg, TapePosition, tap_block_length - 2);
 		}
 	}
 	else
@@ -367,10 +367,10 @@ public class spectrum
 		/* Wrong flag byte or verify selected so reset carry flag to indicate failure */
 		cpu_set_reg(Z80_AF, af_reg & 0xfffe);
 		if ((af_reg & 0x0001)!=0)
-			logerror("Failed to load tape block at offset %ld - type wanted %02x, got type %02x\n", TapePosition, a_reg,
+			logerror("Failed to load tape block at offset %ld - type wanted %02x, got type %02x\n", TapePosition, (int)a_reg,
 					 pSnapshotData.read(TapePosition + 2));
 		else
-			logerror("Failed to load tape block at offset %ld - verify selected\n", TapePosition);
+			logerror("Failed to load tape block at offset %d - verify selected\n", TapePosition);
 	}
 
 	TapePosition += (tap_block_length + 2);
@@ -415,7 +415,7 @@ public class spectrum
 	}
 	while (((return_addr != 0x053f) && (return_addr < 0x0605) && (ts2068_port_f4_data == -1)) ||
 		   ((return_addr != 0x00e5) && (return_addr < 0x01aa) && (ts2068_port_f4_data != -1)));
-	logerror("Load return address=%04x, SP=%04x\n", return_addr, sp_reg);
+	logerror("Load return address=%04x, SP=%04x\n", (int)return_addr, (int)sp_reg);
 	return return_addr;
             }
 	};
