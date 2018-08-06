@@ -47,11 +47,11 @@ import static mess.eventlstH.*;
 import static old.mame.timer.*;
 import static old.mame.timerH.*;
 
-import static mess.machine.nec765.*;
-import static mess.includes.nec765H.*;
-import static mess.machine.flopdrv.*;
-import static mess.includes.flopdrvH.*;
-import static mess.machine.dsk.*;
+/*TODO*/////import static mess.machine.nec765.*;
+/*TODO*/////import static mess.includes.nec765H.*;
+/*TODO*/////import static mess.machine.flopdrv.*;
+/*TODO*/////import static mess.includes.flopdrvH.*;
+/*TODO*/////import static mess.machine.dsk.*;
 
 import static WIP.mame.sndintrf.*;
 import static WIP.mame.sndintrfH.*;
@@ -65,6 +65,9 @@ import static mess.vidhrdw.m6845.*;
 import static mess.vidhrdw.amstrad.*;
 import static mess.includes.amstradH.*;
 import static mess.machine.amstrad.*;
+
+import static mess.machine._8255ppiH.*;
+import static mess.machine._8255ppi.*;
 
 public class amstrad
 {
@@ -193,7 +196,7 @@ public class amstrad
 	
 	/* ppi port a read */
 	//READ_HANDLER(amstrad_ppi_porta_r)
-	public static ReadHandlerPtr amstrad_ppi_porta_r = new ReadHandlerPtr() {
+	public static PortReadHandlerPtr amstrad_ppi_porta_r = new PortReadHandlerPtr() {
             public int handler(int offset) {
 		update_psg();
 	
@@ -211,7 +214,7 @@ public class amstrad
 	 Bit 0 = VSYNC from CRTC */
 	
 	//READ_HANDLER(amstrad_ppi_portb_r)
-	public static ReadHandlerPtr amstrad_ppi_portb_r = new ReadHandlerPtr() {
+	public static PortReadHandlerPtr amstrad_ppi_portb_r = new PortReadHandlerPtr() {
             public int handler(int offset) {
 		int cassette_data;
 	
@@ -228,7 +231,7 @@ public class amstrad
 	}};
 	
 	//WRITE_HANDLER(amstrad_ppi_porta_w)
-	public static WriteHandlerPtr amstrad_ppi_porta_w = new WriteHandlerPtr() {
+	public static PortWriteHandlerPtr amstrad_ppi_porta_w = new PortWriteHandlerPtr() {
             public void handler(int offset, int data) {
 			ppi_port_outputs[0] = data;
 	
@@ -246,7 +249,7 @@ public class amstrad
 	static int previous_ppi_portc_w;
 	
 	//WRITE_HANDLER(amstrad_ppi_portc_w)
-	public static WriteHandlerPtr amstrad_ppi_portc_w = new WriteHandlerPtr() {
+	public static PortWriteHandlerPtr amstrad_ppi_portc_w = new PortWriteHandlerPtr() {
             public void handler(int offset, int data) {
 			int changed_data;
 	
@@ -276,36 +279,43 @@ public class amstrad
 		update_psg();
 	}};
 	
-	/*TODO*////static ppi8255_interface amstrad_ppi8255_interface =
-	/*TODO*////{
-	/*TODO*////	1,
-	/*TODO*////	amstrad_ppi_porta_r,
-	/*TODO*////	amstrad_ppi_portb_r,
-	/*TODO*////	null,
-	/*TODO*////	amstrad_ppi_porta_w,
-	/*TODO*////	null,
-	/*TODO*////	amstrad_ppi_portc_w
-	/*TODO*////};
+	static ppi8255_interface amstrad_ppi8255_interface =
+            new ppi8255_interface(
+		1,
+		amstrad_ppi_porta_r,
+		amstrad_ppi_portb_r,
+		null,
+		amstrad_ppi_porta_w,
+		null,
+		amstrad_ppi_portc_w
+            );
 	
 	/* Amstrad NEC765 interface doesn't use interrupts or DMA! */
-	static nec765_interface amstrad_nec765_interface = new nec765_interface() {
-            @Override
-            public void interrupt(int state) {
-                throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-            }
+	/*TODO*/////static nec765_interface amstrad_nec765_interface = new nec765_interface() {
+        /*TODO*/////    @Override
+        /*TODO*/////    public void interrupt(int state) {
+                /*TODO*//// throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        /*TODO*/////    }
 
-            @Override
-            public void dma_drq(int state, int read_write) {
-                throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-            }
+        /*TODO*/////    @Override
+        /*TODO*/////    public void dma_drq(int state, int read_write) {
+                /*TODO*//// throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        /*TODO*/////    }
         
-	};
+	/*TODO*/////};
 	
 	/* pointers to current ram configuration selected for banks */
 	static UBytePtr[] AmstradCPC_RamBanks=new UBytePtr[4];
+        
+        static {
+            AmstradCPC_RamBanks[0] = new UBytePtr(0x4000);
+            AmstradCPC_RamBanks[1] = new UBytePtr(0x4000);
+            AmstradCPC_RamBanks[2] = new UBytePtr(0x4000);
+            AmstradCPC_RamBanks[3] = new UBytePtr(0x4000);
+        };
 	
 	/* base of all ram allocated - 128k */
-	static UBytePtr Amstrad_Memory;
+	static UBytePtr Amstrad_Memory = new UBytePtr(0x20000);
 	
 	/* current selected upper rom */
 	static UBytePtr Amstrad_UpperRom;
@@ -599,7 +609,7 @@ public class amstrad
 	
 			Index = (offset & 0x0300) >> 8;
 	
-			/*TODO*////data = ppi8255_r(0, Index);
+			data = ppi8255_r(0, Index);
 		}
 	
 		if ((offset & 0x0400) == 0)
@@ -615,14 +625,14 @@ public class amstrad
 				case 2:
 					{
 						/* read status */
-						data = nec765_status_r.handler(0);
+						/*TODO*/////data = nec765_status_r.handler(0);
 					}
 					break;
 	
 				case 3:
 					{
 						/* read data register */
-						data = nec765_data_r.handler(0);
+						/*TODO*/////data = nec765_data_r.handler(0);
 					}
 					break;
 	
@@ -730,7 +740,7 @@ public class amstrad
 	
 			Index = (offset & 0x0300) >> 8;
 	
-			/*TODO*////ppi8255_w(0, Index, data);
+			ppi8255_w(0, Index, data);
 		}
 	
 		if ((offset & 0x0400) == 0)
@@ -746,16 +756,16 @@ public class amstrad
 				case 0:
 					{
 						/* fdc motor on */
-						floppy_drive_set_motor_state(0,data & 0x01);
-						floppy_drive_set_motor_state(1,data & 0x01);
-						floppy_drive_set_ready_state(0,1,1);
-						floppy_drive_set_ready_state(1,1,1);
+						/*TODO*/////floppy_drive_set_motor_state(0,data & 0x01);
+						/*TODO*/////floppy_drive_set_motor_state(1,data & 0x01);
+						/*TODO*/////floppy_drive_set_ready_state(0,1,1);
+						/*TODO*/////floppy_drive_set_ready_state(1,1,1);
 					}
 					break;
 	
 				case 3:
 					{
-						nec765_data_w.handler(0,data);
+						/*TODO*/////nec765_data_w.handler(0,data);
 					}
 					break;
 	
@@ -2285,7 +2295,7 @@ public class amstrad
 			AmstradCPC_PenColours[i] = 0x014;
 		}
 	
-		/*TODO*////ppi8255_init(amstrad_ppi8255_interface);
+		ppi8255_init(amstrad_ppi8255_interface);
 	
 		AmstradCPC_GA_RomConfiguration = 0;
 		amstrad_interrupt_timer = null;
@@ -2318,13 +2328,13 @@ public class amstrad
 	
 		cpu_0_irq_line_vector_w.handler(0, 0x0ff);
 	
-		nec765_init(amstrad_nec765_interface,NEC765A/*?*/);
+		/*TODO*/////nec765_init(amstrad_nec765_interface,NEC765A/*?*/);
 	
-		floppy_drives_init();
-		floppy_drive_set_flag_state(0, FLOPPY_DRIVE_PRESENT, 1);
-		floppy_drive_set_flag_state(1, FLOPPY_DRIVE_PRESENT, 1);
-		floppy_drive_set_geometry(0, floppy_type.FLOPPY_DRIVE_SS_40);
-		floppy_drive_set_geometry(1, floppy_type.FLOPPY_DRIVE_SS_40);
+		/*TODO*/////floppy_drives_init();
+		/*TODO*/////floppy_drive_set_flag_state(0, FLOPPY_DRIVE_PRESENT, 1);
+		/*TODO*/////floppy_drive_set_flag_state(1, FLOPPY_DRIVE_PRESENT, 1);
+		/*TODO*/////floppy_drive_set_geometry(0, floppy_type.FLOPPY_DRIVE_SS_40);
+		/*TODO*/////floppy_drive_set_geometry(1, floppy_type.FLOPPY_DRIVE_SS_40);
 	
 			/* Juergen is a cool dude! */
 			/*TODO*////cpu_set_irq_callback(0, amstrad_cpu_acknowledge_int);
@@ -2784,17 +2794,18 @@ public class amstrad
 		0,								   /* sh start */
 		0,								   /* sh stop */
 		0,								   /* sh update */
-		new MachineSound[] {
+		/*TODO*///new MachineSound[] {
 			/* MachineSound */
-			new MachineSound(
-				SOUND_AY8910,
-				amstrad_ay_interface
-			),
-			new MachineSound(
-				SOUND_WAVE,
-				wave_interface
-			)
-		}
+		/*TODO*///	new MachineSound(
+		/*TODO*///		SOUND_AY8910,
+		/*TODO*///		amstrad_ay_interface
+		/*TODO*///	),
+		/*TODO*///	new MachineSound(
+		/*TODO*///		SOUND_WAVE,
+		/*TODO*///		wave_interface
+		/*TODO*///	)
+		/*TODO*///}
+                null
 	);
 	
 	static MachineDriver machine_driver_kccomp = new MachineDriver
