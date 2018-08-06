@@ -190,7 +190,8 @@ public class system {
         /*TODO*///#endif
         /*TODO*///#ifndef MESS_EXCLUDE_AMSTRAD
         /*TODO*///	/* VEB MIKROELEKTRONIK */
-        /*TODO*///	DRIVER( kccomp )	/* KC compact									  */
+        //	DRIVER( kccomp )	/* KC compact									  */
+        driver_kccomp,
         /*TODO*///	DRIVER( kc85_4 )	/* KC 85/4										  */
         /*TODO*///#endif
         /*TODO*///
