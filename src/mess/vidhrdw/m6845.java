@@ -144,13 +144,13 @@ public class m6845
             
         };
         
-	/*TODO*/////	0,// Memory Address register
-	/*TODO*/////	0,// Row Address register
-	/*TODO*/////	0,// Horizontal status
-	/*TODO*/////	0,// Vertical status
-	/*TODO*/////	0,// Display Enabled status
-	/*TODO*/////	0,// Cursor status
-	/*TODO*/////};
+	//	0,// Memory Address register
+	//	0,// Row Address register
+	//	0,// Horizontal status
+	//	0,// Vertical status
+	//	0,// Display Enabled status
+	//	0,// Cursor status
+	
 	
 	/* set up the local copy of the 6845 external procedure calls */
 	public static void crtc6845_config(crtc6845_interface intf)

@@ -2851,17 +2851,18 @@ public class amstrad
 		0,								   /* sh start */
 		0,								   /* sh stop */
 		0,								   /* sh update */
-		new MachineSound[] {
+		/*TODO*///new MachineSound[] {
 			/* MachineSound */
-			new MachineSound(
-				SOUND_AY8910,
-				amstrad_ay_interface
-			),
-			new MachineSound(
-				SOUND_WAVE,
-				wave_interface
-			)
-		}
+		/*TODO*///	new MachineSound(
+		/*TODO*///		SOUND_AY8910,
+		/*TODO*///		amstrad_ay_interface
+		/*TODO*///	),
+		/*TODO*///	new MachineSound(
+		/*TODO*///		SOUND_WAVE,
+		/*TODO*///		wave_interface
+		/*TODO*///	)
+		/*TODO*///}
+                null
 	);
 	
 	

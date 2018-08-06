@@ -393,7 +393,7 @@ public class amstrad
 	
 	// called when the 6845 changes the character row
 	public static void amstrad_Set_Character_Row(int offset, int data)
-	{
+	{            
 		amstrad_Character_Row=data;
 		amstrad_Set_VideoULA_DE();
 	}
