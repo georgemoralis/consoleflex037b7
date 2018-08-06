@@ -2913,7 +2913,8 @@ public class amstrad
 	ROM_END(); }}; 
 	
 	//static const struct IODevice io_cpc6128[] =
-	public static IODevice io_kccomp[], io_cpc464[], io_cpc664[], io_cpc6128[] = {
+	//public static IODevice io_kccomp[], io_cpc464[], io_cpc664[], io_cpc6128[] = {
+        public static IODevice io_cpc464[] = {
             new IODevice(
 		
 			IO_CARTSLOT,				/* type */
@@ -2934,38 +2935,42 @@ public class amstrad
 			null,						/* input_chunk */
 			null						/* output_chunk */
             ),
-		new IODevice(
-			IO_FLOPPY,					/* type */
-			2,							/* count */
-			"dsk\0",                    /* file extensions */
-			IO_RESET_NONE,				/* reset if file changed */
-			dsk_floppy_id,				/* id */
-			dsk_floppy_load,			/* init */
-			dsk_floppy_exit,			/* exit */
-			null,						/* info */
-			null,						/* open */
-			null,						/* close */
-			null,						/* status */
-			null,						/* seek */
-			null,						/* tell */
-			null,						/* input */
-			null,						/* output */
-			null,						/* input_chunk */
-			null						/* output_chunk */
-                ),
+		/*TODO*////new IODevice(
+		/*TODO*////	IO_FLOPPY,					/* type */
+		/*TODO*////	2,							/* count */
+		/*TODO*////	"dsk\0",                    /* file extensions */
+		/*TODO*////	IO_RESET_NONE,				/* reset if file changed */
+		/*TODO*////	dsk_floppy_id,				/* id */
+		/*TODO*////	dsk_floppy_load,			/* init */
+		/*TODO*////	dsk_floppy_exit,			/* exit */
+		/*TODO*////	null,						/* info */
+		/*TODO*////	null,						/* open */
+		/*TODO*////	null,						/* close */
+		/*TODO*////	null,						/* status */
+		/*TODO*////	null,						/* seek */
+		/*TODO*////	null,						/* tell */
+		/*TODO*////	null,						/* input */
+		/*TODO*////	null,						/* output */
+		/*TODO*////	null,						/* input_chunk */
+		/*TODO*////	null						/* output_chunk */
+                /*TODO*////),
 		/*TODO*////IO_CASSETTE_WAVE(1,"wav\0",null,amstrad_cassette_init,amstrad_cassette_exit),
 	
 		new IODevice(IO_END)
 	};
+        
+        public static IODevice io_kccomp[] = io_cpc464;
+        public static IODevice io_cpc664[] = io_cpc464;
+        public static IODevice io_cpc6128[] = io_cpc464;
 	
 	/*	  YEAR	NAME	  PARENT	MACHINE   INPUT 	INIT COMPANY   FULLNAME */
 	//COMP( 1984, cpc464,   0,		amstrad,  amstrad,	0,	 "Amstrad plc", "Amstrad/Schneider CPC464")
         public static GameDriver driver_cpc464 = new GameDriver("1984", "cpc464", "amstrad.java", rom_cpc464, null, machine_driver_amstrad, input_ports_amstrad, null, io_cpc464, "Amstrad plc", "Amstrad/Schneider CPC464");
 	//COMP( 1985, cpc664,   cpc464,	amstrad,  amstrad,	0,	 "Amstrad plc", "Amstrad/Schneider CPC664")
-        public static GameDriver driver_cpc664 = new GameDriver("1985", "cpc664", "amstrad.java", rom_cpc664, null, machine_driver_amstrad, input_ports_amstrad, null, io_cpc664, "Amstrad plc", "Amstrad/Schneider CPC664");
+        public static GameDriver driver_cpc664 = new GameDriver("1985", "cpc664", "amstrad.java", rom_cpc664, null, machine_driver_amstrad, input_ports_amstrad, null, io_cpc464, "Amstrad plc", "Amstrad/Schneider CPC664");
 	//COMP( 1985, cpc6128,  cpc464,	amstrad,  amstrad,	0,	 "Amstrad plc", "Amstrad/Schneider CPC6128")
-        public static GameDriver driver_cpc6128 = new GameDriver("1985", "cpc6128", "amstrad.java", rom_cpc6128, null, machine_driver_amstrad, input_ports_amstrad, null, io_cpc6128, "Amstrad plc", "Amstrad/Schneider CPC6128");
+        public static GameDriver driver_cpc6128 = new GameDriver("1985", "cpc6128", "amstrad.java", rom_cpc6128, null, machine_driver_amstrad, input_ports_amstrad, null, io_cpc464, "Amstrad plc", "Amstrad/Schneider CPC6128");
 	//COMP( 19??, kccomp,   cpc464,	kccomp,   kccomp,	0,	 "VEB Mikroelektronik", "KC Compact")
-        public static GameDriver driver_kccomp = new GameDriver("19??", "kccomp", "amstrad.java", rom_kccomp, null, machine_driver_kccomp, input_ports_kccomp, null, io_kccomp, "VEB Mikroelektronik", "KC Compact");
+        public static GameDriver driver_kccomp = new GameDriver("19??", "kccomp", "amstrad.java", rom_kccomp, null, machine_driver_kccomp, input_ports_kccomp, null, io_cpc464, "VEB Mikroelektronik", "KC Compact");
 	
 }
