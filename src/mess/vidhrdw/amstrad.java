@@ -65,7 +65,7 @@ public class amstrad
 	/* current mode to render */
 	static int amstrad_render_mode;
 	
-	int amstrad_vsync;
+	static int amstrad_vsync;
 	
 	/* current programmed mode */
 	static int amstrad_current_mode;
@@ -111,7 +111,7 @@ public class amstrad
 	static int y_screen_offset=-21;
 	
 	static int amstrad_HSync=0;
-	static int amstrad_VSync=0;
+	public static int amstrad_VSync=0;
 	static int amstrad_Character_Row=0;
 	static int amstrad_DE=0;
 	
@@ -372,7 +372,7 @@ public class amstrad
 	}
 	
 	/* Select the Function to draw the screen area */
-	void amstrad_Set_VideoULA_DE()
+	public static void amstrad_Set_VideoULA_DE()
 	{
 		if (amstrad_DE != 0)
 		{
@@ -392,7 +392,7 @@ public class amstrad
 	 ************************************************************************/
 	
 	// called when the 6845 changes the character row
-	void amstrad_Set_Character_Row(int offset, int data)
+	public static void amstrad_Set_Character_Row(int offset, int data)
 	{
 		amstrad_Character_Row=data;
 		amstrad_Set_VideoULA_DE();
@@ -400,7 +400,7 @@ public class amstrad
 	
 	/* the horizontal screen position on the display is determined
 	by the length of the HSYNC and the position of the hsync */
-	void amstrad_Set_HSync(int offset, int data)
+	public static void amstrad_Set_HSync(int offset, int data)
 	{
 	//	if (amstrad_rendering != 0)
 	//	{
@@ -442,7 +442,7 @@ public class amstrad
 		amstrad_HSync=data;
 	}
 	
-	void amstrad_Set_VSync(int offset, int data)
+	public static void amstrad_Set_VSync(int offset, int data)
 	{
 	
 	        amstrad_vsync = data;
@@ -477,7 +477,7 @@ public class amstrad
 	}
 	
 	// called when the 6845 changes the Display Enabled
-	void amstrad_Set_DE(int offset, int data)
+	public static void amstrad_Set_DE(int offset, int data)
 	{
 		amstrad_DE=data;
 		amstrad_Set_VideoULA_DE();
@@ -489,15 +489,42 @@ public class amstrad
 	
 	/* use this when rendering */
 	
-	/*TODO*///static crtc6845_interface
-	/*TODO*///amstrad6845= {
-	/*TODO*///	0,// Memory Address register
-	/*TODO*///	amstrad_Set_Character_Row,// Row Address register
-	/*TODO*///	amstrad_Set_HSync,// Horizontal status
-	/*TODO*///	amstrad_Set_VSync,// Vertical status
-	/*TODO*///	amstrad_Set_DE,// Display Enabled status
-	/*TODO*///	null,// Cursor status 
-	/*TODO*///};
+	public static crtc6845_interface amstrad6845= new crtc6845_interface(){
+            @Override
+            public void out_MA_func(int offset, int data) {
+                // 0,// Memory Address register
+            }
+
+            @Override
+            public void out_RA_func(int offset, int data) {
+                //	amstrad_Set_Character_Row,// Row Address register
+                amstrad_Set_Character_Row(offset, data);
+            }
+
+            @Override
+            public void out_HS_func(int offset, int data) {
+                //	amstrad_Set_HSync,// Horizontal status
+                amstrad_Set_HSync(offset, data);
+            }
+
+            @Override
+            public void out_VS_func(int offset, int data) {
+                // amstrad_Set_VSync,// Vertical status
+                amstrad_Set_VSync(offset, data);
+            }
+
+            @Override
+            public void out_DE_func(int offset, int data) {
+                //	amstrad_Set_DE,// Display Enabled status
+                amstrad_Set_DE(offset, data);
+            }
+
+            @Override
+            public void out_CR_func(int offset, int data) {
+                //	null,// Cursor status
+            }
+    
+        };
 	
 	/* update the amstrad colours */
 	public static void amstrad_vh_update_colour(int PenIndex, int hw_colour_index)
@@ -682,7 +709,7 @@ public class amstrad
 		amstrad_init_lookups();
 	
 		crtc6845_start();
-		/*TODO*///crtc6845_config(amstrad6845);
+		crtc6845_config(amstrad6845);
 		crtc6845_reset(0);
 		crtc6845_get_state(0, amstrad_vidhrdw_6845_state);
 		
