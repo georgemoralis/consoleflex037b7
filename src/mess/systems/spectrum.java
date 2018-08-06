@@ -1,5 +1,5 @@
 /***************************************************************************
-		Spectrum/Inves/TK90X etc. memory map:
+		SWRITE_HANDLERpectrum/Inves/TK90X etc. memory map:
 
 	CPU:
 		0000-3fff ROM
@@ -75,7 +75,6 @@ thus is not emulated.
  */ 
 package mess.systems;
 
-import static WIP.mame.memoryH.*;
 import static sound.ay8910.*;
 import static sound.ay8910H.*;
 import static mess.machine.spectrum.*;
