@@ -11,15 +11,22 @@ package mess.vidhrdw;
  ************************************************************************/
 
 public class m6845H{
-    /*TODO*/////struct crtc6845_interface
-    /*TODO*/////{
-    /*TODO*/////        void (*out_MA_func)(int offset, int data);
-    /*TODO*/////        void (*out_RA_func)(int offset, int data);
-    /*TODO*/////        void (*out_HS_func)(int offset, int data);
-    /*TODO*/////        void (*out_VS_func)(int offset, int data);
-    /*TODO*/////        void (*out_DE_func)(int offset, int data);
-    /*TODO*/////        void (*out_CR_func)(int offset, int data);
-    /*TODO*/////};
+    public static abstract class crtc6845_interface
+    {
+            public boolean out_MA_func=false;
+            public boolean out_RA_func=false;
+            public boolean out_HS_func=false;
+            public boolean out_VS_func=false;
+            public boolean out_DE_func=false;
+            public boolean out_CR_func=false;
+            
+            public abstract void out_MA_func(int offset, int data);
+            public abstract void out_RA_func(int offset, int data);
+            public abstract void out_HS_func(int offset, int data);
+            public abstract void out_VS_func(int offset, int data);
+            public abstract void out_DE_func(int offset, int data);
+            public abstract void out_CR_func(int offset, int data);
+    };
 
     public static class crtc6845_state
     {

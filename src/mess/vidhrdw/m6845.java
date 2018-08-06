@@ -32,7 +32,7 @@ public class m6845
 	public static final int Display_Enabled_Delay_Flag = 4;
 	public static final int Display_Disable_Delay_Flag = 8;
         
-        static crtc6845_state crtc;
+        static crtc6845_state crtc=new crtc6845_state();
 	
 	/* total number of chr -1 */
 	static int R0_horizontal_total = crtc.registers[0];
@@ -111,8 +111,39 @@ public class m6845
 	//#endif
 	
 	// local copy of the 6845 external procedure calls
-	/*TODO*/////static crtc6845_interface
-	/*TODO*/////crct6845_calls= {
+	static crtc6845_interface crct6845_calls= new crtc6845_interface(){
+            @Override
+            public void out_MA_func(int offset, int data) {
+                //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+            }
+
+            @Override
+            public void out_RA_func(int offset, int data) {
+                //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+            }
+
+            @Override
+            public void out_HS_func(int offset, int data) {
+                //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+            }
+
+            @Override
+            public void out_VS_func(int offset, int data) {
+                //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+            }
+
+            @Override
+            public void out_DE_func(int offset, int data) {
+                //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+            }
+
+            @Override
+            public void out_CR_func(int offset, int data) {
+                //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+            }
+            
+        };
+        
 	/*TODO*/////	0,// Memory Address register
 	/*TODO*/////	0,// Row Address register
 	/*TODO*/////	0,// Horizontal status
@@ -122,15 +153,16 @@ public class m6845
 	/*TODO*/////};
 	
 	/* set up the local copy of the 6845 external procedure calls */
-	/*TODO*/////void crtc6845_config(crtc6845_interface intf)
-	/*TODO*/////{
-	/*TODO*/////	crct6845_calls.out_MA_func=*intf.out_MA_func;
-	/*TODO*/////	crct6845_calls.out_RA_func=*intf.out_RA_func;
-	/*TODO*/////	crct6845_calls.out_HS_func=*intf.out_HS_func;
-	/*TODO*/////	crct6845_calls.out_VS_func=*intf.out_VS_func;
-	/*TODO*/////	crct6845_calls.out_DE_func=*intf.out_DE_func;
-	/*TODO*/////	crct6845_calls.out_CR_func=*intf.out_CR_func;
-	/*TODO*/////}
+	public static void crtc6845_config(crtc6845_interface intf)
+	{
+		/*crct6845_calls.out_MA_func=intf.out_MA_func;
+		crct6845_calls.out_RA_func=*intf.out_RA_func;
+		crct6845_calls.out_HS_func=*intf.out_HS_func;
+		crct6845_calls.out_VS_func=*intf.out_VS_func;
+		crct6845_calls.out_DE_func=*intf.out_DE_func;
+		crct6845_calls.out_CR_func=*intf.out_CR_func;*/
+                crct6845_calls = intf;
+	}
 	
 	public static void crtc6845_start()
 	{
@@ -365,6 +397,8 @@ public class m6845
 	/* clock the 6845 */
 	public static void crtc6845_clock()
 	{
+            if(crtc==null) crtc=new crtc6845_state();
+            
 		/* KT - I think the compiler might generate shit code when using "%" operator! */
 		/*crtc.Memory_Address=(crtc.Memory_Address+1)%0x4000;*/
 		crtc.Memory_Address=(crtc.Memory_Address+1)&0x03fff;
@@ -454,6 +488,7 @@ public class m6845
 				{
 					crtc.VSYNC=True;
 					/*TODO*/////if (crct6845_calls.out_VS_func) (crct6845_calls.out_VS_func)(0,crtc.VSYNC); /* call VS update */
+                                        crct6845_calls.out_VS_func(0,crtc.VSYNC);
 				}
 	
 	
@@ -468,6 +503,7 @@ public class m6845
 	                                crtc.Vertical_Sync_Width_Counter=0;
 	                                crtc.VSYNC=False;
 	                                /*TODO*/////if (crct6845_calls.out_VS_func) (crct6845_calls.out_VS_func)(0,crtc.VSYNC); /* call VS update */
+                                        crct6845_calls.out_VS_func(0,crtc.VSYNC);
 	                        }
 	                }
 	
@@ -494,6 +530,7 @@ public class m6845
 					{
 						crtc.VSYNC=True;
 						/*TODO*/////if (crct6845_calls.out_VS_func) (crct6845_calls.out_VS_func)(0,crtc.VSYNC); /* call VS update */
+                                                crct6845_calls.out_VS_func(0,crtc.VSYNC);
 					}
 				}
 			}
@@ -505,6 +542,7 @@ public class m6845
 				crtc.Scan_Line_Counter_Reset=True;
 			}
 			/*TODO*/////if (crct6845_calls.out_RA_func) (crct6845_calls.out_RA_func)(0,crtc.Scan_Line_Counter); /* call RA update */
+                        crct6845_calls.out_RA_func(0,crtc.Scan_Line_Counter);
 		}
 		/* end of vertical clock pulse */
 	
@@ -537,6 +575,7 @@ public class m6845
 	                {
 	                        crtc.HSYNC=True;
 	                        /*TODO*/////if (crct6845_calls.out_HS_func) (crct6845_calls.out_HS_func)(0,crtc.HSYNC); /* call HS update */
+                                crct6845_calls.out_HS_func(0,crtc.HSYNC);
 	                }
 	        }
 	
@@ -549,9 +588,11 @@ public class m6845
 	                        crtc.Horizontal_Sync_Width_Counter=0;
 	                        crtc.HSYNC=False;
 	                        /*TODO*/////if (crct6845_calls.out_HS_func) (crct6845_calls.out_HS_func)(0,crtc.HSYNC); /* call HS update */
+                                crct6845_calls.out_HS_func(0,crtc.HSYNC);
 	                }
 	        }
 		/*TODO*/////if (crct6845_calls.out_MA_func) (crct6845_calls.out_MA_func)(0,crtc.Memory_Address);	/* call MA update */
+                crct6845_calls.out_MA_func(0,crtc.Memory_Address);
 	
 	
 	
@@ -576,6 +617,7 @@ public class m6845
 				crtc.Delay_Flags=crtc.Delay_Flags^Cursor_On_Flag;
 				crtc.Cursor_Delayed_Status=False;
 				/*TODO*/////if (crct6845_calls.out_CR_func) (crct6845_calls.out_CR_func)(0,crtc.Cursor_Delayed_Status); /* call CR update */
+                                crct6845_calls.out_CR_func(0,crtc.Cursor_Delayed_Status);
 			}
 	
 			/* cursor enabled delay */
@@ -589,6 +631,7 @@ public class m6845
 						crtc.Delay_Flags=(crtc.Delay_Flags^Cursor_Start_Delay_Flag)|Cursor_On_Flag;
 						crtc.Cursor_Delayed_Status=True;
 						/*TODO*/////if (crct6845_calls.out_CR_func) (crct6845_calls.out_CR_func)(0,crtc.Cursor_Delayed_Status); /* call CR update */
+                                                crct6845_calls.out_CR_func(0,crtc.Cursor_Delayed_Status);
 					}
 				}
 			}
@@ -602,6 +645,7 @@ public class m6845
 					crtc.Delay_Flags=crtc.Delay_Flags^Display_Enabled_Delay_Flag;
 					crtc.Display_Delayed_Enabled=True;
 					/*TODO*/////if (crct6845_calls.out_DE_func) (crct6845_calls.out_DE_func)(0,crtc.Display_Delayed_Enabled); /* call DE update */
+                                        crct6845_calls.out_DE_func(0,crtc.Display_Delayed_Enabled);
 				}
 			}
 	
@@ -614,6 +658,7 @@ public class m6845
 					crtc.Delay_Flags=crtc.Delay_Flags^Display_Disable_Delay_Flag;
 					crtc.Display_Delayed_Enabled=False;
 					/*TODO*/////if (crct6845_calls.out_DE_func) (crct6845_calls.out_DE_func)(0,crtc.Display_Delayed_Enabled); /* call DE update */
+                                        crct6845_calls.out_DE_func(0,crtc.Display_Delayed_Enabled);
 				}
 			}
 		}
@@ -783,7 +828,7 @@ public class m6845
 	
 		/* call function to let emulation "know" */
 		/*TODO*/////if (crct6845_calls.out_VS_func) (crct6845_calls.out_VS_func)(0,crtc.VSYNC); /* call VS update */
-	
+                crct6845_calls.out_VS_func(0,crtc.VSYNC);
 	
 		/* if we got to here the vsync has just ended */
 		/* the next vsync will occur in cycles per frame - vsync length in cycles */
@@ -804,7 +849,7 @@ public class m6845
 	
 		/* call function to let emulation "know" */
 		/*TODO*/////if (crct6845_calls.out_VS_func) (crct6845_calls.out_VS_func)(0,crtc.VSYNC); /* call VS update */
-	
+                crct6845_calls.out_VS_func(0,crtc.VSYNC);
 	
 		/* if we got to here the vsync has just been set, and has just started */
 		/* the next timer will be in vsync length cycles unless it is reprogrammed as the VSYNC
