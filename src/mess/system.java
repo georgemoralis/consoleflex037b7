@@ -8,6 +8,7 @@ import static mess.systems.coleco.*;
 import static mess.systems.sms.*;
 import static mess.systems.nes.*;
 import static mess.systems.spectrum.*;
+import static mess.systems.amstrad.*;
 
 public class system {
 
@@ -167,9 +168,12 @@ public class system {
         /*TODO*///#endif
         /*TODO*///
         /*TODO*///#ifndef MESS_EXCLUDE_AMSTRAD
-        /*TODO*///	DRIVER( cpc464 )	/* Amstrad (Schneider in Germany) 1984			  */
-        /*TODO*///	DRIVER( cpc664 )	/* Amstrad (Schneider in Germany) 1985			  */
-        /*TODO*///	DRIVER( cpc6128 )	/* Amstrad (Schneider in Germany) 1985			  */
+        //	DRIVER( cpc464 )	/* Amstrad (Schneider in Germany) 1984			  */
+        driver_cpc464,
+        //	DRIVER( cpc664 )	/* Amstrad (Schneider in Germany) 1985			  */
+        driver_cpc664,
+        //	DRIVER( cpc6128 )	/* Amstrad (Schneider in Germany) 1985			  */
+        driver_cpc6128,
         /*TODO*////*	DRIVER( cpc464p )*/	/* Amstrad CPC464  Plus - 1987					  */
         /*TODO*////*	DRIVER( cpc6128p )*//* Amstrad CPC6128 Plus - 1987					  */
         /*TODO*///	DRIVER( pcw8256 )	/* 198? PCW8256 								  */
