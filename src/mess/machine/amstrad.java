@@ -51,6 +51,9 @@ import static sound.ay8910H.*;
 import static mess.systems.amstrad.*;
 import static mess.vidhrdw.m6845.*;
 
+import static mess.machine._8255ppiH.*;
+import static mess.machine._8255ppi.*;
+
 public class amstrad
 {
 	//
@@ -255,11 +258,11 @@ public class amstrad
 		AmstradCPC_SetUpperRom(pSnapshot.read(0x055));
 	
 		/* PPI */
-		/*TODO*///ppi8255_w(0,3,pSnapshot.read(0x059) & 0x0ff);
+		ppi8255_w(0,3,pSnapshot.read(0x059) & 0x0ff);
 	
-		/*TODO*///ppi8255_w(0,0,pSnapshot.read(0x056) & 0x0ff);
-		/*TODO*///ppi8255_w(0,1,pSnapshot.read(0x057) & 0x0ff);
-		/*TODO*///ppi8255_w(0,2,pSnapshot.read(0x058) & 0x0ff);
+		ppi8255_w(0,0,pSnapshot.read(0x056) & 0x0ff);
+		ppi8255_w(0,1,pSnapshot.read(0x057) & 0x0ff);
+		ppi8255_w(0,2,pSnapshot.read(0x058) & 0x0ff);
 	
 		/* PSG */
 		for (i=0; i<16; i++)
