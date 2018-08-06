@@ -2967,10 +2967,10 @@ public class amstrad
 	//COMP( 1984, cpc464,   0,		amstrad,  amstrad,	0,	 "Amstrad plc", "Amstrad/Schneider CPC464")
         public static GameDriver driver_cpc464 = new GameDriver("1984", "cpc464", "amstrad.java", rom_cpc464, null, machine_driver_amstrad, input_ports_amstrad, null, io_cpc464, "Amstrad plc", "Amstrad/Schneider CPC464");
 	//COMP( 1985, cpc664,   cpc464,	amstrad,  amstrad,	0,	 "Amstrad plc", "Amstrad/Schneider CPC664")
-        public static GameDriver driver_cpc664 = new GameDriver("1985", "cpc664", "amstrad.java", rom_cpc664, null, machine_driver_amstrad, input_ports_amstrad, null, io_cpc464, "Amstrad plc", "Amstrad/Schneider CPC664");
+        public static GameDriver driver_cpc664 = new GameDriver("1985", "cpc664", "amstrad.java", rom_cpc664, null, machine_driver_amstrad, input_ports_amstrad, null, io_cpc664, "Amstrad plc", "Amstrad/Schneider CPC664");
 	//COMP( 1985, cpc6128,  cpc464,	amstrad,  amstrad,	0,	 "Amstrad plc", "Amstrad/Schneider CPC6128")
-        public static GameDriver driver_cpc6128 = new GameDriver("1985", "cpc6128", "amstrad.java", rom_cpc6128, null, machine_driver_amstrad, input_ports_amstrad, null, io_cpc464, "Amstrad plc", "Amstrad/Schneider CPC6128");
+        public static GameDriver driver_cpc6128 = new GameDriver("1985", "cpc6128", "amstrad.java", rom_cpc6128, null, machine_driver_amstrad, input_ports_amstrad, null, io_cpc6128, "Amstrad plc", "Amstrad/Schneider CPC6128");
 	//COMP( 19??, kccomp,   cpc464,	kccomp,   kccomp,	0,	 "VEB Mikroelektronik", "KC Compact")
-        public static GameDriver driver_kccomp = new GameDriver("19??", "kccomp", "amstrad.java", rom_kccomp, null, machine_driver_kccomp, input_ports_kccomp, null, io_cpc464, "VEB Mikroelektronik", "KC Compact");
+        public static GameDriver driver_kccomp = new GameDriver("19??", "kccomp", "amstrad.java", rom_kccomp, null, machine_driver_kccomp, input_ports_kccomp, null, io_kccomp, "VEB Mikroelektronik", "KC Compact");
 	
 }
