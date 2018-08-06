@@ -17,6 +17,8 @@ public class eventlst
         public static EVENT_LIST_ITEM pCurrentItem;
 	/* number of items in buffer */
 	static int NumEvents = 0;
+        
+        static int CurrentItemPos = 0;
 	
 	/* size of the buffer - used to prevent buffer overruns */
 	static int TotalEvents = 0;
@@ -46,6 +48,7 @@ public class eventlst
 	
 		//pEventListBuffer = malloc(sizeof(EVENT_LIST_ITEM)*NumEntries);
                 pEventListBuffer = new EVENT_LIST_ITEM[NumEntries];
+                CurrentItemPos = 0;
 	
 		if (pEventListBuffer!=null)
 		{
@@ -76,6 +79,7 @@ public class eventlst
 		NumEvents = 0;
 		//pCurrentItem = (EVENT_LIST_ITEM *)pEventListBuffer;
                 pCurrentItem = null;
+                CurrentItemPos=0;
 	}
 	
 	
@@ -136,7 +140,15 @@ public class eventlst
 	/* get first item in buffer */
 	public static EVENT_LIST_ITEM EventList_GetFirstItem()
 	{
+                CurrentItemPos=0;
 		//return (EVENT_LIST_ITEM *)pEventListBuffer;
                 return pEventListBuffer[0];
 	}
+        
+        public static EVENT_LIST_ITEM EventList_GetNextItem()
+        {
+            CurrentItemPos++;
+            
+            return pEventListBuffer[CurrentItemPos];
+        }
 }
