@@ -539,6 +539,7 @@ public class amstrad
 	}
         
         static void draw_function(){
+            //System.out.println("draw_function "+draw_function);
             if (draw_function == 0){
                 amstrad_draw_screen_disabled();
             } else {
