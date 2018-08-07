@@ -39,7 +39,7 @@ public class amstrad
 	
 	static crtc6845_state amstrad_vidhrdw_6845_state;
 	//#ifdef AMSTRAD_VIDEO_EVENT_LIST
-	static int amstrad_rendering;
+	//static int amstrad_rendering;
         static int draw_function = 0;
 	//#endif
 	
@@ -535,6 +535,7 @@ public class amstrad
 	/* update mode */
 	public static void amstrad_vh_update_mode(int Mode)
 	{
+            System.out.println("Mode: "+Mode);
 		amstrad_current_mode = Mode;
 	}
         
@@ -595,7 +596,7 @@ public class amstrad
 		
 		
 	//#else
-		int c;
+	/*	int c;
 	
 	
 		int crtc_execute_cycles;
@@ -612,13 +613,13 @@ public class amstrad
 	
 		amstrad_bitmap=bitmap;
 		amstrad_display = amstrad_bitmap.line[0];
-		c=0;
+		c=0;*/
 	
 		// video_refresh is set if any of the 6845 or Video ULA registers are changed
 		// this then forces a full screen redraw
 	
 	
-	        pItem = EventList_GetFirstItem();
+	        /*pItem = EventList_GetFirstItem();
 	        NumItemsRemaining = EventList_NumEvents();
 	
 		do
@@ -631,9 +632,9 @@ public class amstrad
 			else
 			{
 				int time_delta;
-	
+	*/
 				/* calculate time between last event and this event */
-				time_delta = pItem.Event_Time - previous_time;
+				/*time_delta = pItem.Event_Time - previous_time;
 			
 				crtc_execute_cycles = time_delta/4;
 	
@@ -663,9 +664,9 @@ public class amstrad
 					break;
 	
 					case EVENT_LIST_CODE_CRTC_INDEX_WRITE:
-					{
+					{*/
 						/* register select */
-						crtc6845_address_w(0,pItem.Event_Data);
+					/*	crtc6845_address_w(0,pItem.Event_Data);
 					}
 					break;
 	
@@ -677,23 +678,23 @@ public class amstrad
 	
 					default:
 						break;
-				}
+				}*/
 			
 				/* store time for next calculation */
-				previous_time = pItem.Event_Time;
-				//pItem++;
+				/*previous_time = pItem.Event_Time;
+				
                                 pItem=EventList_GetNextItem();
 				NumItemsRemaining--;		
 			}
 		}
 		while (num_cycles_remaining>0);
-	
+	*/
 	    /* Assume all other routines have processed their data from the list */
-	    EventList_Reset();
+	/*    EventList_Reset();
 	    EventList_SetOffsetStartTime ( cpu_getcurrentcycles() );
 	
 		crtc6845_get_state(0, amstrad_vidhrdw_6845_state);
-		amstrad_rendering = 0;
+		amstrad_rendering = 0;*/
 	//#endif
 	} };
 	
@@ -727,8 +728,8 @@ public class amstrad
 	    }
 	
 	//#ifdef AMSTRAD_VIDEO_EVENT_LIST
-		amstrad_rendering = 0;
-		EventList_Initialise(19968);
+		//amstrad_rendering = 0;
+		//EventList_Initialise(19968);
 	//#else
 		amstrad_bitmap = osd_alloc_bitmap(AMSTRAD_SCREEN_WIDTH, AMSTRAD_SCREEN_HEIGHT,8);
 		amstrad_display = amstrad_bitmap.line[0];
@@ -747,7 +748,7 @@ public class amstrad
 	{
 		crtc6845_stop();
 	//#ifdef AMSTRAD_VIDEO_EVENT_LIST
-		EventList_Finish();
+		//EventList_Finish();
 	//#else
 		if (amstrad_bitmap != null)
 		{
