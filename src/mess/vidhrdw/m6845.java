@@ -398,7 +398,7 @@ public class m6845
 	public static void crtc6845_clock()
 	{
             if(crtc==null) crtc=new crtc6845_state();
-            
+            if (crtc != null){
 		/* KT - I think the compiler might generate shit code when using "%" operator! */
 		/*crtc.Memory_Address=(crtc.Memory_Address+1)%0x4000;*/
 		crtc.Memory_Address=(crtc.Memory_Address+1)&0x03fff;
@@ -662,7 +662,7 @@ public class m6845
 				}
 			}
 		}
-	
+            }
 	}
 	
 	/* functions to read the 6845 outputs */
