@@ -778,43 +778,42 @@ public class mess {
 /*TODO*///		dev++;
 /*TODO*///	}
 /*TODO*///}
-/*TODO*///
-/*TODO*///int device_seek(int type, int id, int offset, int whence)
-/*TODO*///{
-/*TODO*///	const struct IODevice *dev = Machine->gamedrv->dev;
-/*TODO*///	while( dev && dev->count )
-/*TODO*///	{
-/*TODO*///		if( type == dev->type && dev->seek )
-/*TODO*///			return (*dev->seek)(id,offset,whence);
-/*TODO*///		dev++;
-/*TODO*///	}
-/*TODO*///	return 0;
-/*TODO*///}
-/*TODO*///
-/*TODO*///int device_tell(int type, int id)
-/*TODO*///{
-/*TODO*///	const struct IODevice *dev = Machine->gamedrv->dev;
-/*TODO*///	while( dev && dev->count )
-/*TODO*///	{
-/*TODO*///		if( type == dev->type && dev->tell )
-/*TODO*///			return (*dev->tell)(id);
-/*TODO*///		dev++;
-/*TODO*///	}
-/*TODO*///	return 0;
-/*TODO*///}
-/*TODO*///
-/*TODO*///int device_status(int type, int id, int newstatus)
-/*TODO*///{
-/*TODO*///	const struct IODevice *dev = Machine->gamedrv->dev;
-/*TODO*///	while( dev && dev->count )
-/*TODO*///	{
-/*TODO*///		if( type == dev->type && dev->status )
-/*TODO*///			return (*dev->status)(id,newstatus);
-/*TODO*///		dev++;
-/*TODO*///	}
-/*TODO*///	return 0;
-/*TODO*///}
-/*TODO*///
+    public static int device_seek(int type, int id, int offset, int whence) {
+        IODevice[] dev = Machine.gamedrv.dev;
+        int dev_ptr = 0;
+        while (dev != null && dev[dev_ptr].count != 0) {
+            if (type == dev[dev_ptr].type && dev[dev_ptr].seek != null) {
+                return dev[dev_ptr].seek.handler(id, offset, whence);
+            }
+            dev_ptr++;
+        }
+        return 0;
+    }
+
+    public static int device_tell(int type, int id) {
+        IODevice[] dev = Machine.gamedrv.dev;
+        int dev_ptr = 0;
+        while (dev != null && dev[dev_ptr].count != 0) {
+            if (type == dev[dev_ptr].type && dev[dev_ptr].tell != null) {
+                return dev[dev_ptr].tell.handler(id);
+            }
+            dev_ptr++;
+        }
+        return 0;
+    }
+
+    public static int device_status(int type, int id, int newstatus) {
+        IODevice[] dev = Machine.gamedrv.dev;
+        int dev_ptr = 0;
+        while (dev != null && dev[dev_ptr].count != 0) {
+            if (type == dev[dev_ptr].type && dev[dev_ptr].status != null) {
+                return dev[dev_ptr].status.handler(id, newstatus);
+            }
+            dev_ptr++;
+        }
+        return 0;
+    }
+
     public static int device_input(int type, int id) {
         IODevice[] dev = Machine.gamedrv.dev;
         int dev_ptr = 0;
@@ -986,3 +985,4 @@ public class mess {
 /*TODO*///
 /*TODO*///    
 }
+
