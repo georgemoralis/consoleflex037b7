@@ -123,6 +123,7 @@ import static mess.includes.nec765H.*;
 import static mess.includes.flopdrvH.*;
 import static mess.machine.flopdrv.*;
 import static mess.machine.dsk.*;
+import static mess.mess.device_input;
 
 /*TODO*/////import static mess.machine.wd17xx.h.*;
 
@@ -1054,10 +1055,10 @@ public class spectrum
 			cassette input from wav
 		 --------------------------------------------------*/
 		/*TODO*///// cassette emulation
-                /*if (device_input(IO_CASSETTE, 0)>255 )
+                if (device_input(IO_CASSETTE, 0)>255 )
 		{
                     data &= ~0x40;
-		}*/
+		}
 	
 	   /* Issue 2 Spectrums default to having bits 5, 6 & 7 set.
 		  Issue 3 Spectrums default to having bits 5 & 7 set and bit 6 reset. */

@@ -21,7 +21,7 @@ import static old.arcadeflex.osdepend.logerror;
 import static old.mame.inptportH.*;
 import static old.mame.input.*;
 import static old.mame.inputH.*;
-import  static WIP.mame.mame.*;
+import static WIP.mame.mame.*;
 
 public class mess {
 
@@ -491,20 +491,21 @@ public class mess {
         return null;
     }
 
-    
     /*
      * Return the 'id'th playable info for a device of type 'type',
      * NULL if not enough image names of that type are available.
      */
-    public static String device_playable(int type, int id)
-    {
-            if (type >= IO_COUNT)
-                    return null;
-            if (id < count[type])
-                    return images[type][id].playable;
+    public static String device_playable(int type, int id) {
+        if (type >= IO_COUNT) {
             return null;
+        }
+        if (id < count[type]) {
+            return images[type][id].playable;
+        }
+        return null;
     }
-/*TODO*///
+
+    /*TODO*///
 /*TODO*///
 /*TODO*////*
 /*TODO*/// * Return the 'id'th extrainfo info for a device of type 'type',
@@ -751,18 +752,19 @@ public class mess {
 /*TODO*///	return 0;
 /*TODO*///}
 /*TODO*///
-/*TODO*///int device_open(int type, int id, int mode, void *args)
-/*TODO*///{
-/*TODO*///	const struct IODevice *dev = Machine->gamedrv->dev;
-/*TODO*///	while( dev && dev->count )
-/*TODO*///	{
-/*TODO*///		if( type == dev->type && dev->open )
-/*TODO*///			return (*dev->open)(id,mode,args);
-/*TODO*///		dev++;
-/*TODO*///	}
-/*TODO*///	return 1;
-/*TODO*///}
-/*TODO*///
+    public static int device_open(int type, int id, int mode, Object args) {
+        IODevice[] dev = Machine.gamedrv.dev;
+        int dev_ptr = 0;
+        while (dev != null && dev[dev_ptr].count != 0) {
+            if (type == dev[dev_ptr].type && dev[dev_ptr].open != null) {
+                return dev[dev_ptr].open.handler(id, mode, args);
+            }
+            dev_ptr++;
+        }
+        return 1;
+    }
+
+    /*TODO*///
 /*TODO*///void device_close(int type, int id)
 /*TODO*///{
 /*TODO*///	const struct IODevice *dev = Machine->gamedrv->dev;
@@ -813,18 +815,19 @@ public class mess {
 /*TODO*///	return 0;
 /*TODO*///}
 /*TODO*///
-/*TODO*///int device_input(int type, int id)
-/*TODO*///{
-/*TODO*///	const struct IODevice *dev = Machine->gamedrv->dev;
-/*TODO*///	while( dev && dev->count )
-/*TODO*///	{
-/*TODO*///		if( type == dev->type && dev->input )
-/*TODO*///			return (*dev->input)(id);
-/*TODO*///		dev++;
-/*TODO*///	}
-/*TODO*///	return 0;
-/*TODO*///}
-/*TODO*///
+    public static int device_input(int type, int id) {
+        IODevice[] dev = Machine.gamedrv.dev;
+        int dev_ptr = 0;
+        while (dev != null && dev[dev_ptr].count != 0) {
+            if (type == dev[dev_ptr].type && dev[dev_ptr].input != null) {
+                return dev[dev_ptr].input.handler(id);
+            }
+            dev_ptr++;
+        }
+        return 0;
+    }
+
+    /*TODO*///
 /*TODO*///void device_output(int type, int id, int data)
 /*TODO*///{
 /*TODO*///	const struct IODevice *dev = Machine->gamedrv->dev;
@@ -883,20 +886,20 @@ public class mess {
                     String info;
                     dst += sprintf("%s: %s\n", device_typename_id(type, id), device_filename(type, id));
                     info = device_longname(type, id);
-                    if (info!=null) {
+                    if (info != null) {
                         dst += sprintf("%s\n", info);
                     }
                     info = device_manufacturer(type, id);
-                    if (info!=null) {
+                    if (info != null) {
                         dst += sprintf("%s", info);
-                        info = /*stripspace*/(device_year(type, id));
-                        if (info!=null && strlen(info)!=0) {
+                        info = /*stripspace*/ (device_year(type, id));
+                        if (info != null && strlen(info) != 0) {
                             dst += sprintf(", %s", info);
                         }
                         dst += sprintf("\n");
                     }
                     info = device_playable(type, id);
-                    if (info!=null) {
+                    if (info != null) {
                         dst += sprintf("%s\n", info);
                     }
 // why is extrainfo printed? only MSX and NES use it that i know of ... Cowering
@@ -908,12 +911,11 @@ public class mess {
                 }
             }
         }
-        
 
         if (sel == -1) {
             /* startup info, print MAME version and ask for any key */
 
-            dst+= "\n\tPress any key to Begin";
+            dst += "\n\tPress any key to Begin";
             ui_drawbox(bitmap, 0, 0, Machine.uiwidth, Machine.uiheight);
             ui_displaymessagewindow(bitmap, dst);
 
@@ -924,19 +926,19 @@ public class mess {
             }
         } else {
             /* menu system, use the normal menu keys */
-            dst+= "\n\t\u001A Return to Main Menu \u001B";
+            dst += "\n\t\u001A Return to Main Menu \u001B";
 
             ui_displaymessagewindow(bitmap, dst);
 
-            if ((input_ui_pressed(IPT_UI_SELECT))!=0) {
+            if ((input_ui_pressed(IPT_UI_SELECT)) != 0) {
                 sel = -1;
             }
 
-            if ((input_ui_pressed(IPT_UI_CANCEL))!=0) {
+            if ((input_ui_pressed(IPT_UI_CANCEL)) != 0) {
                 sel = -1;
             }
 
-            if ((input_ui_pressed(IPT_UI_CONFIGURE))!=0) {
+            if ((input_ui_pressed(IPT_UI_CONFIGURE)) != 0) {
                 sel = -2;
             }
         }

@@ -62,6 +62,7 @@ import static mess.vidhrdw.border.*;
 
 import static sound.ay8910.*;
 import static sound.ay8910H.*;
+import sound.waveH.wave_args;
 
 public class spectrum
 {
@@ -1152,14 +1153,12 @@ public class spectrum
             file = image_fopen(IO_CASSETTE, id, OSD_FILETYPE_IMAGE_R, OSD_FOPEN_READ);
             	if (file != null)
             	{
-                    throw new UnsupportedOperationException("TODO implement!");
-            /*TODO*/////		struct wave_args wa =
-            /*TODO*/////		{0,};
-            /*TODO*/////		wa.file = file;
-            /*TODO*/////		wa.display = 1;
-            /*TODO*/////		if (device_open(IO_CASSETTE, id, 0, &wa))
-            /*TODO*/////			return INIT_FAILED;
-            /*TODO*/////		return INIT_OK;
+                    wave_args wa =new wave_args(null);
+            		wa.file = file;
+            		wa.display = 1;
+                    	if (device_open(IO_CASSETTE, id, 0, wa)!=0)
+            			return INIT_FAILED;
+            		return INIT_OK;
             	}
             /* HJB 02/18: no file, create a new file instead */
  /*TODO*/////	file = image_fopen(IO_CASSETTE, id, OSD_FILETYPE_IMAGE_RW, OSD_FOPEN_WRITE);

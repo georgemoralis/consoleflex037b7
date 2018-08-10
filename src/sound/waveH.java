@@ -69,17 +69,22 @@ public class waveH {
 /*TODO*/// * chunk_samples
 /*TODO*/// *	  number of samples produced for a data chunk (optional)
 /*TODO*/// *****************************************************************************/
-/*TODO*///struct wave_args {
-/*TODO*///    void *file;
-/*TODO*///	int display;
-/*TODO*///	int (*fill_wave)(INT16 *buffer, int length, UINT8 *bytes);
-/*TODO*///	int smpfreq;
-/*TODO*///    int header_samples;
+    public static class wave_args {
+
+        public wave_args(Object file) {
+            this.file = file;
+        }
+
+        public Object file;
+        public int display;
+        /*TODO*///	int (*fill_wave)(INT16 *buffer, int length, UINT8 *bytes);
+        public int smpfreq;
+        /*TODO*///    int header_samples;
 /*TODO*///    int trailer_samples;
 /*TODO*///    int chunk_size;
 /*TODO*///	int chunk_samples;
-/*TODO*///};
-/*TODO*///
+    };
+    /*TODO*///
 /*TODO*////*****************************************************************************
 /*TODO*/// * Your (optional) fill_wave callback will be called with "UINT8 *bytes" set
 /*TODO*/// * to one of these values if you should fill in the (optional) header or
@@ -90,8 +95,8 @@ public class waveH {
 /*TODO*///#define CODE_TRAILER	((UINT8*)-2)
 /*TODO*///
 /*TODO*///#define WAVE_STATUS_MOTOR_ENABLE	1
-/*TODO*///#define WAVE_STATUS_MUTED			2
-/*TODO*///#define WAVE_STATUS_MOTOR_INHIBIT	4
+    public static final int WAVE_STATUS_MUTED = 2;
+    /*TODO*///#define WAVE_STATUS_MOTOR_INHIBIT	4
 /*TODO*///#endif
 /*TODO*///
 /*TODO*///    
