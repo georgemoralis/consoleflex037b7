@@ -5,12 +5,20 @@
 package sound;
 
 import WIP.arcadeflex.libc_v2.ShortPtr;
+import static WIP.arcadeflex.libc_v2.charArrayToInt;
+import static WIP.arcadeflex.libc_v2.charArrayToLong;
+import static WIP.arcadeflex.libc_v2.memcmp;
 import static WIP.arcadeflex.libc_v2.sprintf;
 import static WIP.mame.mame.Machine;
 import static WIP.mame.sndintrf.*;
 import static WIP.mame.sndintrfH.*;
 import static consoleflex.funcPtr.*;
+import static mame.usrintrf.ui_text;
+import static mess.messH.INIT_OK;
 import static old.sound.streams.*;
+import static mess.osdepend.fileio.*;
+import static old.arcadeflex.libc_old.SEEK_CUR;
+import static old.arcadeflex.osdepend.logerror;
 import static sound.waveH.*;
 
 public class wave extends snd_interface {
@@ -34,23 +42,23 @@ public class wave extends snd_interface {
     public static class struct_wave_file {
 
         int channel;/* channel for playback */
- /*TODO*///	void *file; 			/* osd file handle */
-/*TODO*///	int mode;				/* write mode? */
+        Object file;/* osd file handle */
+ /*TODO*///	int mode;				/* write mode? */
 /*TODO*///	int (*fill_wave)(INT16 *,int,UINT8*);
-/*TODO*///	void *timer;			/* timer (TIME_NEVER) for reading sample values */
-/*TODO*///	INT16 play_sample;		/* current sample value for playback */
+        Object timer;/* timer (TIME_NEVER) for reading sample values */
+	short play_sample;/* current sample value for playback */
 /*TODO*///	INT16 record_sample;	/* current sample value for playback */
-/*TODO*///	int display;			/* display tape status on screen */
-/*TODO*///	int offset; 			/* offset set by device_seek function */
-/*TODO*///	int play_pos;			/* sample position for playback */
-/*TODO*///	int record_pos; 		/* sample position for recording */
-/*TODO*///	int counter;			/* sample fraction counter for playback */
-/*TODO*///	int smpfreq;			/* sample frequency from the WAV header */
-/*TODO*///	int resolution; 		/* sample resolution in bits/sample (8 or 16) */
-/*TODO*///	int samples;			/* number of samples (length * resolution / 8) */
-/*TODO*///	int length; 			/* length in bytes */
-/*TODO*///	void *data; 			/* sample data */
-/*TODO*///	int status;				/* other status (mute, motor inhibit) */
+        int display;/* display tape status on screen */
+        int offset;/* offset set by device_seek function */
+        int play_pos;/* sample position for playback */
+ /*TODO*///	int record_pos; 		/* sample position for recording */
+	int counter;/* sample fraction counter for playback */
+        int smpfreq;/* sample frequency from the WAV header */
+        int resolution;/* sample resolution in bits/sample (8 or 16) */
+        int samples;/* number of samples (length * resolution / 8) */
+        int length;/* length in bytes */
+        byte[] data;/* sample data */
+        int status;/* other status (mute, motor inhibit) */
     };
 
     static Wave_interface intf;
@@ -66,155 +74,149 @@ public class wave extends snd_interface {
     public static final int WAVE_ERR = 1;
     public static final int WAVE_FMT = 2;
 
-    /*TODO*////*****************************************************************************
-/*TODO*/// * helper functions
-/*TODO*/// *****************************************************************************/
-/*TODO*///static int wave_read(int id)
-/*TODO*///{
-/*TODO*///	struct wave_file *w = &wave[id];
-/*TODO*///    UINT32 offset = 0;
-/*TODO*///	UINT32 filesize, temp32;
-/*TODO*///	UINT16 channels, bits, temp16;
-/*TODO*///	char buf[32];
-/*TODO*///
-/*TODO*///	if( !w->file )
-/*TODO*///		return WAVE_ERR;
-/*TODO*///
-/*TODO*///    /* read the core header and make sure it's a WAVE file */
-/*TODO*///	offset += osd_fread(w->file, buf, 4);
-/*TODO*///	if( offset < 4 )
-/*TODO*///	{
-/*TODO*///		logerror("WAVE read error at offs %d\n", offset);
-/*TODO*///		return WAVE_ERR;
-/*TODO*///	}
-/*TODO*///	if( memcmp (&buf[0], "RIFF", 4) != 0 )
-/*TODO*///	{
-/*TODO*///		logerror("WAVE header not 'RIFF'\n");
-/*TODO*///		return WAVE_FMT;
-/*TODO*///    }
-/*TODO*///
-/*TODO*///	/* get the total size */
-/*TODO*///	offset += osd_fread(w->file, &temp32, 4);
-/*TODO*///	if( offset < 8 )
-/*TODO*///	{
-/*TODO*///		logerror("WAVE read error at offs %d\n", offset);
-/*TODO*///		return WAVE_ERR;
-/*TODO*///	}
-/*TODO*///	filesize = intelLong(temp32);
-/*TODO*///	logerror("WAVE filesize %u bytes\n", filesize);
-/*TODO*///
-/*TODO*///	/* read the RIFF file type and make sure it's a WAVE file */
-/*TODO*///	offset += osd_fread(w->file, buf, 4);
-/*TODO*///	if( offset < 12 )
-/*TODO*///	{
-/*TODO*///		logerror("WAVE read error at offs %d\n", offset);
-/*TODO*///		return WAVE_ERR;
-/*TODO*///	}
-/*TODO*///	if( memcmp (&buf[0], "WAVE", 4) != 0 )
-/*TODO*///	{
-/*TODO*///		logerror("WAVE RIFF type not 'WAVE'\n");
-/*TODO*///		return WAVE_FMT;
-/*TODO*///	}
-/*TODO*///
-/*TODO*///	/* seek until we find a format tag */
-/*TODO*///	while( 1 )
-/*TODO*///	{
-/*TODO*///		offset += osd_fread(w->file, buf, 4);
-/*TODO*///		offset += osd_fread(w->file, &temp32, 4);
-/*TODO*///		w->length = intelLong(temp32);
-/*TODO*///		if( memcmp(&buf[0], "fmt ", 4) == 0 )
-/*TODO*///			break;
-/*TODO*///
-/*TODO*///		/* seek to the next block */
-/*TODO*///		osd_fseek(w->file, w->length, SEEK_CUR);
-/*TODO*///		offset += w->length;
-/*TODO*///		if( offset >= filesize )
-/*TODO*///		{
-/*TODO*///			logerror("WAVE no 'fmt ' tag found\n");
-/*TODO*///			return WAVE_ERR;
-/*TODO*///        }
-/*TODO*///	}
-/*TODO*///
-/*TODO*///	/* read the format -- make sure it is PCM */
-/*TODO*///	offset += osd_fread_lsbfirst(w->file, &temp16, 2);
-/*TODO*///	if( temp16 != 1 )
-/*TODO*///	{
-/*TODO*///		logerror("WAVE format %d not supported (not = 1 PCM)\n", temp16);
-/*TODO*///			return WAVE_ERR;
-/*TODO*///    }
-/*TODO*///	logerror("WAVE format %d (PCM)\n", temp16);
-/*TODO*///
-/*TODO*///	/* number of channels -- only mono is supported */
-/*TODO*///	offset += osd_fread_lsbfirst(w->file, &channels, 2);
-/*TODO*///	if( channels != 1 && channels != 2 )
-/*TODO*///	{
-/*TODO*///		logerror("WAVE channels %d not supported (only 1 mono or 2 stereo)\n", channels);
-/*TODO*///		return WAVE_ERR;
-/*TODO*///    }
-/*TODO*///	logerror("WAVE channels %d\n", channels);
-/*TODO*///
-/*TODO*///	/* sample rate */
-/*TODO*///	offset += osd_fread(w->file, &temp32, 4);
-/*TODO*///	w->smpfreq = intelLong(temp32);
-/*TODO*///	logerror("WAVE sample rate %d Hz\n", w->smpfreq);
-/*TODO*///
-/*TODO*///	/* bytes/second and block alignment are ignored */
-/*TODO*///	offset += osd_fread(w->file, buf, 6);
-/*TODO*///
-/*TODO*///	/* bits/sample */
-/*TODO*///	offset += osd_fread_lsbfirst(w->file, &bits, 2);
-/*TODO*///	if( bits != 8 && bits != 16 )
-/*TODO*///	{
-/*TODO*///		logerror("WAVE %d bits/sample not supported (only 8/16)\n", bits);
-/*TODO*///		return WAVE_ERR;
-/*TODO*///    }
-/*TODO*///	logerror("WAVE bits/sample %d\n", bits);
-/*TODO*///	w->resolution = bits;
-/*TODO*///
-/*TODO*///	/* seek past any extra data */
-/*TODO*///	osd_fseek(w->file, w->length - 16, SEEK_CUR);
-/*TODO*///	offset += w->length - 16;
-/*TODO*///
-/*TODO*///	/* seek until we find a data tag */
-/*TODO*///	while( 1 )
-/*TODO*///	{
-/*TODO*///		offset += osd_fread(w->file, buf, 4);
-/*TODO*///		offset += osd_fread(w->file, &temp32, 4);
-/*TODO*///		w->length = intelLong(temp32);
-/*TODO*///		if( memcmp(&buf[0], "data", 4) == 0 )
-/*TODO*///			break;
-/*TODO*///
-/*TODO*///		/* seek to the next block */
-/*TODO*///		osd_fseek(w->file, w->length, SEEK_CUR);
-/*TODO*///		offset += w->length;
-/*TODO*///		if( offset >= filesize )
-/*TODO*///		{
-/*TODO*///			logerror("WAVE not 'data' tag found\n");
-/*TODO*///			return WAVE_ERR;
-/*TODO*///        }
-/*TODO*///	}
-/*TODO*///
-/*TODO*///	/* allocate the game sample */
-/*TODO*///	w->data = malloc(w->length);
-/*TODO*///
-/*TODO*///	if( w->data == NULL )
-/*TODO*///	{
-/*TODO*///		logerror("WAVE failed to malloc %d bytes\n", w->length);
-/*TODO*///		return WAVE_ERR;
-/*TODO*///    }
-/*TODO*///
-/*TODO*///	/* read the data in */
-/*TODO*///	if( w->resolution == 8 )
-/*TODO*///	{
-/*TODO*///		if( osd_fread(w->file, w->data, w->length) != w->length )
-/*TODO*///		{
-/*TODO*///			logerror("WAVE failed read %d data bytes\n", w->length);
-/*TODO*///			free(w->data);
-/*TODO*///			return WAVE_ERR;
-/*TODO*///		}
-/*TODO*///		if( channels == 2 )
-/*TODO*///		{
-/*TODO*///			UINT8 *src = w->data;
+    static {
+        for (int i = 0; i < MAX_WAVE; i++) {
+            //struct wave_file *w = &wave[i];
+            wave[i] = new struct_wave_file();
+            wave[i].channel = -1; //channel inits to -1
+        }
+    }
+
+    /**
+     * ***************************************************************************
+     * helper functions
+     * ***************************************************************************
+     */
+    static int wave_read(int id) {
+        struct_wave_file w = wave[id];
+        long /*unsigned*/ offset = 0;
+        long /*UINT32*/ filesize, temp32;
+        int /*UINT16*/ channels, bits, temp16;
+        char[] /*UINT8*/ buf = new char[32];
+
+        if (w.file == null) {
+            return WAVE_ERR;
+        }
+        /* read the core header and make sure it's a WAVE file */
+        offset += osd_fread(w.file, buf, 4);
+        if (offset < 4) {
+            logerror("WAVE read error at offs %d\n", offset);
+            return WAVE_ERR;
+        }
+        if (memcmp(buf, 0, "RIFF", 4) != 0) {
+            logerror("WAVE header not 'RIFF'\n");
+            return WAVE_FMT;
+        }
+        /* get the total size */
+        offset += osd_fread(w.file, buf, 4);
+        if (offset < 8) {
+            logerror("WAVE read error at offs %d\n", offset);
+            return WAVE_ERR;
+        }
+        filesize = charArrayToLong(buf);
+        logerror("WAVE filesize %u bytes\n", filesize);
+
+        /* read the RIFF file type and make sure it's a WAVE file */
+        offset += osd_fread(w.file, buf, 4);
+        if (offset < 12) {
+            logerror("WAVE read error at offs %d\n", offset);
+            return WAVE_ERR;
+        }
+        if (memcmp(buf, 0, "WAVE", 4) != 0) {
+            logerror("WAVE RIFF type not 'WAVE'\n");
+            return WAVE_FMT;
+        }
+        /* seek until we find a format tag */
+        while (true) {
+            offset += osd_fread(w.file, buf, 4);
+            char[] tmp = new char[buf.length];//temp creation
+            System.arraycopy(buf, 0, tmp, 0, buf.length);//temp creation
+            offset += osd_fread(w.file, buf, 4);//offset += osd_fread(f, &length, 4);
+            w.length = (int) charArrayToLong(buf);
+            if (memcmp(tmp, 0, "fmt ", 4) == 0) {
+                break;
+            }
+
+            /* seek to the next block */
+            osd_fseek(w.file, (int) w.length, SEEK_CUR);
+            offset += w.length;
+            if (offset >= filesize) {
+                logerror("WAVE no 'fmt ' tag found\n");
+                return WAVE_ERR;
+            }
+        }
+        /* read the format -- make sure it is PCM */
+        offset += osd_fread_lsbfirst(w.file, buf, 2);
+        temp16 = charArrayToInt(buf);
+        if (temp16 != 1) {
+            logerror("WAVE format %d not supported (not = 1 PCM)\n", temp16);
+            return WAVE_ERR;
+        }
+        logerror("WAVE format %d (PCM)\n", temp16);
+
+        /* number of channels -- only mono is supported */
+        offset += osd_fread_lsbfirst(w.file, buf, 2);
+        channels = charArrayToInt(buf);
+        if (channels != 1 && channels != 2) {
+            logerror("WAVE channels %d not supported (only 1 mono or 2 stereo)\n", channels);
+            return WAVE_ERR;
+        }
+        logerror("WAVE channels %d\n", channels);
+
+        /* sample rate */
+        offset += osd_fread(w.file, buf, 4);
+        w.smpfreq = (int) charArrayToLong(buf);
+
+        logerror("WAVE sample rate %d Hz\n", w.smpfreq);
+
+        /* bytes/second and block alignment are ignored */
+        offset += osd_fread(w.file, buf, 6);
+
+        /* bits/sample */
+        offset += osd_fread_lsbfirst(w.file, buf, 2);
+        bits = charArrayToInt(buf);
+        if (bits != 8 && bits != 16) {
+            logerror("WAVE %d bits/sample not supported (only 8/16)\n", bits);
+            return WAVE_ERR;
+        }
+        logerror("WAVE bits/sample %d\n", bits);
+        w.resolution = bits;
+
+        /* seek past any extra data */
+        osd_fseek(w.file, (int) w.length - 16, SEEK_CUR);
+        offset += w.length - 16;
+
+        /* seek until we find a data tag */
+        while (true) {
+            offset += osd_fread(w.file, buf, 4);
+            char[] tmp = new char[buf.length];//temp creation
+            System.arraycopy(buf, 0, tmp, 0, buf.length);//temp creation
+            offset += osd_fread(w.file, buf, 4);//offset += osd_fread(f, &length, 4);
+            w.length = (int) charArrayToLong(buf);
+            if (memcmp(tmp, 0, "data", 4) == 0) {
+                break;
+            }
+
+            /* seek to the next block */
+            osd_fseek(w.file, (int) w.length, SEEK_CUR);
+            offset += w.length;
+            if (offset >= filesize) {
+                logerror("WAVE not 'data' tag found\n");
+                return WAVE_ERR;
+            }
+        }
+        /* allocate the game sample */
+        w.data = new byte[w.length];
+        /* read the data in */
+        if (w.resolution == 8) {
+            if (osd_fread(w.file, w.data, w.length) != w.length) {
+                logerror("WAVE failed read %d data bytes\n", w.length);
+                w.data = null;
+                return WAVE_ERR;
+            }
+            if (channels == 2) {
+                throw new UnsupportedOperationException("Unsupported");
+                /*TODO*///			UINT8 *src = w->data;
 /*TODO*///			INT8 *dst = w->data;
 /*TODO*///			logerror("WAVE mixing 8-bit unsigned stereo to 8-bit signed mono\n");
 /*TODO*///            /* convert stereo 8-bit data to mono signed samples */
@@ -231,20 +233,20 @@ public class wave extends snd_interface {
 /*TODO*///				logerror("WAVE failed to malloc %d bytes\n", w->length);
 /*TODO*///				return WAVE_ERR;
 /*TODO*///			}
-/*TODO*///        }
-/*TODO*///		else
-/*TODO*///		{
-/*TODO*///			UINT8 *src = w->data;
+            } else {
+                /*TODO*///			UINT8 *src = w->data;
 /*TODO*///			INT8 *dst = w->data;
-/*TODO*///            logerror("WAVE converting 8-bit unsigned to 8-bit signed\n");
-/*TODO*///            /* convert 8-bit data to signed samples */
-/*TODO*///			for( temp32 = 0; temp32 < w->length; temp32++ )
+                logerror("WAVE converting 8-bit unsigned to 8-bit signed\n");
+                /* convert 8-bit data to signed samples */
+                for (temp32 = 0; temp32 < w.length; temp32++) {
+                    w.data[(int) temp32] ^= 0x80;
+                }
+                /*TODO*///			for( temp32 = 0; temp32 < w->length; temp32++ )
 /*TODO*///				*dst++ = *src++ ^ 0x80;
-/*TODO*///		}
-/*TODO*///	}
-/*TODO*///	else
-/*TODO*///	{
-/*TODO*///		/* 16-bit data is fine as-is */
+            }
+        } else {
+            throw new UnsupportedOperationException("Unsupported");
+            /*TODO*///		/* 16-bit data is fine as-is */
 /*TODO*///		if( osd_fread_lsbfirst(w->file, w->data, w->length) != w->length )
 /*TODO*///		{
 /*TODO*///			logerror("WAVE failed read %d data bytes\n", w->length);
@@ -275,13 +277,14 @@ public class wave extends snd_interface {
 /*TODO*///		{
 /*TODO*///			logerror("WAVE using 16-bit signed samples as is\n");
 /*TODO*///        }
-/*TODO*///	}
-/*TODO*///	w->samples = w->length * 8 / w->resolution;
-/*TODO*///	logerror("WAVE %d samples - %d:%02d\n", w->samples, (w->samples/w->smpfreq)/60, (w->samples/w->smpfreq)%60);
-/*TODO*///
-/*TODO*///	return WAVE_OK;
-/*TODO*///}
-/*TODO*///
+        }
+        w.samples = w.length * 8 / w.resolution;
+        logerror("WAVE %d samples - %d:%02d\n", w.samples, (w.samples / w.smpfreq) / 60, (w.samples / w.smpfreq) % 60);
+
+        return WAVE_OK;
+    }
+
+    /*TODO*///
 /*TODO*///static int wave_write(int id)
 /*TODO*///{
 /*TODO*///	struct wave_file *w = &wave[id];
@@ -420,41 +423,39 @@ public class wave extends snd_interface {
 /*TODO*///	return WAVE_OK;
 /*TODO*///}
 /*TODO*///
-/*TODO*///static void wave_display(int id)
-/*TODO*///{
-/*TODO*///	static int tape_pos = 0;
-/*TODO*///    struct wave_file *w = &wave[id];
-/*TODO*///
-/*TODO*///	if( abs(w->play_pos - tape_pos) > w->smpfreq / 4 )
-/*TODO*///	{
-/*TODO*///        char buf[32];
-/*TODO*///		int x, y, n, t0, t1;
-/*TODO*///
-/*TODO*///        x = Machine->uixmin + id * Machine->uifontwidth * 16 + 1;
-/*TODO*///		y = Machine->uiymin + Machine->uiheight - 9;
-/*TODO*///		n = (w->play_pos * 4 / w->smpfreq) & 3;
-/*TODO*///		t0 = w->play_pos / w->smpfreq;
-/*TODO*///		t1 = w->samples / w->smpfreq;
-/*TODO*///		sprintf(buf, "%c%c %2d:%02d [%2d:%02d]", n*2+2,n*2+3, t0/60,t0%60, t1/60,t1%60);
-/*TODO*///		ui_text(Machine->scrbitmap,buf, x, y);
-/*TODO*///		tape_pos = w->play_pos;
-/*TODO*///    }
-/*TODO*///}
-/*TODO*///
+    static int tape_pos = 0;
+
+    static void wave_display(int id) {
+        struct_wave_file w = wave[id];
+
+        if (Math.abs(w.play_pos - tape_pos) > w.smpfreq / 4) {
+            String buf = "";
+            int x, y, n, t0, t1;
+
+            x = Machine.uixmin + id * Machine.uifontwidth * 16 + 1;
+            y = Machine.uiymin + Machine.uiheight - 9;
+            n = (w.play_pos * 4 / w.smpfreq) & 3;
+            t0 = w.play_pos / w.smpfreq;
+            t1 = w.samples / w.smpfreq;
+            buf = sprintf("%c%c %2d:%02d [%2d:%02d]", n * 2 + 2, n * 2 + 3, t0 / 60, t0 % 60, t1 / 60, t1 % 60);
+            ui_text(Machine.scrbitmap, buf, x, y);
+            tape_pos = w.play_pos;
+        }
+    }
+
     public static StreamInitPtr wave_sound_update = new StreamInitPtr() {
-        public void handler(int param, ShortPtr buffer, int length) {
-            /*TODO*///	struct wave_file *w = &wave[id];
-/*TODO*///	int pos = w->play_pos;
-/*TODO*///	int count = w->counter;
-/*TODO*///	INT16 sample = w->play_sample;
-/*TODO*///
-/*TODO*///	if( !w->timer || (w->status & WAVE_STATUS_MUTED) )
-/*TODO*///	{
-/*TODO*///		while( length-- > 0 )
-/*TODO*///			*buffer++ = sample;
-/*TODO*///		return;
-/*TODO*///	}
-/*TODO*///
+        public void handler(int id, ShortPtr buffer, int length) {
+            struct_wave_file w = wave[id];
+            int pos = w.play_pos;
+            int count = w.counter;
+            short sample = w.play_sample;
+            
+	if( w.timer==null || (w.status & WAVE_STATUS_MUTED)!=0 )
+	{
+		while( length-- > 0 )
+			buffer.writeinc(sample);
+		return;
+	}
 /*TODO*///    while (length--)
 /*TODO*///	{
 /*TODO*///		count -= w->smpfreq;
@@ -493,11 +494,8 @@ public class wave extends snd_interface {
         int i;
 
         intf = (Wave_interface) msound.sound_interface;
-
         for (i = 0; i < intf.num; i++) {
             //struct wave_file *w = &wave[i];
-            wave[i] = new struct_wave_file();
-            wave[i].channel = -1; //channel inits to -1
             String buf = "";
 
             if (intf.num > 1) {
@@ -584,10 +582,9 @@ public class wave extends snd_interface {
 /*TODO*///	wave_close(id);
 /*TODO*///}
 /*TODO*///
-    public static io_statusPtr wave_status = new io_statusPtr(){
+    public static io_statusPtr wave_status = new io_statusPtr() {
 
-        public int handler(int id, int newststatus)
-        {
+        public int handler(int id, int newststatus) {
             System.out.println("Unimplemented wave_status fucntion");//TODO
             return 0;//TOBE REMOVED
 /*TODO*///	/* wave status has the following bitfields:
@@ -631,26 +628,25 @@ public class wave extends snd_interface {
 /*TODO*///	}
 /*TODO*///	return (w->timer ? WAVE_STATUS_MOTOR_ENABLE : 0) |
 /*TODO*///		(w->status & WAVE_STATUS_MOTOR_INHIBIT ? w->status : w->status & ~WAVE_STATUS_MOTOR_ENABLE);
-}
+        }
     };
     public static io_openPtr wave_open = new io_openPtr() {
 
         public int handler(int id, int mode, Object args) {
-            System.out.println("Unimplemented wave_open function");//TODO REMOVE IT
-            /*TODO*///	struct wave_file *w = &wave[id];
-/*TODO*///    struct wave_args *wa = args;
-/*TODO*///	int result;
-/*TODO*///
-/*TODO*///    /* wave already opened? */
-/*TODO*///	if( w->file )
-/*TODO*///		wave_close(id);
-/*TODO*///
-/*TODO*///    w->file = wa->file;
-/*TODO*///	w->mode = mode;
+            struct_wave_file w = wave[id];
+            wave_args wa = (wave_args) args;
+            int result;
+
+            /* wave already opened? */
+            if (w.file != null) {
+                wave_close.handler(id);
+            }
+            w.file = wa.file;
+            /*TODO*///	w->mode = mode;
 /*TODO*///	w->fill_wave = wa->fill_wave;
 /*TODO*///	w->smpfreq = wa->smpfreq;
-/*TODO*///	w->display = wa->display;
-/*TODO*///
+            w.display = wa.display;
+            /*TODO*///
 /*TODO*///	if( w->mode )
 /*TODO*///	{
 /*TODO*///        w->resolution = 16;
@@ -667,15 +663,14 @@ public class wave extends snd_interface {
 /*TODO*///    }
 /*TODO*///	else
 /*TODO*///	{
-/*TODO*///		result = wave_read(id);
-/*TODO*///		if( result == WAVE_OK )
-/*TODO*///		{
-/*TODO*///			/* return sample frequency in the user supplied structure */
-/*TODO*///			wa->smpfreq = w->smpfreq;
-/*TODO*///			w->offset = 0;
-/*TODO*///			return INIT_OK;
-/*TODO*///		}
-/*TODO*///
+            result = wave_read(id);
+            if (result == WAVE_OK) {
+                /* return sample frequency in the user supplied structure */
+                wa.smpfreq = w.smpfreq;
+                w.offset = 0;
+                return INIT_OK;
+            }
+            /*TODO*///
 /*TODO*///		if( result == WAVE_FMT )
 /*TODO*///		{
 /*TODO*///			UINT8 *data;
@@ -911,18 +906,18 @@ public class wave extends snd_interface {
     };
     public static io_inputPtr wave_input = new io_inputPtr() {
         public int handler(int id) {
-            System.out.println("Unimplemented wave_input function");//TODO Remove
-            return 0;//todo remove!!
-/*TODO*///	struct wave_file *w = &wave[id];
-/*TODO*///	UINT32 pos = 0;
-/*TODO*///    int level = 0;
-/*TODO*///
-/*TODO*///	if( !w->file )
-/*TODO*///		return level;
-/*TODO*///
-/*TODO*///    if( w->channel != -1 )
-/*TODO*///		stream_update(w->channel, 0);
-/*TODO*///
+            struct_wave_file w = wave[id];
+            int/*UINT32*/ pos = 0;
+            int level = 0;
+
+            if (w.file == null) {
+                return level;
+            }
+
+            if (w.channel != -1) {
+                stream_update(w.channel, 0);
+            }
+            /*TODO*///
 /*TODO*///    if( w->timer )
 /*TODO*///	{
 /*TODO*///		pos = w->offset + (timer_timeelapsed(w->timer) * w->smpfreq + 0.5);
@@ -936,9 +931,10 @@ public class wave extends snd_interface {
 /*TODO*///				level = 256 * *((INT8 *)w->data + pos);
 /*TODO*///		}
 /*TODO*///    }
-/*TODO*///	if( w->display )
-/*TODO*///		wave_display(id);
-/*TODO*///    return level;
+            if (w.display != 0) {
+                wave_display(id);
+            }
+            return level;
         }
     };
     public static io_outputPtr wave_output = new io_outputPtr() {

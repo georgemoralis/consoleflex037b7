@@ -1,3 +1,7 @@
+10/08/2018
+==========
+-Intial wave sound support for spectrum cassette (not yet working )
+
 06/08/2018
 ==========
 -First AMSTRAD computers support (WIP)
