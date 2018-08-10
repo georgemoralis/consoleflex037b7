@@ -2,7 +2,7 @@
 ==========
 -Intial wave sound support for spectrum cassette (not yet working )
 -Tapectrl now works and wav loading seems to work (tested with simcity)
--Initial zx spectrum +3 disk support (WIP) 
+-Initial zx spectrum +3 disk support (WIP) still working in it! 
 
 06/08/2018
 ==========
