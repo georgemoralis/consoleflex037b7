@@ -6,7 +6,7 @@
 For the purpose of easier reading the script
 is divided into following sections:
 
-  - initialization
+  - initializatione
   - compilation
   - jar
   - execution
@@ -223,7 +223,7 @@ is divided into following sections:
         <condition else="" property="testng.debug.mode" value="-mixed">
             <istrue value="${junit+testng.available}"/>
         </condition>
-        <property name="java.failonerror" value="true"/>
+        <property name="java.failonerror" value="false"/>
     </target>
     <target name="-post-init">
         <!-- Empty placeholder for easier customization. -->

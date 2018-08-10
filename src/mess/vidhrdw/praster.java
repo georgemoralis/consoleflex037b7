@@ -47,8 +47,10 @@ public class praster
         
         public static void draw_character(osd_bitmap bitmap,int ybegin, int yend, UBytePtr font, int y, int x, char[] color){
             if (praster_draw_character == 8){
+                System.out.println("Pinto 8");
                 praster_draw_character8(bitmap, ybegin, yend, font, y, x, color);
             } else {
+                System.out.println("No Pinto 8");
                 praster_draw_character16(bitmap, ybegin, yend, font, y, x, color);
             }
         }
@@ -63,8 +65,10 @@ public class praster
 
         public static void draw_pixel(osd_bitmap bitmap, int y, int x, int color){
             if (praster_draw_pixel == 8){
+                System.out.println("Pinto 8");
                 praster_draw_pixel8(bitmap, y, x, color);
             } else {
+                System.out.println("Pinto 16");
                 praster_draw_pixel16(bitmap, y, x, color);
             }
         }
@@ -226,7 +230,7 @@ public class praster
 	static void praster_update(PRASTER This)
 	{
 		//memset(raster2.text.dirtybuffer, 1, raster2.text.size_x*raster2.text.size_y);
-                raster2.text.dirtybuffer = new UBytePtr(raster2.text.size_x*raster2.text.size_y);
+                This.text.dirtybuffer = new UBytePtr(This.text.size_x*raster2.text.size_y);
 	}
 	
 	static void praster_cursor_update(PRASTER This)

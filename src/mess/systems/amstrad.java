@@ -47,11 +47,11 @@ import static mess.eventlstH.*;
 import static old.mame.timer.*;
 import static old.mame.timerH.*;
 
-/*TODO*/////import static mess.machine.nec765.*;
-/*TODO*/////import static mess.includes.nec765H.*;
-/*TODO*/////import static mess.machine.flopdrv.*;
-/*TODO*/////import static mess.includes.flopdrvH.*;
-/*TODO*/////import static mess.machine.dsk.*;
+import static mess.machine.nec765.*;
+import static mess.includes.nec765H.*;
+import static mess.machine.flopdrv.*;
+import static mess.includes.flopdrvH.*;
+import static mess.machine.dsk.*;
 
 import static WIP.mame.sndintrf.*;
 import static WIP.mame.sndintrfH.*;
@@ -291,18 +291,18 @@ public class amstrad
             );
 	
 	/* Amstrad NEC765 interface doesn't use interrupts or DMA! */
-	/*TODO*/////static nec765_interface amstrad_nec765_interface = new nec765_interface() {
-        /*TODO*/////    @Override
-        /*TODO*/////    public void interrupt(int state) {
-                /*TODO*//// throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-        /*TODO*/////    }
+	static nec765_interface amstrad_nec765_interface = new nec765_interface() {
+            @Override
+            public void interrupt(int state) {
+                 /*TODO*///throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+            }
 
-        /*TODO*/////    @Override
-        /*TODO*/////    public void dma_drq(int state, int read_write) {
-                /*TODO*//// throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-        /*TODO*/////    }
+            @Override
+            public void dma_drq(int state, int read_write) {
+                 /*TODO*///throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+            }
         
-	/*TODO*/////};
+	};
 	
 	/* pointers to current ram configuration selected for banks */
 	static UBytePtr[] AmstradCPC_RamBanks=new UBytePtr[4];
@@ -493,7 +493,7 @@ public class amstrad
 				{
 	
 	//#ifdef AMSTRAD_VIDEO_EVENT_LIST
-				   EventList_AddItemOffset((EVENT_LIST_CODE_GA_COLOUR<<6) | PenIndex, AmstradCPC_PenColours[PenIndex], cpu_getcurrentcycles());
+				   //EventList_AddItemOffset((EVENT_LIST_CODE_GA_COLOUR<<6) | PenIndex, AmstradCPC_PenColours[PenIndex], cpu_getcurrentcycles());
 	//#else
 				   amstrad_update_video();
 				   amstrad_vh_update_colour(PenIndex, AmstradCPC_PenColours[PenIndex]);
@@ -522,7 +522,7 @@ public class amstrad
 				if (((Data^Previous_GA_RomConfiguration) & 0x03)!=0)
 				{
 	//#ifdef AMSTRAD_VIDEO_EVENT_LIST
-				EventList_AddItemOffset((EVENT_LIST_CODE_GA_MODE<<6) , Data & 0x03, cpu_getcurrentcycles());
+				//EventList_AddItemOffset((EVENT_LIST_CODE_GA_MODE<<6) , Data & 0x03, cpu_getcurrentcycles());
 	//#else
 					amstrad_update_video();
 					amstrad_vh_update_mode(Data & 0x03);
@@ -625,14 +625,14 @@ public class amstrad
 				case 2:
 					{
 						/* read status */
-						/*TODO*/////data = nec765_status_r.handler(0);
+						data = nec765_status_r.handler(0);
 					}
 					break;
 	
 				case 3:
 					{
 						/* read data register */
-						/*TODO*/////data = nec765_data_r.handler(0);
+						data = nec765_data_r.handler(0);
 					}
 					break;
 	
@@ -674,7 +674,7 @@ public class amstrad
 			case 0:
 				{
 	//#ifdef AMSTRAD_VIDEO_EVENT_LIST
-					EventList_AddItemOffset((EVENT_LIST_CODE_CRTC_INDEX_WRITE<<6), data, cpu_getcurrentcycles());
+					//EventList_AddItemOffset((EVENT_LIST_CODE_CRTC_INDEX_WRITE<<6), data, cpu_getcurrentcycles());
 	//#endif
 	
 					///* register select */
@@ -708,7 +708,7 @@ public class amstrad
 					/* crtc register write */
 					{
 	
-						EventList_AddItemOffset((EVENT_LIST_CODE_CRTC_WRITE<<6), data, cpu_getcurrentcycles());
+						//EventList_AddItemOffset((EVENT_LIST_CODE_CRTC_WRITE<<6), data, cpu_getcurrentcycles());
 					}
 	//#endif
 									/* recalc time */
@@ -756,16 +756,16 @@ public class amstrad
 				case 0:
 					{
 						/* fdc motor on */
-						/*TODO*/////floppy_drive_set_motor_state(0,data & 0x01);
-						/*TODO*/////floppy_drive_set_motor_state(1,data & 0x01);
-						/*TODO*/////floppy_drive_set_ready_state(0,1,1);
-						/*TODO*/////floppy_drive_set_ready_state(1,1,1);
+						floppy_drive_set_motor_state(0,data & 0x01);
+						floppy_drive_set_motor_state(1,data & 0x01);
+						floppy_drive_set_ready_state(0,1,1);
+						floppy_drive_set_ready_state(1,1,1);
 					}
 					break;
 	
 				case 3:
 					{
-						/*TODO*/////nec765_data_w.handler(0,data);
+						nec765_data_w.handler(0,data);
 					}
 					break;
 	
@@ -1145,7 +1145,7 @@ public class amstrad
             //#ifndef AMSTRAD_VIDEO_EVENT_LIST
                     amstrad_update_video();
             //#else
-                    amstrad_interrupt_timer_update();
+                    //amstrad_interrupt_timer_update();
             //#endif
 	}};
 	
@@ -2328,13 +2328,13 @@ public class amstrad
 	
 		cpu_0_irq_line_vector_w.handler(0, 0x0ff);
 	
-		/*TODO*/////nec765_init(amstrad_nec765_interface,NEC765A/*?*/);
+		nec765_init(amstrad_nec765_interface,NEC765A/*?*/);
 	
-		/*TODO*/////floppy_drives_init();
-		/*TODO*/////floppy_drive_set_flag_state(0, FLOPPY_DRIVE_PRESENT, 1);
-		/*TODO*/////floppy_drive_set_flag_state(1, FLOPPY_DRIVE_PRESENT, 1);
-		/*TODO*/////floppy_drive_set_geometry(0, floppy_type.FLOPPY_DRIVE_SS_40);
-		/*TODO*/////floppy_drive_set_geometry(1, floppy_type.FLOPPY_DRIVE_SS_40);
+		floppy_drives_init();
+		//floppy_drive_set_flag_state(0, FLOPPY_DRIVE_PRESENT, 1);
+		//floppy_drive_set_flag_state(1, FLOPPY_DRIVE_PRESENT, 1);
+		floppy_drive_set_geometry(0, floppy_type.FLOPPY_DRIVE_SS_40);
+		floppy_drive_set_geometry(1, floppy_type.FLOPPY_DRIVE_SS_40);
 	
 			/* Juergen is a cool dude! */
 			/*TODO*////cpu_set_irq_callback(0, amstrad_cpu_acknowledge_int);
@@ -2524,6 +2524,17 @@ public class amstrad
 		/* read cpc keyboard */
 		return AmstradCPC_ReadKeyboard();
 	}};
+        
+        public static ReadHandlerPtr amstrad_psg_dummy_read = new ReadHandlerPtr() {
+            public int handler(int offset) {
+		/* read cpc keyboard */
+		return 0;
+	}};
+        
+        public static WriteHandlerPtr amstrad_psg_dummy_write = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+		/* nothing to do */
+	}};
 	
 	
 	static AY8910interface amstrad_ay_interface = new AY8910interface
@@ -2533,11 +2544,14 @@ public class amstrad
 		new int[] {25, 25},
 		new ReadHandlerPtr[] {amstrad_psg_porta_read},
 		//new ReadHandlerPtr[] {0},
-                null,
+                //null,
+                new ReadHandlerPtr[] {amstrad_psg_dummy_read},
 		//new WriteHandlerPtr[] {0},
-                null,
+                //null,
+                new WriteHandlerPtr[]{amstrad_psg_dummy_write},
 		//new WriteHandlerPtr[] {0}
-                null
+                //null
+                new WriteHandlerPtr[]{amstrad_psg_dummy_write}
 	);
 	
 	//#define KEYBOARD_PORTS \
@@ -2794,18 +2808,18 @@ public class amstrad
 		0,								   /* sh start */
 		0,								   /* sh stop */
 		0,								   /* sh update */
-		/*TODO*///new MachineSound[] {
+		new MachineSound[] {
 			/* MachineSound */
-		/*TODO*///	new MachineSound(
-		/*TODO*///		SOUND_AY8910,
-		/*TODO*///		amstrad_ay_interface
-		/*TODO*///	),
-		/*TODO*///	new MachineSound(
-		/*TODO*///		SOUND_WAVE,
-		/*TODO*///		wave_interface
-		/*TODO*///	)
-		/*TODO*///}
-                null
+			new MachineSound(
+				SOUND_AY8910,
+				amstrad_ay_interface
+			),
+			new MachineSound(
+				SOUND_WAVE,
+				wave_interface
+			)
+		}
+                //null
 	);
 	
 	static MachineDriver machine_driver_kccomp = new MachineDriver
@@ -2851,18 +2865,18 @@ public class amstrad
 		0,								   /* sh start */
 		0,								   /* sh stop */
 		0,								   /* sh update */
-		/*TODO*///new MachineSound[] {
+		new MachineSound[] {
 			/* MachineSound */
-		/*TODO*///	new MachineSound(
-		/*TODO*///		SOUND_AY8910,
-		/*TODO*///		amstrad_ay_interface
-		/*TODO*///	),
-		/*TODO*///	new MachineSound(
-		/*TODO*///		SOUND_WAVE,
-		/*TODO*///		wave_interface
-		/*TODO*///	)
-		/*TODO*///}
-                null
+			new MachineSound(
+				SOUND_AY8910,
+				amstrad_ay_interface
+			),
+			new MachineSound(
+				SOUND_WAVE,
+				wave_interface
+			)
+		}
+                //null
 	);
 	
 	
@@ -2929,7 +2943,7 @@ public class amstrad
         public static IODevice io_cpc464[] = {
             new IODevice(
 		
-			IO_CARTSLOT,				/* type */
+			IO_SNAPSHOT,				/* type */
 			1,							/* count */
 			"sna\0",                    /* file extensions */
 			IO_RESET_ALL,				/* reset if file changed */
@@ -2947,25 +2961,25 @@ public class amstrad
 			null,						/* input_chunk */
 			null						/* output_chunk */
             ),
-		/*TODO*////new IODevice(
-		/*TODO*////	IO_FLOPPY,					/* type */
-		/*TODO*////	2,							/* count */
-		/*TODO*////	"dsk\0",                    /* file extensions */
-		/*TODO*////	IO_RESET_NONE,				/* reset if file changed */
-		/*TODO*////	dsk_floppy_id,				/* id */
-		/*TODO*////	dsk_floppy_load,			/* init */
-		/*TODO*////	dsk_floppy_exit,			/* exit */
-		/*TODO*////	null,						/* info */
-		/*TODO*////	null,						/* open */
-		/*TODO*////	null,						/* close */
-		/*TODO*////	null,						/* status */
-		/*TODO*////	null,						/* seek */
-		/*TODO*////	null,						/* tell */
-		/*TODO*////	null,						/* input */
-		/*TODO*////	null,						/* output */
-		/*TODO*////	null,						/* input_chunk */
-		/*TODO*////	null						/* output_chunk */
-                /*TODO*////),
+		new IODevice(
+			IO_FLOPPY,					/* type */
+			2,							/* count */
+			"dsk\0",                    /* file extensions */
+			IO_RESET_NONE,				/* reset if file changed */
+			null,				/* id */
+			dsk_floppy_load,			/* init */
+			dsk_floppy_exit,			/* exit */
+			null,						/* info */
+			null,						/* open */
+			null,						/* close */
+			floppy_status,						/* status */
+			null,						/* seek */
+			null,						/* tell */
+			null,						/* input */
+			null,						/* output */
+			null,						/* input_chunk */
+			null						/* output_chunk */
+                ),
 		/*TODO*////IO_CASSETTE_WAVE(1,"wav\0",null,amstrad_cassette_init,amstrad_cassette_exit),
 	
 		new IODevice(IO_END)
