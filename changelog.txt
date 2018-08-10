@@ -1,6 +1,7 @@
 10/08/2018
 ==========
 -Intial wave sound support for spectrum cassette (not yet working )
+-Initial zx spectrum +3 disk support (WIP)
 
 06/08/2018
 ==========
