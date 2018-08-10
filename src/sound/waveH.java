@@ -94,10 +94,8 @@ public class waveH {
 /*TODO*///#define CODE_HEADER 	((UINT8*)-1)
 /*TODO*///#define CODE_TRAILER	((UINT8*)-2)
 /*TODO*///
-/*TODO*///#define WAVE_STATUS_MOTOR_ENABLE	1
+    public static final int WAVE_STATUS_MOTOR_ENABLE = 1;
     public static final int WAVE_STATUS_MUTED = 2;
-    /*TODO*///#define WAVE_STATUS_MOTOR_INHIBIT	4
-/*TODO*///#endif
-/*TODO*///
-/*TODO*///    
+    public static final int WAVE_STATUS_MOTOR_INHIBIT = 4;
+
 }

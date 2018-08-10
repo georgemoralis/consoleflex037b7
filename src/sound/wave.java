@@ -17,9 +17,12 @@ import static mame.usrintrf.ui_text;
 import static mess.messH.INIT_OK;
 import static old.sound.streams.*;
 import static mess.osdepend.fileio.*;
-import static old.arcadeflex.libc_old.SEEK_CUR;
+import static old.arcadeflex.libc_old.*;
 import static old.arcadeflex.osdepend.logerror;
+import static old.mame.timerH.*;
+import static old.mame.timer.*;
 import static sound.waveH.*;
+import static WIP.mame.common.*;
 
 public class wave extends snd_interface {
 
@@ -46,13 +49,13 @@ public class wave extends snd_interface {
  /*TODO*///	int mode;				/* write mode? */
 /*TODO*///	int (*fill_wave)(INT16 *,int,UINT8*);
         Object timer;/* timer (TIME_NEVER) for reading sample values */
-	short play_sample;/* current sample value for playback */
-/*TODO*///	INT16 record_sample;	/* current sample value for playback */
+        short play_sample;/* current sample value for playback */
+ /*TODO*///	INT16 record_sample;	/* current sample value for playback */
         int display;/* display tape status on screen */
         int offset;/* offset set by device_seek function */
         int play_pos;/* sample position for playback */
- /*TODO*///	int record_pos; 		/* sample position for recording */
-	int counter;/* sample fraction counter for playback */
+        int record_pos;/* sample position for recording */
+        int counter;/* sample fraction counter for playback */
         int smpfreq;/* sample frequency from the WAV header */
         int resolution;/* sample resolution in bits/sample (8 or 16) */
         int samples;/* number of samples (length * resolution / 8) */
@@ -239,7 +242,7 @@ public class wave extends snd_interface {
                 logerror("WAVE converting 8-bit unsigned to 8-bit signed\n");
                 /* convert 8-bit data to signed samples */
                 for (temp32 = 0; temp32 < w.length; temp32++) {
-                    w.data[(int) temp32] ^= 0x80;
+                    w.data[(int) temp32] ^= 0x80;//TODO RECHECK!
                 }
                 /*TODO*///			for( temp32 = 0; temp32 < w->length; temp32++ )
 /*TODO*///				*dst++ = *src++ ^ 0x80;
@@ -449,38 +452,40 @@ public class wave extends snd_interface {
             int pos = w.play_pos;
             int count = w.counter;
             short sample = w.play_sample;
-            
-	if( w.timer==null || (w.status & WAVE_STATUS_MUTED)!=0 )
-	{
-		while( length-- > 0 )
-			buffer.writeinc(sample);
-		return;
-	}
-/*TODO*///    while (length--)
-/*TODO*///	{
-/*TODO*///		count -= w->smpfreq;
-/*TODO*///		while (count <= 0)
-/*TODO*///		{
-/*TODO*///			count += Machine->sample_rate;
-/*TODO*///			if (w->resolution == 16)
-/*TODO*///				sample = *((INT16 *)w->data + pos);
-/*TODO*///			else
-/*TODO*///				sample = *((INT8 *)w->data + pos)*256;
-/*TODO*///			if (++pos >= w->samples)
-/*TODO*///			{
-/*TODO*///				pos = w->samples - 1;
-/*TODO*///				if (pos < 0)
-/*TODO*///					pos = 0;
-/*TODO*///			}
-/*TODO*///        }
-/*TODO*///		*buffer++ = sample;
-/*TODO*///	}
-/*TODO*///	w->counter = count;
-/*TODO*///	w->play_pos = pos;
-/*TODO*///	w->play_sample = sample;
-/*TODO*///		
-/*TODO*///	if( w->display )
-/*TODO*///		wave_display(id);
+
+            if (w.timer == null || (w.status & WAVE_STATUS_MUTED) != 0) {
+                while (length-- > 0) {
+                    buffer.writeinc(sample);
+                }
+                return;
+            }
+            // System.out.println("Unimplemented sound update!");
+            while (length-- != 0) {
+                count -= w.smpfreq;
+                while (count <= 0) {
+                    count += Machine.sample_rate;
+                    if (w.resolution == 16) {
+                        throw new UnsupportedOperationException("unimplemented");
+                        /*TODO*///				sample = *((INT16 *)w->data + pos);
+                    } else {
+                        sample = (short) (w.data[pos] * 256);//sample = *((INT8 *)w->data + pos)*256;
+                    }
+                    if (++pos >= w.samples) {
+                        pos = w.samples - 1;
+                        if (pos < 0) {
+                            pos = 0;
+                        }
+                    }
+                }
+                buffer.writeinc(sample);
+            }
+            w.counter = count;
+            w.play_pos = pos;
+            w.play_sample = sample;
+
+            if (w.display != 0) {
+                wave_display(id);
+            }
         }
     };
 
@@ -584,50 +589,46 @@ public class wave extends snd_interface {
 /*TODO*///
     public static io_statusPtr wave_status = new io_statusPtr() {
 
-        public int handler(int id, int newststatus) {
-            System.out.println("Unimplemented wave_status fucntion");//TODO
-            return 0;//TOBE REMOVED
-/*TODO*///	/* wave status has the following bitfields:
-/*TODO*///	 *
-/*TODO*///	 *  Bit 2:  Inhibit Motor (1=inhibit 0=noinhibit)
-/*TODO*///	 *	Bit 1:	Mute (1=mute 0=nomute)
-/*TODO*///	 *	Bit 0:	Motor (1=on 0=off)
-/*TODO*///	 *
-/*TODO*///	 *  Bit 0 is usually set by the tape control, and bit 2 is usually set by
-/*TODO*///	 *  the driver
-/*TODO*///	 *
-/*TODO*///	 *	Also, you can pass -1 to have it simply return the status
-/*TODO*///	 */
-/*TODO*///	struct wave_file *w = &wave[id];
-/*TODO*///
-/*TODO*///	if( !w->file )
-/*TODO*///		return 0;
-/*TODO*///
-/*TODO*///    if( newstatus != -1 )
-/*TODO*///	{
-/*TODO*///		w->status = newstatus;
-/*TODO*///
-/*TODO*///		if (newstatus & WAVE_STATUS_MOTOR_INHIBIT)
-/*TODO*///			newstatus = 0;
-/*TODO*///		else
-/*TODO*///			newstatus &= WAVE_STATUS_MOTOR_ENABLE;
-/*TODO*///
-/*TODO*///		if( newstatus && !w->timer )
-/*TODO*///		{
-/*TODO*///			w->timer = timer_set(TIME_NEVER, 0, NULL);
-/*TODO*///		}
-/*TODO*///		else
-/*TODO*///		if( !newstatus && w->timer )
-/*TODO*///		{
-/*TODO*///			if( w->timer )
-/*TODO*///				w->offset += (timer_timeelapsed(w->timer) * w->smpfreq + 0.5);
-/*TODO*///			timer_remove(w->timer);
-/*TODO*///			w->timer = NULL;
-/*TODO*///			schedule_full_refresh();
-/*TODO*///		}
-/*TODO*///	}
-/*TODO*///	return (w->timer ? WAVE_STATUS_MOTOR_ENABLE : 0) |
-/*TODO*///		(w->status & WAVE_STATUS_MOTOR_INHIBIT ? w->status : w->status & ~WAVE_STATUS_MOTOR_ENABLE);
+        public int handler(int id, int newstatus) {
+            /* wave status has the following bitfields:
+	 *
+	 *  Bit 2:  Inhibit Motor (1=inhibit 0=noinhibit)
+	 *	Bit 1:	Mute (1=mute 0=nomute)
+	 *	Bit 0:	Motor (1=on 0=off)
+	 *
+	 *  Bit 0 is usually set by the tape control, and bit 2 is usually set by
+	 *  the driver
+	 *
+	 *	Also, you can pass -1 to have it simply return the status
+             */
+            struct_wave_file w = wave[id];
+
+            if (w.file == null) {
+                return 0;
+            }
+
+            if (newstatus != -1) {
+                w.status = newstatus;
+
+                if ((newstatus & WAVE_STATUS_MOTOR_INHIBIT) != 0) {
+                    newstatus = 0;
+                } else {
+                    newstatus &= WAVE_STATUS_MOTOR_ENABLE;
+                }
+
+                if (newstatus != 0 && w.timer == null) {
+                    w.timer = timer_set(TIME_NEVER, 0, null);
+                } else if (newstatus == 0 && w.timer != null) {
+                    if (w.timer != null) {
+                        w.offset += (timer_timeelapsed(w.timer) * w.smpfreq + 0.5);
+                    }
+                    timer_remove(w.timer);
+                    w.timer = null;
+                    schedule_full_refresh();
+                }
+            }
+            return (w.timer != null ? WAVE_STATUS_MOTOR_ENABLE : 0)
+                    | ((w.status & WAVE_STATUS_MOTOR_INHIBIT) != 0 ? w.status : w.status & ~WAVE_STATUS_MOTOR_ENABLE);
         }
     };
     public static io_openPtr wave_open = new io_openPtr() {
@@ -855,53 +856,53 @@ public class wave extends snd_interface {
     };
     public static io_seekPtr wave_seek = new io_seekPtr() {
         public int handler(int id, int offset, int whence) {
-            System.out.println("Unimplemented wave_seek function");//TODO remove
-            return 0; // Dummy to be removed
-/*TODO*///	struct wave_file *w = &wave[id];
-/*TODO*///    UINT32 pos = 0;
-/*TODO*///
-/*TODO*///	if( !w->file )
-/*TODO*///		return pos;
-/*TODO*///
-/*TODO*///    switch( whence )
-/*TODO*///	{
-/*TODO*///	case SEEK_SET:
-/*TODO*///		w->offset = offset;
-/*TODO*///		break;
-/*TODO*///	case SEEK_END:
-/*TODO*///		w->offset = w->samples - 1;
-/*TODO*///		break;
-/*TODO*///	case SEEK_CUR:
-/*TODO*///		if( w->timer )
-/*TODO*///			pos = w->offset + (timer_timeelapsed(w->timer) * w->smpfreq + 0.5);
-/*TODO*///		w->offset = pos + offset;
-/*TODO*///		if( w->offset < 0 )
-/*TODO*///			w->offset = 0;
-/*TODO*///		if( w->offset >= w->length )
-/*TODO*///			w->offset = w->length - 1;
-/*TODO*///	}
-/*TODO*///	w->play_pos = w->record_pos = w->offset;
-/*TODO*///
-/*TODO*///    if( w->timer )
-/*TODO*///	{
-/*TODO*///		timer_remove(w->timer);
-/*TODO*///		w->timer = timer_set(TIME_NEVER, 0, NULL);
-/*TODO*///	}
-/*TODO*///
-/*TODO*///    return w->offset;
+            struct_wave_file w = wave[id];
+            int/*UINT32*/ pos = 0;
+
+            if (w.file == null) {
+                return pos;
+            }
+
+            switch (whence) {
+                case SEEK_SET:
+                    w.offset = offset;
+                    break;
+                case SEEK_END:
+                    w.offset = w.samples - 1;
+                    break;
+                case SEEK_CUR:
+                    if (w.timer != null) {
+                        pos = (int) (w.offset + (timer_timeelapsed(w.timer) * w.smpfreq + 0.5));
+                    }
+                    w.offset = pos + offset;
+                    if (w.offset < 0) {
+                        w.offset = 0;
+                    }
+                    if (w.offset >= w.length) {
+                        w.offset = w.length - 1;
+                    }
+            }
+            w.play_pos = w.record_pos = w.offset;
+
+            if (w.timer != null) {
+                timer_remove(w.timer);
+                w.timer = timer_set(TIME_NEVER, 0, null);
+            }
+
+            return w.offset;
         }
     };
     public static io_tellPtr wave_tell = new io_tellPtr() {
         public int handler(int id) {
-            System.out.println("Unimplemented wave_tell function");//TODO Remove
-            return 0;//todo remove!!
-            /*TODO*///	struct wave_file *w = &wave[id];
-/*TODO*///    UINT32 pos = 0;
-/*TODO*///	if( w->timer )
-/*TODO*///		pos = w->offset + (timer_timeelapsed(w->timer) * w->smpfreq + 0.5);
-/*TODO*///	if( pos >= w->samples )
-/*TODO*///		pos = w->samples -1;
-/*TODO*///    return pos;
+            struct_wave_file w = wave[id];
+            int/*UINT32*/ pos = 0;
+            if (w.timer != null) {
+                pos = (int) (w.offset + (timer_timeelapsed(w.timer) * w.smpfreq + 0.5));
+            }
+            if (pos >= w.samples) {
+                pos = w.samples - 1;
+            }
+            return pos;
         }
     };
     public static io_inputPtr wave_input = new io_inputPtr() {
@@ -917,20 +918,21 @@ public class wave extends snd_interface {
             if (w.channel != -1) {
                 stream_update(w.channel, 0);
             }
-            /*TODO*///
-/*TODO*///    if( w->timer )
-/*TODO*///	{
-/*TODO*///		pos = w->offset + (timer_timeelapsed(w->timer) * w->smpfreq + 0.5);
-/*TODO*///		if( pos >= w->samples )
-/*TODO*///			pos = w->samples - 1;
-/*TODO*///		if( pos >= 0 )
-/*TODO*///		{
-/*TODO*///			if( w->resolution == 16 )
-/*TODO*///				level = *((INT16 *)w->data + pos);
-/*TODO*///			else
-/*TODO*///				level = 256 * *((INT8 *)w->data + pos);
-/*TODO*///		}
-/*TODO*///    }
+
+            if (w.timer != null) {
+                pos = (int) (w.offset + (timer_timeelapsed(w.timer) * w.smpfreq + 0.5));
+                if (pos >= w.samples) {
+                    pos = w.samples - 1;
+                }
+                if (pos >= 0) {
+                    if (w.resolution == 16) {
+                        throw new UnsupportedOperationException("Unimplemented");
+                        /*TODO*///				level = *((INT16 *)w->data + pos);
+                    } else {
+                        level = 256 * w.data[pos];//level = 256 * *((INT8 *)w->data + pos);
+                    }
+                }
+            }
             if (w.display != 0) {
                 wave_display(id);
             }

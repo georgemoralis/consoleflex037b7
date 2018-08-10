@@ -3,6 +3,7 @@
  */
 // Changelog 
 // ========= 
+//10/08/2018 (shadow) - Added tapectrl menu selection
 //27/07/2018 (shadow) - Finished most of usrintrf stuff and the neccesary ports to MESS
 //24/07/2018 (shadow) - Implemented ui_displaymenu (long texts selection not yet working) + other functions
 //23/07/2018 (shadow) - Intial work for use with mess
@@ -28,6 +29,7 @@ import static mame.mameH.MAX_GFX_ELEMENTS;
 import static mess.mess.displayimageinfo;
 import mess.messH;
 import static mess.system.drivers;
+import static mess.tapectrl.tapecontrol;
 import static old.arcadeflex.libc_old.sprintf;
 import static old.arcadeflex.sound.*;
 import static old.arcadeflex.video.*;
@@ -2457,21 +2459,21 @@ public class usrintrf {
                 case UI_CODE:
                     res = setcodesettings(bitmap, sel >> SEL_BITS);
                     break;
-                			case UI_ANALOG:
-				res = 0;//settraksettings(bitmap, sel >> SEL_BITS);
-				break;
-			case UI_CALIBRATE:
-				res = 0;//calibratejoysticks(bitmap, sel >> SEL_BITS);
-				break;
+                case UI_ANALOG:
+                    res = 0;//settraksettings(bitmap, sel >> SEL_BITS);
+                    break;
+                case UI_CALIBRATE:
+                    res = 0;//calibratejoysticks(bitmap, sel >> SEL_BITS);
+                    break;
                 case UI_IMAGEINFO:
                     res = displayimageinfo(bitmap, sel >> SEL_BITS);
                     break;
-                			case UI_FILEMANAGER:
-				res = 0;//filemanager(bitmap, sel >> SEL_BITS);
-				break;
-			case UI_TAPECONTROL:
-				res = 0;//tapecontrol(bitmap, sel >> SEL_BITS);
-				break;
+                case UI_FILEMANAGER:
+                    res = 0;//filemanager(bitmap, sel >> SEL_BITS);
+                    break;
+                case UI_TAPECONTROL:
+                    res=tapecontrol(bitmap, sel >> SEL_BITS);
+                    break;
                 case UI_HISTORY:
                     res = displayhistory(bitmap, sel >> SEL_BITS);
                     break;
