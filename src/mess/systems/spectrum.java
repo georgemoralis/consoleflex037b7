@@ -123,6 +123,7 @@ import static mess.includes.nec765H.*;
 import static mess.includes.flopdrvH.*;
 import static mess.machine.flopdrv.*;
 import static mess.machine.dsk.*;
+import static mess.mess.device_input;
 
 /*TODO*/////import static mess.machine.wd17xx.h.*;
 
@@ -292,8 +293,8 @@ public class spectrum
 	
 			floppy_drive_set_geometry(0, floppy_type.FLOPPY_DRIVE_SS_40);
 			floppy_drive_set_geometry(1, floppy_type.FLOPPY_DRIVE_SS_40);
-			floppy_drive_set_flag_state(0, FLOPPY_DRIVE_PRESENT, 1);
-			floppy_drive_set_flag_state(1, FLOPPY_DRIVE_PRESENT, 1);
+			//floppy_drive_set_flag_state(0, FLOPPY_DRIVE_PRESENT, 1);
+			//floppy_drive_set_flag_state(1, FLOPPY_DRIVE_PRESENT, 1);
 	
 			/* Initial configuration */
 			spectrum_128_port_7ffd_data = 0;
@@ -1054,10 +1055,10 @@ public class spectrum
 			cassette input from wav
 		 --------------------------------------------------*/
 		/*TODO*///// cassette emulation
-                /*if (device_input(IO_CASSETTE, 0)>255 )
+                if (device_input(IO_CASSETTE, 0)>255 )
 		{
                     data &= ~0x40;
-		}*/
+		}
 	
 	   /* Issue 2 Spectrums default to having bits 5, 6 & 7 set.
 		  Issue 3 Spectrums default to having bits 5 & 7 set and bit 6 reset. */
@@ -2689,13 +2690,13 @@ public class spectrum
 			2,					/* count */
 			"dsk\0",            /* file extensions */
 			IO_RESET_NONE,		/* reset if file changed */
-			dsk_floppy_id,		/* id */
+			null,		/* id */
 			dsk_floppy_load,	/* init */
 			dsk_floppy_exit,	/* exit */
 			null, /* info */
                         null, /* open */
                         null, /* close */
-                        null, /* status */
+                        floppy_status, /* status */
                         null, /* seek */
                         null, /* tell */
                         null, /* input */
@@ -2789,3 +2790,4 @@ public class spectrum
         //COMP( ????, pentagon, spectrum, 0,		pentagon,		spectrum,	0,		specpls3,	"???",		"Pentagon", GAME_NOT_WORKING)
         public static GameDriver driver_pentagon = new GameDriver("????", "pentagon", "spectrum.java", rom_pentagon, null, machine_driver_pentagon, input_ports_spectrum, null, io_spectrum, "???", "Pentagon");
 }
+
