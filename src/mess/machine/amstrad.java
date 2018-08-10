@@ -62,10 +62,10 @@ public class amstrad
 	/*TODO*/////void amstrad_handle_snapshot(UBytePtr );
 	
 	
-	static UBytePtr snapshot = null;
+	public static UBytePtr snapshot = null;
 	
 	public static UBytePtr Amstrad_Memory;
-	static int snapshot_loaded;
+	static int snapshot_loaded=0;
 	
 	/* used to setup computer if a snapshot was specified */
 	//OPBASE_HANDLER( amstrad_opbaseoverride )
@@ -96,7 +96,7 @@ public class amstrad
 		/* allocate ram - I control how it is accessed so I must
 		allocate it somewhere - here will do */
 		Amstrad_Memory = new UBytePtr(128*1024);
-		if(Amstrad_Memory==null) return;
+		//if(Amstrad_Memory==null) return;
 	
 		if (snapshot_loaded != 0)
 		{
@@ -163,6 +163,7 @@ public class amstrad
 		int RegData;
 		int i;
 	
+                System.out.println("SNA "+pSnapshot);
 	
 		/* init Z80 */
 		RegData = (pSnapshot.read(0x011) & 0x0ff) | ((pSnapshot.read(0x012) & 0x0ff)<<8);
@@ -302,8 +303,12 @@ public class amstrad
 	static int amstrad_load(int type, int id, UBytePtr ptr)
 	{
 		Object file = null;
+                
+                //System.out.println("A");
 	
-		file = image_fopen(type, id, OSD_FILETYPE_IMAGE_RW, OSD_FOPEN_READ);
+		file = image_fopen(type, id, OSD_FILETYPE_IMAGE_R, OSD_FOPEN_READ);
+                //System.out.println("B");
+                //System.out.println(file);
 	
 		if (file != null)
 		{
@@ -324,6 +329,8 @@ public class amstrad
 					osd_fread(file, data, datasize);
 	
 					ptr = new UBytePtr(data, 0);
+                                        snapshot=new UBytePtr(data, 0);
+                                        snapshot_loaded=1;
 	
 					/* close file */
 					osd_fclose(file);
@@ -362,6 +369,7 @@ public class amstrad
             public int handler(int id) {
 		int valid;
 		UBytePtr snapshot_data=new UBytePtr();
+                snapshot_data.memory=new char[1024];
 	
 		valid = ID_FAILED;
 	
