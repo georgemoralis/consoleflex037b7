@@ -4,8 +4,33 @@
  */ 
 package mess.machine;
 
+/*
+	This code handles the floppy drives.
+	All FDD actions should be performed using these functions.
+
+	The functions are emulated and a disk image is used.
+
+  Disk image operation:
+  - set disk image functions using floppy_drive_set_disk_image_interface
+
+  Real disk operation:
+  - set unit id
+
+  TODO:
+	- Disk change handling.
+	- Override write protect if disk image has been opened in read mode
+*/
+
+import static consoleflex.funcPtr.*;
 import static mess.includes.flopdrvH.*;
 import static old.arcadeflex.osdepend.logerror;
+import static mess.messH.*;
+import static mess.mess.*;
+
+import static old.mame.timer.*;
+import static old.mame.timerH.*;
+
+import static WIP.arcadeflex.fucPtr.*;
 
 public class flopdrv
 {
@@ -19,326 +44,488 @@ public class flopdrv
                 drives[i] = new floppy_drive();
         };
 	
-	/* init all floppy drives */
-	public static void floppy_drives_init()
-	{
-	System.out.println("floppy_drives_init");
-        /* KT - caused problems with disk missing etc */
-	//        memset(&drives[0], 0, sizeof(floppy_drive));
-            //drives[0]=new floppy_drive();
-	//        memset(&drives[1], 0, sizeof(floppy_drive));
-            //drives[1]=new floppy_drive();
-	//        memset(&drives[2], 0, sizeof(floppy_drive));
-            //drives[2]=new floppy_drive();
-	//        memset(&drives[3], 0, sizeof(floppy_drive));
-            //drives[3]=new floppy_drive();
-	        drives[0].current_track = 10;
-	        drives[1].current_track = 10;
-	        drives[2].current_track = 10;
-	        drives[3].current_track = 10;
-	}
-	
-	public static void floppy_drive_set_interface(int index1, floppy_interface iface)
-	{
-		System.out.println("floppy_drive_set_interface");
-                if ((index1<0) || (index1>=MAX_DRIVES))
-			return;
-	
-		//memcpy(drives[index1].f_interface, iface, sizeof(floppy_interface));
-                drives[index1].f_interface = iface;
-	}
-	
-	/* set flag state */
-	public static void floppy_drive_set_flag_state(int drive, int flag, int state)
-	{
-		//System.out.println("floppy_drive_set_flag_state");
-                drives[drive].flags &= ~flag;
-	
-		if (state != 0)
-		{
-			drives[drive].flags |= flag;
-		}
-	
-		if (flag==FLOPPY_DRIVE_DISK_PRESENT)
-		{
-			floppy_drive_seek(drive, 0);
-		}
-	
-	}
-	
-	public static void floppy_drive_set_motor_state(int drive, int state)
-	{
-		//System.out.println("floppy_drive_set_motor_state");
-                floppy_drive_set_flag_state(drive, FLOPPY_DRIVE_MOTOR_ON, state);
-	}
-	
-	
-	public static void floppy_drive_set_ready_state(int drive, int state, int flag)
-	{
-		//System.out.println("floppy_drive_set_ready_state");
-                if (flag != 0)
-		{
-			/* set ready only if drive is present, disk is in the drive,
-			and disk motor is on - for Amstrad, Spectrum and PCW*/
-		
-			/* drive present? */
-			if ((drives[drive].flags & FLOPPY_DRIVE_PRESENT) != 0)
-			{
-				/* disk inserted? */
-				if ((drives[drive].flags & FLOPPY_DRIVE_DISK_PRESENT) != 0)
-				{
-					if ((drives[drive].flags & FLOPPY_DRIVE_MOTOR_ON) != 0)
-					{
-						/* set state */
-						floppy_drive_set_flag_state(drive, FLOPPY_DRIVE_READY, state);
-	                                        return;
-	                                }
-				}
-			}
-	
-	                floppy_drive_set_flag_state(drive, FLOPPY_DRIVE_READY, 0);
-	
-	
-		}
-		else
-		{
-			/* force ready state - for PC driver */
-			floppy_drive_set_flag_state(drive, FLOPPY_DRIVE_READY, state);
-		}
-	
-	}
-	
-	
-	/* get flag state */
-	public static int floppy_drive_get_flag_state(int drive, int flag)
-	{
-		//System.out.println("floppy_drive_get_flag_state");
-                switch (flag)
-		{
-			case FLOPPY_DRIVE_HEAD_AT_TRACK_0:
-			{
-				/* drive present */
-				if ((drives[drive].flags & FLOPPY_DRIVE_PRESENT) != 0)
-				{
-					/* return real state of track 0 flag */
-					return drives[drive].flags & FLOPPY_DRIVE_HEAD_AT_TRACK_0;
-				}
-		
-				/* return not at track 0 */
-				return 0;
-			}
-	
-			case FLOPPY_DRIVE_PRESENT:
-				return drives[drive].flags & flag;
-		
-	
-			/* return ready state - in case of CPC drive will not be ready if it is not present */
-			/* in case of PC drive will be ready even if it is not present */
-			case FLOPPY_DRIVE_READY:
-				return drives[drive].flags & flag;
-                                //return 0;
-		
-			case FLOPPY_DRIVE_DISK_WRITE_PROTECTED:
-			{
-				/* drive present */
-				if ((drives[drive].flags & FLOPPY_DRIVE_PRESENT) != 0)
-				{
-					/* return real state of write protected flag */
-					return drives[drive].flags & FLOPPY_DRIVE_DISK_WRITE_PROTECTED;
-				}
-		
-				/* drive not present. return write protected  */
-				return FLOPPY_DRIVE_DISK_WRITE_PROTECTED;
-			}
-	
-			case FLOPPY_DRIVE_INDEX:
-				return drives[drive].flags & flag;
-	
-			case FLOPPY_DRIVE_DISK_PRESENT:
-				return drives[drive].flags & flag;
-	
-			default:
-				break;
-		}
-	
-		return 0;
-	}
-	
-	
-	
-	
-	//static int floppy_drive_motor_state;
-	//
-	//void	floppy_drive_set_motor_state(int state)
-	//{
-	//	floppy_drive_motor_state = state;
-	//
-	//}
-	
-	//#if 0
-	public void floppy_drive_init()
-	{
-		System.out.println("floppy_drive_init");
+	/* this is called once in init_devices */
+        /* initialise all floppy drives */
+        /* and initialise real disc access */
+        public static void floppy_drives_init()
+        {
                 int i;
-	
-		for (i=0; i<4; i++)
-		{
-			//floppy_drive pDrive = get_floppy_drive_ptr(i);
+
+                /* if no floppies, no point setting this up */
+                if (device_count(IO_FLOPPY)==0)
+                        return;
+
+                /* ensure first drive is present, all other drives are marked
+                as not present - override in driver if more are to be made available */
+                for (i=0; i<MAX_DRIVES; i++)
+                {
                         floppy_drive pDrive = drives[i];
-	
-			pDrive.id_index = 0;
-			pDrive.current_track = 0;
-			pDrive.flags = FLOPPY_DRIVE_HEAD_AT_TRACK_0;
-	
-			/* 	When Drive is accessed but not fitted,
-			Drive Ready and Write Protected status signals are false. */
-	
-			/* When Drive is  fitted and accessed with no disk inserted,
-			Drive Ready status from Drive is false and Write Protected status
-			from Drive 1 is true. */
-	
-			floppy_drive_set_geometry(i, floppy_type.FLOPPY_DRIVE_SS_40);
-		}
-	}
-	//#endif
-	
-	public static void floppy_drive_set_geometry(int drive, floppy_type type)
-	{
-		System.out.println("floppy_drive_set_geometry");
+
+                        /* initialise flags */
+                        pDrive.flags = FLOPPY_DRIVE_HEAD_AT_TRACK_0;
+                        pDrive.index_pulse_callback = null;
+                        pDrive.index_timer = null;
+
+                        if (i==0)
+                        {
+                                /* set first drive connected */
+                                floppy_drive_set_flag_state(i, FLOPPY_DRIVE_CONNECTED, 1);
+                        }
+                        else
+                        {
+                                /* all remaining drives are not connected - can be overriden in driver */
+                                floppy_drive_set_flag_state(i, FLOPPY_DRIVE_CONNECTED, 0);
+                        }
+
+                        /* all drives are double-sided 80 track - can be overriden in driver! */
+                        floppy_drive_set_geometry(i, floppy_type.FLOPPY_DRIVE_DS_80);
+
+                        pDrive.fdd_unit = i;
+
+                        /* initialise id index - not so important */
+                        pDrive.id_index = 0;
+                        /* initialise track */
+                        pDrive.current_track = 0;
+                }
+        }
+
+        void floppy_drives_exit()
+        {
+                int i;
+
+                /* if no floppies, no point cleaning up*/
+                if (device_count(IO_FLOPPY)==0)
+                        return;
+
+                for (i=0; i<MAX_DRIVES; i++)
+                {
+                        floppy_drive pDrive;
+
+                        pDrive = drives[i];
+
+                        /* remove timer for index pulse */
+                        if (pDrive.index_timer != null)
+                        {
+                                timer_remove(pDrive.index_timer);
+                                pDrive.index_timer = null;
+                        }
+                }
+
+        }
+
+        /* this callback is executed every 300 times a second to emulate the index
+        pulse. What is the length of the index pulse?? */
+        public static timer_callback floppy_drive_index_callback = new timer_callback() {
+            public void handler(int id) {
+                /* check it's in range */
+                    if ((id>=0) && (id<MAX_DRIVES))
+                    {
+                            floppy_drive pDrive;
+
+                            pDrive = drives[id];
+
+                            if (pDrive.index_pulse_callback != null)
+                                    pDrive.index_pulse_callback.handler(id);
+                    }
+            }
+        };
+        
+        /* set the callback for the index pulse */
+        void floppy_drive_set_index_pulse_callback(int id, timer_callback callback)
+        {
+                floppy_drive pDrive;
+
+                /* check it's in range */
+                if ((id<0) || (id>=MAX_DRIVES))
+                        return;
+
+                pDrive = drives[id];
+
+                pDrive.index_pulse_callback = callback;
+        }
+
+        /*************************************************************************/
+        /* IO_FLOPPY device functions */
+
+        /* return and set current status
+          use for setting:-
+          1) write protect/enable
+          2) drive present/missing
+        */
+
+        //public static int	floppy_status(int id, int new_status)
+        public static io_statusPtr floppy_status = new io_statusPtr(){
+     
+            public int handler(int id, int new_status){
+                System.out.println("floppy_status");
+                floppy_drive pDrive;
+
+                /* check it's in range */
+                if ((id<0) || (id>=MAX_DRIVES))
+                        return 0;
+
+                pDrive = drives[id];
+
+                /* return current status only? */
+                if (new_status!=-1)
+                {
+                        /* we don't set the flags directly.
+                        The flags are "cooked" when we do a floppy_drive_get_flag_state depending on
+                        if drive is connected etc. So if we wrote the flags back it would
+                        corrupt this information. Therefore we update the flags depending on new_status */
+
+                        floppy_drive_set_flag_state(id, FLOPPY_DRIVE_CONNECTED, (new_status & FLOPPY_DRIVE_CONNECTED));
+                        floppy_drive_set_flag_state(id, FLOPPY_DRIVE_DISK_WRITE_PROTECTED, (new_status & FLOPPY_DRIVE_DISK_WRITE_PROTECTED));
+                }
+
+                /* return current status */
+                return floppy_drive_get_flag_state(id,0x0ff);
+        }};
+                
+        
+
+        void floppy_drive_set_real_fdd_unit(int id, int unit_id)
+        {
+                if ((id<0) || (id>=MAX_DRIVES))
+                        return;
+
+                drives[id].fdd_unit = unit_id;
+        }
+
+        /* set interface for image interface */
+        public static void floppy_drive_set_disk_image_interface(int id, floppy_interface iface)
+        {
+                if ((id<0) || (id>=MAX_DRIVES))
+                        return;
+
+                if (iface==null)
+                        return;
+
+                //memcpy(&drives[id].interface, iface, sizeof(floppy_interface));
+                drives[id].f_interface = iface;
+        }
+
+        /* set flag state */
+        public static void floppy_drive_set_flag_state(int id, int flag, int state)
+        {
+                if ((id<0) || (id>=MAX_DRIVES))
+                        return;
+
+                drives[id].flags &= ~flag;
+
+                if (state != 0)
+                        drives[id].flags |= flag;
+        }
+
+        public static void floppy_drive_set_motor_state(int drive, int state)
+        {
+                int new_motor_state = 0;
+                int previous_state = 0;
+
+                /* previous state */
+                if (floppy_drive_get_flag_state(drive, FLOPPY_DRIVE_MOTOR_ON) != 0)
+                        previous_state = 1;
+
+                /* calc new state */
+
+                /* drive present? */
+                if (floppy_drive_get_flag_state(drive, FLOPPY_DRIVE_CONNECTED) != 0)
+                {
+                        /* disk inserted? */
+                        if (floppy_drive_get_flag_state(drive, FLOPPY_DRIVE_DISK_INSERTED) != 0)
+                        {
+                                /* drive present and disc inserted */
+
+                                /* state of motor is same as the programmed state */
+                                if (state != 0)
+                                {
+                                        new_motor_state = 1;
+                                }
+                        }
+                }
+
+                if ((new_motor_state^previous_state)!=0)
+                {
+                        /* if timer already setup remove it */
+                        if ((drive>=0) && (drive<MAX_DRIVES))
+                        {
+                                floppy_drive pDrive;
+
+                                pDrive = drives[drive];
+
+                                if (pDrive.index_timer!=null)
+                                {
+                                        timer_remove(pDrive.index_timer);
+                                        pDrive.index_timer = null;
+                                }
+
+                                if (new_motor_state != 0)
+                                {
+                                        /* off->on */
+                                        /* check it's in range */
+
+                                        /* setup timer to trigger at 300 times a second = 300rpm */
+                                        pDrive.index_timer = timer_pulse(TIME_IN_HZ(300), drive, floppy_drive_index_callback);
+                                }
+                                else
+                                {
+                                        /* on->off */
+                                }
+                        }
+                }
+
+                floppy_drive_set_flag_state(drive, FLOPPY_DRIVE_MOTOR_ON, new_motor_state);
+
+        }
+
+        /* for pc, drive is always ready, for amstrad,pcw,spectrum it is only ready under
+        a fixed set of circumstances */
+        /* use this to set ready state of drive */
+        public static void floppy_drive_set_ready_state(int drive, int state, int flag)
+        {
+                if (flag != 0)
+                {
+                        /* set ready only if drive is present, disk is in the drive,
+                        and disk motor is on - for Amstrad, Spectrum and PCW*/
+
+                        /* drive present? */
+                        if (floppy_drive_get_flag_state(drive, FLOPPY_DRIVE_CONNECTED) != 0)
+                        {
+                                /* disk inserted? */
+                                if (floppy_drive_get_flag_state(drive, FLOPPY_DRIVE_DISK_INSERTED) != 0)
+                                {
+                                        if (floppy_drive_get_flag_state(drive, FLOPPY_DRIVE_MOTOR_ON) != 0)
+                                        {
+                                                /* set state */
+                                                floppy_drive_set_flag_state(drive, FLOPPY_DRIVE_READY, state);
+                            return;
+                                        }
+                                }
+                        }
+                        floppy_drive_set_flag_state(drive, FLOPPY_DRIVE_READY, 0);
+                }
+                else
+                {
+                        /* force ready state - for PC driver */
+                        floppy_drive_set_flag_state(drive, FLOPPY_DRIVE_READY, state);
+                }
+
+        }
+
+
+        /* get flag state */
+        public static int	floppy_drive_get_flag_state(int id, int flag)
+        {
+                int drive_flags;
+                int flags;
+
+                flags = 0;
+
+                /* check it is within range */
+                if ((id<0) || (id>=MAX_DRIVES))
+                        return flags;
+
+                drive_flags = drives[id].flags;
+
+                /* these flags are independant of a real drive/disk image */
+            flags |= drive_flags & (FLOPPY_DRIVE_CONNECTED | FLOPPY_DRIVE_READY | FLOPPY_DRIVE_MOTOR_ON | FLOPPY_DRIVE_INDEX);
+
+                flags |= drive_flags & FLOPPY_DRIVE_DISK_INSERTED;
+
+                /* if disk image is read-only return write protected all the time */
+                if ((drive_flags & FLOPPY_DRIVE_DISK_IMAGE_READ_ONLY) != 0)
+                {
+                        flags |= FLOPPY_DRIVE_DISK_WRITE_PROTECTED;
+                }
+                else
+                {
+                        /* return real state of write protected flag */
+                        flags |= drive_flags & FLOPPY_DRIVE_DISK_WRITE_PROTECTED;
+                }
+
+                /* drive present not */
+                if ((drive_flags & FLOPPY_DRIVE_CONNECTED) == 0)
+                {
+                        /* adjust some flags if drive is not present */
+                        flags &= ~FLOPPY_DRIVE_HEAD_AT_TRACK_0;
+                        flags |= FLOPPY_DRIVE_DISK_WRITE_PROTECTED;
+                        flags &= ~FLOPPY_DRIVE_DISK_INSERTED;
+                }
+
+                flags &= flag;
+
+                return flags;
+        }
+
+
+        public static void	floppy_drive_set_geometry(int id, floppy_type type)
+        {
+                if ((id<0) || (id>=MAX_DRIVES))
+                        return;
+
                 switch (type)
-		{
-			/* single sided, 40 track drive e.g. Amstrad CPC internal 3" drive */
-			case FLOPPY_DRIVE_SS_40:
-			{                            
-				drives[drive].max_track = 42;
-				drives[drive].num_sides = 1;
-			}
-			break;
-	
-			case FLOPPY_DRIVE_DS_80:
-			{
-				drives[drive].max_track = 83;
-				drives[drive].num_sides = 2;
-			}
-			break;
-		}
-	
-		drives[drive].id_index = 0;
-		drives[drive].current_track = 0;
-		drives[drive].flags |= FLOPPY_DRIVE_HEAD_AT_TRACK_0;
-	
-	}
-	
-	
-	public static void floppy_drive_seek(int drive, int signed_tracks)
-	{
-		//System.out.println("floppy_drive_seek");
-                floppy_drive pDrive = drives[drive];
-	
-		/* update position */
-		pDrive.current_track+=signed_tracks;
-	
-		if (pDrive.current_track<0)
-		{
-			pDrive.current_track = 0;
-		}
-		else
-		if (pDrive.current_track>=pDrive.max_track)
-		{
-			pDrive.current_track = pDrive.max_track-1;
-		}
-	
-		/* set track 0 flag */
-		pDrive.flags &= ~FLOPPY_DRIVE_HEAD_AT_TRACK_0;
-	
-		if (pDrive.current_track==0)
-		{
-			pDrive.flags |= FLOPPY_DRIVE_HEAD_AT_TRACK_0;
-		}
-	
-		if ((floppy_drive_get_flag_state(drive, FLOPPY_DRIVE_PRESENT)) != 0)
-		{
-			//if ((drives[drive].f_interface.seek_callback)
-                        /*System.out.println(drives);
-                        System.out.println(drives[drive]);
-                        System.out.println("Interface: ");
-                        System.out.println(drives[drive].f_interface);
-                        System.out.println(drive);
-                        System.out.println(pDrive);
-                        System.out.println(pDrive.current_track);*/
-                        
-                        drives[drive].f_interface.seek_callback(drive, pDrive.current_track);
-		}
-	}
-	
-	/* this is not accurate. But it will do for now */
-	public static void floppy_drive_get_next_id(int drive, int side, chrn_id id)
-	{
-		System.out.println("floppy_drive_get_next_id");
+                {
+                        /* single sided, 40 track drive e.g. Amstrad CPC internal 3" drive */
+                        case FLOPPY_DRIVE_SS_40:
+                        {
+                                drives[id].max_track = 42;
+                                drives[id].num_sides = 1;
+                        }
+                        break;
+
+                        case FLOPPY_DRIVE_DS_80:
+                        {
+                                drives[id].max_track = 83;
+                                drives[id].num_sides = 2;
+                        }
+                        break;
+                }
+        }
+
+        public static void    floppy_drive_seek(int id, int signed_tracks)
+        {
+                floppy_drive pDrive;
+
+                if ((id<0) || (id>=MAX_DRIVES))
+                        return;
+
+                pDrive = drives[id];
+
+                /* update position */
+                pDrive.current_track+=signed_tracks;
+
+                if (pDrive.current_track<0)
+                {
+                        pDrive.current_track = 0;
+                }
+                else
+                if (pDrive.current_track>=pDrive.max_track)
+                {
+                        pDrive.current_track = pDrive.max_track-1;
+                }
+
+                /* set track 0 flag */
+                pDrive.flags &= ~FLOPPY_DRIVE_HEAD_AT_TRACK_0;
+
+                if (pDrive.current_track==0)
+                {
+                        pDrive.flags |= FLOPPY_DRIVE_HEAD_AT_TRACK_0;
+                }
+
+                /* inform disk image of step operation so it can cache information */
+                //if (pDrive.interface.seek_callback)
+                        pDrive.f_interface.seek_callback(id, pDrive.current_track);
+
+        }
+
+
+        /* this is not accurate. But it will do for now */
+        public static int	floppy_drive_get_next_id(int drive, int side, chrn_id id)
+        {
                 int spt;
-	
-		/* get sectors per track */
-		spt = 0;
-		//if ((drives[drive].f_interface.get_sectors_per_track) != 0)
-			spt = drives[drive].f_interface.get_sectors_per_track(drive, side);
-	
-		/* set index */
-		if ((drives[drive].id_index==(spt-1)) || (spt==0))
-		{
-			floppy_drive_set_flag_state(drive, FLOPPY_DRIVE_INDEX, 1);
-		}
-		else
-		{
-			floppy_drive_set_flag_state(drive, FLOPPY_DRIVE_INDEX, 0);
-		}
-	
-		/* get id */
-		//if (drives[drive].interface.get_id_callback)
-		//{
-			drives[drive].f_interface.get_id_callback(drive, id, drives[drive].id_index, side);
-		//}
-	
-		id.data_id = drives[drive].id_index;
-	
-		drives[drive].id_index++;
-		if (spt!=0)
-		{
-			drives[drive].id_index %= spt;
-		}
-		else
-		{
-			drives[drive].id_index = 0;
-		}
-	
-	}
-	
-	public static int floppy_drive_get_current_track(int drive)
-	{
-		System.out.println("floppy_drive_get_current_track");
+
+                /* get sectors per track */
+                spt = 0;
+                //if (drives[drive].interface.get_sectors_per_track)
+                        spt = drives[drive].f_interface.get_sectors_per_track(drive, side);
+
+                /* set index */
+                if ((drives[drive].id_index==(spt-1)) || (spt==0))
+                {
+                        floppy_drive_set_flag_state(drive, FLOPPY_DRIVE_INDEX, 1);
+                }
+                else
+                {
+                        floppy_drive_set_flag_state(drive, FLOPPY_DRIVE_INDEX, 0);
+                }
+
+                /* get id */
+                if (spt!=0)
+                {
+                        //if (drives[drive].f_interface.get_id_callback)
+                        //{
+                                drives[drive].f_interface.get_id_callback(drive, id, drives[drive].id_index, side);
+                        //}
+                }
+
+                drives[drive].id_index++;
+                if (spt!=0)
+                {
+                        drives[drive].id_index %= spt;
+                }
+                else
+                {
+                        drives[drive].id_index = 0;
+                }
+
+                if (spt==0)
+                        return 0;
+
+                return 1;
+        }
+
+        public static int	floppy_drive_get_current_track(int drive)
+        {
                 return drives[drive].current_track;
-	}
-	
-	public static void floppy_drive_format_sector(int drive, int side, int sector_index,int c,int h, int r, int n, int filler)
-	{
-                System.out.println("floppy_drive_format_sector");
-                //if (drives[drive].interface.format_sector)
-                    drives[drive].f_interface.format_sector(drive, side, sector_index,c, h, r, n, filler);
-	}
-	
-	public static void floppy_drive_read_sector_data(int drive, int side, int index1, char[] pBuffer, int length)
-	{
-                System.out.println("floppy_drive_read_sector_data");
-		//if (drives[drive].f_interface.read_sector_data_into_buffer)
-	                drives[drive].f_interface.read_sector_data_into_buffer(drive, side, index1, pBuffer,length);
-		
-	}
-	
-	public static void floppy_drive_write_sector_data(int drive, int side, int index1, char[] pBuffer,int length)
-	{
-                System.out.println("floppy_drive_write_sector_data");
-		//if (drives[drive].f_interface.write_sector_data_from_buffer)
-	                drives[drive].f_interface.write_sector_data_from_buffer(drive, side, index1, pBuffer,length);
-		
-	}
+        }
+
+        void	floppy_drive_read_track_data_info_buffer(int drive, int side, char[] ptr, int length )
+        {
+                //if (drives[drive].f_interface.read_track_data_info_buffer)
+                        drives[drive].f_interface.read_track_data_info_buffer(drive, side, ptr, length);
+        }
+
+        public static void	floppy_drive_format_sector(int drive, int side, int sector_index,int c,int h, int r, int n, int filler)
+        {
+                //if (drives[drive].f_interface.format_sector)
+                        drives[drive].f_interface.format_sector(drive, side, sector_index,c, h, r, n, filler);
+        }
+
+        public static void    floppy_drive_read_sector_data(int drive, int side, int index1, char[] pBuffer, int length)
+        {
+                //if (drives[drive].interface.read_sector_data_into_buffer)
+                        drives[drive].f_interface.read_sector_data_into_buffer(drive, side, index1, pBuffer,length);
+        }
+
+        public static void    floppy_drive_write_sector_data(int drive, int side, int index1, char[] pBuffer,int length, int ddam)
+        {
+                //if (drives[drive].interface.write_sector_data_from_buffer)
+                        drives[drive].f_interface.write_sector_data_from_buffer(drive, side, index1, pBuffer,length,ddam);
+        }
+
+        int floppy_drive_get_datarate_in_us(DENSITY density)
+        {
+                int usecs;
+                /* 64 for single density */
+                switch (density)
+                {
+                        case DEN_FM_LO:
+                        {
+                                usecs = 128;
+                        }
+                        break;
+
+                        case DEN_FM_HI:
+                        {
+                                usecs = 64;
+                        }
+                        break;
+
+                        default:
+                        case DEN_MFM_LO:
+                        {
+                                usecs = 32;
+                        }
+                        break;
+
+                        case DEN_MFM_HI:
+                        {
+                                usecs = 16;
+                        }
+                        break;
+                }
+
+                return usecs;
+        }
 	
 }
