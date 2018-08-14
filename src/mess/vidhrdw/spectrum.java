@@ -30,6 +30,8 @@ import static WIP.mame.drawgfx.*;
 import static WIP.mame.mame.*;
 import static mess.includes.spectrumH.*;
 import static mess.systems.spectrum.*;
+import static mess.systems.spec128.*;
+import static mess.systems.timex.*;
 import static old.mame.drawgfxH.*;
 
 import static mess.eventlst.*;
