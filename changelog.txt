@@ -1,3 +1,7 @@
+14/08/2018
+==========
+-ZX Spectrum drivers splitted
+
 10/08/2018
 ==========
 -Intial wave sound support for spectrum cassette (not yet working )
