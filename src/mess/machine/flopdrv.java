@@ -215,6 +215,8 @@ public class flopdrv
 
                 if (state != 0)
                         drives[id].flags |= flag;
+                
+                floppy_drive_seek(0, 0);
         }
 
         public static void floppy_drive_set_motor_state(int drive, int state)

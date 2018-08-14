@@ -50,6 +50,9 @@ import consoleflex.funcPtr.*;
 import cpu.z80.z80;
 
 import static mess.systems.spectrum.*;
+import static mess.systems.timex.*;
+import static mess.systems.spec128.*;
+import static mess.systems.specpls3.*;
 import static mess.includes.spectrumH.*;
 import static old.arcadeflex.osdepend.logerror;
 import static old.mame.cpuintrfH.*;

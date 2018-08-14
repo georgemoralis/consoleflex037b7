@@ -627,7 +627,7 @@ public class nec765
                         fdc.nec765_flags |= NEC765_INT;
                 }
 
-                //if (nec765_iface.interrupt)
+                if (nec765_iface != null)
                         nec765_iface.interrupt((fdc.nec765_flags & NEC765_INT));
         }
 
@@ -641,7 +641,7 @@ public class nec765
                         fdc.nec765_flags |= NEC765_DMA_DRQ;
                 }
 
-                //if (nec765_iface.dma_drq)
+                if (nec765_iface != null)
                         nec765_iface.dma_drq((fdc.nec765_flags & NEC765_DMA_DRQ), (fdc.FDC_main & (1<<6)));
         }
 
@@ -723,7 +723,7 @@ public class nec765
         //READ_HANDLER(nec765_status_r)
         public static ReadHandlerPtr nec765_status_r = new ReadHandlerPtr() {
             public int handler(int offset) {
-                System.out.println("nnec765_data_rec765_status_r "+fdc.FDC_main);
+                System.out.println("nec765_status_r "+fdc.FDC_main);
                 return fdc.FDC_main;
         }};
 

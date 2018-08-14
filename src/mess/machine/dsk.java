@@ -195,10 +195,17 @@ public class dsk {
                     {
                         dsk_disk_image_init(thedrive); /* initialise dsk */
                         floppy_drive_set_disk_image_interface(id,dsk_floppy_interface);
+                        floppy_drive_set_flag_state(id, FLOPPY_DRIVE_READY, 1);
+			
+                        
+                                
                         if(dsk_floppy_verify(thedrive.data) == IMAGE_VERIFY_PASS)
                             return 0;
                         else
                             return 1;
+                        
+                        
+				
                     }
             }
 
