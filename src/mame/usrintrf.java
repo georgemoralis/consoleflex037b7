@@ -717,7 +717,7 @@ public class usrintrf {
         displaytext(bitmap, dt, 0, 0);
 
         if (selected_long != 0) {
-            System.out.println("TODO selected_long" + subitems[selected]);
+            //System.out.println("TODO selected_long" + subitems[selected]);
             /*TODO*///		int long_dx;
 /*TODO*///		int long_dy;
 /*TODO*///		int long_x;
