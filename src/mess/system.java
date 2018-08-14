@@ -7,7 +7,14 @@ import static mess.messH.*;
 import static mess.systems.coleco.*;
 import static mess.systems.sms.*;
 import static mess.systems.nes.*;
+
 import static mess.systems.spectrum.*;
+import static mess.systems.spec128.*;
+import static mess.systems.specpls3.*;
+import static mess.systems.pentagon.*;
+import static mess.systems.scorpion.*;
+import static mess.systems.timex.*;
+
 import static mess.systems.amstrad.*;
 
 public class system {
