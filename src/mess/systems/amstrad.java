@@ -69,6 +69,11 @@ import static mess.machine.amstrad.*;
 import static mess.machine._8255ppiH.*;
 import static mess.machine._8255ppi.*;
 
+import static cpu.z80.z80H.*;
+import static cpu.z80.z80.*;
+
+import static mess.mess.*;
+
 public class amstrad
 {
 	/* for 8255 ppi */
@@ -76,6 +81,12 @@ public class amstrad
 	/* CRTC display */
 	/* for floppy disc controller */
 	/* for CPCEMU style disk images */
+    
+        /* the hardware allows selection of 256 ROMs. Rom 0 is usually BASIC and Rom 7 is AMSDOS */
+        /* With the CPC hardware, if a expansion ROM is not connected, BASIC rom will be selected instead */
+        public static UBytePtr[] Amstrad_ROM_Table=new UBytePtr[256];
+        
+        public static int previous_printer_data_byte;
 	
 	/*TODO*////#ifdef AMSTRAD_VIDEO_EVENT_LIST
 	/* for event list */
@@ -109,40 +120,39 @@ public class amstrad
 	
 	public static void amstrad_update_video()
 	{
-	   int current_time;
-		int time_delta;
-	
-		/* current cycles */
-		current_time = cpu_getcurrentcycles() + amstrad_cycles_at_frame_end;
-		/* time between last write and this write */
-		time_delta = current_time - amstrad_cycles_last_write + time_delta_fraction;
-		/* The timing used to be spot on, but now it can give odd cycles, hopefully
-		this will compensate for that! */
-		time_delta_fraction = time_delta & 0x03;
-		time_delta = time_delta>>2;
-	
-		   /* set new previous write */
-			amstrad_cycles_last_write = current_time;
-	
-		if (time_delta!=0)
-		{
-			amstrad_vh_execute_crtc_cycles(time_delta);
-		}
+            int current_time;
+            int time_delta;
+
+            /* current cycles */
+            current_time = TIME_TO_CYCLES(0,cpu_getscanline()*cpu_getscanlineperiod()) + amstrad_cycles_at_frame_end;
+            /* time between last write and this write */
+            time_delta = current_time - amstrad_cycles_last_write + time_delta_fraction;
+            /* The timing used to be spot on, but now it can give odd cycles, hopefully
+            this will compensate for that! */
+            time_delta_fraction = time_delta & 0x03;
+            time_delta = time_delta>>2;
+
+            /* set new previous write */
+            amstrad_cycles_last_write = current_time;
+
+            if (time_delta!=0)
+            {
+                    amstrad_vh_execute_crtc_cycles(time_delta);
+            }
 	}
 	
 	public static VhEofCallbackPtr amstrad_eof_callback = new VhEofCallbackPtr() { 
             public void handler() 
             {
 		if ((readinputport(11) & 0x02)!=0)
-		{
-				multiface_stop();
-		}
-	
-	//#ifndef AMSTRAD_VIDEO_EVENT_LIST
-		amstrad_update_video();
-		// update cycle count
-		amstrad_cycles_at_frame_end += cpu_getcurrentcycles();
-	//#endif
+	{
+			multiface_stop();
+	}
+        /*TODO*/////#ifndef AMSTRAD_VIDEO_EVENT_LIST
+                amstrad_update_video();
+                // update cycle count
+                amstrad_cycles_at_frame_end += TIME_TO_CYCLES(0,cpu_getscanline()*cpu_getscanlineperiod());
+        /*TODO*/////#endif
 	}};
 	
 	/* psg access operation:
@@ -164,32 +174,32 @@ public class amstrad
 	static void update_psg()
 	{
 		switch (amstrad_psg_operation)
-		{
-			/* inactive */
-		default:
-			break;
-	
-			/* psg read data register */
-		case 1:
-			{
-				ppi_port_inputs[0] = AY8910_read_port_0_r.handler(0);
-			}
-			break;
-	
-			/* psg write data */
-		case 2:
-			{
-				AY8910_write_port_0_w.handler(0, ppi_port_outputs[0]);
-			}
-			break;
-	
-			/* write index register */
-		case 3:
-			{
-				AY8910_control_port_0_w.handler(0, ppi_port_outputs[0]);
-			}
-			break;
-		}
+                {
+                        /* inactive */
+                default:
+                        break;
+
+                        /* psg read data register */
+                case 1:
+                        {
+                                ppi_port_inputs[0] = AY8910_read_port_0_r.handler(0);
+                        }
+                        break;
+
+                        /* psg write data */
+                case 2:
+                        {
+                                AY8910_write_port_0_w.handler(0, ppi_port_outputs[0]);
+                        }
+                        break;
+
+                        /* write index register */
+                case 3:
+                        {
+                                AY8910_control_port_0_w.handler(0, ppi_port_outputs[0]);
+                        }
+                        break;
+                }
 	}
 	
 	
@@ -216,26 +226,35 @@ public class amstrad
 	//READ_HANDLER(amstrad_ppi_portb_r)
 	public static PortReadHandlerPtr amstrad_ppi_portb_r = new PortReadHandlerPtr() {
             public int handler(int offset) {
-		int cassette_data;
+		int data;
 	
 	//#ifndef AMSTRAD_VIDEO_EVENT_LIST
 			amstrad_update_video();
 	//#endif
 	
-		cassette_data = 0x0;
+		data = 0x0;
 	
-		/*TODO*/////if (device_input(IO_CASSETTE,0) > 255)
-		/*TODO*/////	cassette_data |=0x080;
+		if (device_input(IO_CASSETTE,0) > 255)
+			data |=0x080;
 	
-			return ((ppi_port_inputs[1] & 0x07e) | amstrad_vsync | cassette_data);
+		/* printer busy */
+                if (device_status (IO_PRINTER, 0, 0)==0 )
+                        data |=0x040;
+
+                /* vsync state from CRTC */
+                data |= amstrad_vsync;
+
+                /* manufacturer name and 50hz/60hz state, defined by links on PCB */
+                data |= ppi_port_inputs[1] & 0x01e;
+
+                return data;
 	}};
 	
 	//WRITE_HANDLER(amstrad_ppi_porta_w)
 	public static PortWriteHandlerPtr amstrad_ppi_porta_w = new PortWriteHandlerPtr() {
             public void handler(int offset, int data) {
-			ppi_port_outputs[0] = data;
-	
-		update_psg();
+		ppi_port_outputs[0] = data;
+                update_psg();
 	}};
 	
 	/*
@@ -251,43 +270,43 @@ public class amstrad
 	//WRITE_HANDLER(amstrad_ppi_portc_w)
 	public static PortWriteHandlerPtr amstrad_ppi_portc_w = new PortWriteHandlerPtr() {
             public void handler(int offset, int data) {
-			int changed_data;
-	
-			previous_ppi_portc_w = ppi_port_outputs[2];
-			ppi_port_outputs[2] = data;
-	
-			changed_data = previous_ppi_portc_w^data;
-	
-			/* cassette motor changed state */
-			if ((changed_data & (1<<4))!=0)
-			{
-					/* cassette motor control */
-					/*TODO*/////device_status(IO_CASSETTE, 0, ((data>>4) & 0x01));
-			}
-	
-			/* cassette write data changed state */
-			if ((changed_data & (1<<5))!=0)
-			{
-					/*TODO*/////device_output(IO_CASSETTE, 0, (data & (1<<5)) ? -32768 : 32767);
-			}
-	
-		/* psg operation */
-			amstrad_psg_operation = (data >> 6) & 0x03;
-		/* keyboard line */
-			amstrad_keyboard_line = (data & 0x0f);
-	
-		update_psg();
+		int changed_data;
+
+                previous_ppi_portc_w = ppi_port_outputs[2];
+                ppi_port_outputs[2] = data;
+
+                changed_data = previous_ppi_portc_w^data;
+
+                /* cassette motor changed state */
+                if ((changed_data & (1<<4))!=0)
+                {
+                                /* cassette motor control */
+                                device_status(IO_CASSETTE, 0, ((data>>4) & 0x01));
+                }
+
+                /* cassette write data changed state */
+                if ((changed_data & (1<<5))!=0)
+                {
+                                /*TODO*/////device_output(IO_CASSETTE, 0, (data & (1<<5)) ? -32768 : 32767);
+                }
+
+                /* psg operation */
+                amstrad_psg_operation = (data >> 6) & 0x03;
+                /* keyboard line */
+                amstrad_keyboard_line = (data & 0x0f);
+
+                update_psg();
 	}};
 	
 	static ppi8255_interface amstrad_ppi8255_interface =
             new ppi8255_interface(
 		1,
 		amstrad_ppi_porta_r,
-		amstrad_ppi_portb_r,
-		null,
-		amstrad_ppi_porta_w,
-		null,
-		amstrad_ppi_portc_w
+                amstrad_ppi_portb_r,
+                null,
+                amstrad_ppi_porta_w,
+                null,
+                amstrad_ppi_portc_w
             );
 	
 	/* Amstrad NEC765 interface doesn't use interrupts or DMA! */
@@ -415,7 +434,7 @@ public class amstrad
 			cpu_setbank(16, new UBytePtr(AmstradCPC_RamBanks[3], 0x02000));
 	
 			/* multiface hardware enabled? */
-					if (multiface_hardware_enabled() != 0)
+                        if (multiface_hardware_enabled() != 0)
 			{
 				multiface_rethink_memory();
 			}
@@ -549,19 +568,11 @@ public class amstrad
 	way */
 	public static void AmstradCPC_SetUpperRom(int Data)
 	{
-		/* low byte of port holds the rom index */
-		if ((Data & 0x0ff) == 7)
-		{
-			/* select dos rom */
-			Amstrad_UpperRom = new UBytePtr(memory_region(REGION_CPU1), 0x018000);
-		}
-		else
-		{
-			/* select basic rom */
-			Amstrad_UpperRom = new UBytePtr(memory_region(REGION_CPU1), 0x014000);
-		}
-	
-		Amstrad_RethinkMemory();
+            Amstrad_UpperRom = Amstrad_ROM_Table[Data & 0x0ff];
+
+            //logerror("upper rom %02x\n",Data);
+
+            Amstrad_RethinkMemory();
 	}
 	
 	/*
@@ -585,65 +596,65 @@ public class amstrad
 		int data = 0x0ff;
 	
 		if ((offset & 0x04000) == 0)
-		{
-			/* CRTC */
-			int Index;
-	
-			Index = (offset & 0x0300) >> 8;
-	
-			if (Index == 3)
-			{
-	//#ifndef AMSTRAD_VIDEO_EVENT_LIST
-				amstrad_update_video();
-	//#endif
-				/* CRTC Read register */
-				data =	crtc6845_register_r(0);
-			}
-		}
-	
-		if ((offset & 0x0800) == 0)
-		{
-			/* 8255 PPI */
-	
-			int Index;
-	
-			Index = (offset & 0x0300) >> 8;
-	
-			data = ppi8255_r(0, Index);
-		}
-	
-		if ((offset & 0x0400) == 0)
-		{
-			if ((offset & 0x080) == 0)
-			{
-				int Index;
-	
-				Index = ((offset & 0x0100) >> (8 - 1)) | (offset & 0x01);
-	
-				switch (Index)
-				{
-				case 2:
-					{
-						/* read status */
-						data = nec765_status_r.handler(0);
-					}
-					break;
-	
-				case 3:
-					{
-						/* read data register */
-						data = nec765_data_r.handler(0);
-					}
-					break;
-	
-				default:
-					break;
-				}
-			}
-		}
-	
-	
-		return data;
+                {
+                        /* CRTC */
+                        int Index;
+
+                        Index = (offset & 0x0300) >> 8;
+
+                        if (Index == 3)
+                        {
+        //#ifndef AMSTRAD_VIDEO_EVENT_LIST
+                                amstrad_update_video();
+        //#endif
+                                /* CRTC Read register */
+                                data =	crtc6845_register_r(0);
+                        }
+                }
+
+                if ((offset & 0x0800) == 0)
+                {
+                        /* 8255 PPI */
+
+                        int Index;
+
+                        Index = (offset & 0x0300) >> 8;
+
+                        data = ppi8255_r(0, Index);
+                }
+
+                if ((offset & 0x0400) == 0)
+                {
+                        if ((offset & 0x080) == 0)
+                        {
+                                int Index;
+
+                                Index = ((offset & 0x0100) >> (8 - 1)) | (offset & 0x01);
+
+                                switch (Index)
+                                {
+                                case 2:
+                                        {
+                                                /* read status */
+                                                data = nec765_status_r.handler(0);
+                                        }
+                                        break;
+
+                                case 3:
+                                        {
+                                                /* read data register */
+                                                data = nec765_data_r.handler(0);
+                                        }
+                                        break;
+
+                                default:
+                                        break;
+                                }
+                        }
+                }
+
+
+                return data;
 	
 	}};
 	
@@ -653,129 +664,146 @@ public class amstrad
 	//WRITE_HANDLER ( AmstradCPC_WritePortHandler )
 	public static WriteHandlerPtr AmstradCPC_WritePortHandler = new WriteHandlerPtr() {
             public void handler(int offset, int data) {
-                /*#ifdef AMSTRAD_DEBUG
-                        printf("Write port Offs: %04x Data: %04x\r\n", offset, data);
-                #endif*/
-		if ((offset & 0x0c000) == 0x04000)
-		{
-			/* GA */
-			AmstradCPC_GA_Write(data);
-		}
-	
-		if ((offset & 0x04000) == 0)
-		{
-			/* CRTC */
-			int Index;
-	
-			Index = (offset & 0x0300) >> 8;
-	
-			switch (Index)
-			{
-			case 0:
-				{
-	//#ifdef AMSTRAD_VIDEO_EVENT_LIST
-					//EventList_AddItemOffset((EVENT_LIST_CODE_CRTC_INDEX_WRITE<<6), data, cpu_getcurrentcycles());
-	//#endif
-	
-					///* register select */
-					crtc6845_address_w(0,data);
-				}
-				break;
-	
-			case 1:
-				{
-	//#if 0
-									int current_time;
-									int time_delta;
-									int cur_time;
-	
-									/* current time */
-									current_time = cpu_getcurrentcycles();
-									cur_time = current_time;
-	
-									if (previous_crtc_write_time>current_time)
-									{
-										cur_time += cpu_getfperiod();
-									}
-	
-									/* time between last write and this write */
-									time_delta = (cur_time - previous_crtc_write_time)>>2;
-	
-									/* set new previous write */
-									previous_crtc_write_time = current_time;
-	
-	//#ifdef AMSTRAD_VIDEO_EVENT_LIST
-					/* crtc register write */
-					{
-	
-						//EventList_AddItemOffset((EVENT_LIST_CODE_CRTC_WRITE<<6), data, cpu_getcurrentcycles());
-					}
-	//#endif
-									/* recalc time */
-									crtc6845_recalc(0, time_delta);
-	
-	//#else
-									  amstrad_update_video();
-	//#endif
-	
-								  /* write data */
-								  crtc6845_register_w(0,data);
-	
-				}
-				break;
-	
-			default:
-				break;
-			}
-		}
-	
-		if ((offset & 0x02000) == 0)
-		{
-			AmstradCPC_SetUpperRom(data);
-		}
-	
-		if ((offset & 0x0800) == 0)
-		{
-			int Index;
-	
-			Index = (offset & 0x0300) >> 8;
-	
-			ppi8255_w(0, Index, data);
-		}
-	
-		if ((offset & 0x0400) == 0)
-		{
-			if ((offset & 0x080) == 0)
-			{
-				int Index;
-	
-				Index = ((offset & 0x0100) >> (8 - 1)) | (offset & 0x01);
-	
-				switch (Index)
-				{
-				case 0:
-					{
-						/* fdc motor on */
-						floppy_drive_set_motor_state(0,data & 0x01);
-						floppy_drive_set_motor_state(1,data & 0x01);
-						floppy_drive_set_ready_state(0,1,1);
-						floppy_drive_set_ready_state(1,1,1);
-					}
-					break;
-	
-				case 3:
-					{
-						nec765_data_w.handler(0,data);
-					}
-					break;
-	
-				default:
-					break;
-				}
-			}
-		}
-	
-		multiface_io_write.handler(offset,data);
+                if ((offset & 0x0c000) == 0x04000)
+                {
+                        /* GA */
+                        AmstradCPC_GA_Write(data);
+                }
+
+                if ((offset & 0x04000) == 0)
+                {
+                        /* CRTC */
+                        int Index;
+
+                        Index = (offset & 0x0300) >> 8;
+
+                        switch (Index)
+                        {
+                        case 0:
+                                {
+        //#ifdef AMSTRAD_VIDEO_EVENT_LIST
+        //                                EventList_AddItemOffset((EVENT_LIST_CODE_CRTC_INDEX_WRITE<<6), data, TIME_TO_CYCLES(0,cpu_getscanline()*cpu_getscanlineperiod()));
+        //#endif
+
+                                        ///* register select */
+                                        crtc6845_address_w(0,data);
+                                }
+                                break;
+
+                        case 1:
+                                {
+        //#if 0
+                                        int current_time;
+                                        int time_delta;
+                                        int cur_time;
+
+                                        /* current time */
+                                        current_time = TIME_TO_CYCLES(0,cpu_getscanline()*cpu_getscanlineperiod());
+                                        cur_time = current_time;
+
+                                        if (previous_crtc_write_time>current_time)
+                                        {
+                                            cur_time += cpu_getfperiod();
+                                        }
+
+                                        /* time between last write and this write */
+                                        time_delta = (cur_time - previous_crtc_write_time)>>2;
+
+                                        /* set new previous write */
+                                        previous_crtc_write_time = current_time;
+
+        //#ifdef AMSTRAD_VIDEO_EVENT_LIST
+                                        /* crtc register write */
+        //                                {
+
+        //                                        EventList_AddItemOffset((EVENT_LIST_CODE_CRTC_WRITE<<6), data, TIME_TO_CYCLES(0,cpu_getscanline()*cpu_getscanlineperiod()));
+        //                                }
+        //#endif
+                                        /* recalc time */
+                                        crtc6845_recalc(0, time_delta);
+
+        //#else
+                                        amstrad_update_video();
+        //#endif
+
+                                        /* write data */
+                                        crtc6845_register_w(0,data);
+
+                                }
+                                break;
+
+                        default:
+                                break;
+                        }
+                }
+
+
+                if ((offset & 0x01000)==0)
+                {
+                        /* on CPC, write to printer through LS chip */
+                        /* the amstrad is crippled with a 7-bit port :( */
+                        /* bit 7 of the data is the printer /strobe */
+
+                        /* strobe state changed? */
+                        if (((previous_printer_data_byte^data) & 0x080)!=0)
+                        {
+                                /* check for only one transition */
+                                if ((data & 0x080)==0)
+                                {
+                                        /* output data to printer */
+                                        /*TODO*/////device_output (IO_PRINTER, 0, data & 0x07f);
+                                }
+                        }
+                        previous_printer_data_byte = data;
+                }
+
+                if ((offset & 0x02000) == 0)
+                {
+                        AmstradCPC_SetUpperRom(data);
+                }
+
+                if ((offset & 0x0800) == 0)
+                {
+                        int Index;
+
+                        Index = (offset & 0x0300) >> 8;
+
+                        ppi8255_w(0, Index, data);
+                }
+
+                if ((offset & 0x0400) == 0)
+                {
+                        if ((offset & 0x080) == 0)
+                        {
+                                int Index;
+
+                                Index = ((offset & 0x0100) >> (8 - 1)) | (offset & 0x01);
+
+                                switch (Index)
+                                {
+                                case 0:
+                                        {
+                                                /* fdc motor on */
+                                                floppy_drive_set_motor_state(0,data & 0x01);
+                                                floppy_drive_set_motor_state(1,data & 0x01);
+                                                floppy_drive_set_ready_state(0,1,1);
+                                                floppy_drive_set_ready_state(1,1,1);
+                                        }
+                                        break;
+
+                                case 3:
+                                        {
+                                                nec765_data_w.handler(0,data);
+                                        }
+                                        break;
+
+                                default:
+                                        break;
+                                }
+                        }
+                }
+
+                multiface_io_write.handler(offset,data);
 	}};
 	
 	/******************************************************************************************
@@ -849,7 +877,7 @@ public class amstrad
 		multiface_flags = MULTIFACE_VISIBLE;
 	
 		/* allocate ram */
-			multiface_ram = new UBytePtr(8192);
+		multiface_ram = new UBytePtr(8192);
 	}
 	
 	void	multiface_exit()
@@ -948,10 +976,10 @@ public class amstrad
 	public static WriteHandlerPtr multiface_io_write = new WriteHandlerPtr() {
             public void handler(int offset, int data) {
 		/* multiface hardware enabled? */
-			if (multiface_hardware_enabled()==0)
-			return;
+                if (multiface_hardware_enabled()==0)
+                return;
 	
-			/* visible? */
+		/* visible? */
 		if ((multiface_flags & MULTIFACE_VISIBLE) != 0)
 		{
 			if (offset==0x0fee8)
@@ -1157,12 +1185,18 @@ public class amstrad
 	}
 	
 	/* called when cpu acknowledges int */
-	int 	amstrad_cpu_acknowledge_int(int cpu)
-	{
-		amstrad_clear_top_bit_of_int_counter();
+        public static irqcallbacksPtr amstrad_cpu_acknowledge_int = new irqcallbacksPtr(){
+            
+            public int handler(int irqline) {
+                amstrad_clear_top_bit_of_int_counter();
+
+                cpu_set_irq_line(0,0, CLEAR_LINE);
+
+                return 0x0ff;
+            }
+            
+        };
 	
-		return 0x0ff;
-	}
 	
 	static int US_TO_CPU_CYCLES(int x) {
             return ((x)<<2);
@@ -2276,133 +2310,133 @@ public class amstrad
 		US_TO_CPU_CYCLES(1),	/* RST 38 */
 	};
 	
-	static int previous_op_table;
-	static int previous_cb_table;
-	static int previous_ed_table;
-	static int previous_xy_table;
-	static int previous_xycb_table;
-	static int previous_ex_table;
+	static int[] previous_op_table;
+	static int[] previous_cb_table;
+	static int[] previous_ed_table;
+	static int[] previous_xy_table;
+	static int[] previous_xycb_table;
+	static int[] previous_ex_table;
 	
 	
 	static void amstrad_common_init()
 	{
 	
-		/* set all colours to black */
-		int i;
-	
-		for (i = 0; i < 17; i++)
-		{
-			AmstradCPC_PenColours[i] = 0x014;
-		}
-	
-		ppi8255_init(amstrad_ppi8255_interface);
-	
-		AmstradCPC_GA_RomConfiguration = 0;
-		amstrad_interrupt_timer = null;
-			amstrad_interrupt_timer = timer_pulse(TIME_IN_USEC(64), 0,amstrad_interrupt_timer_callback);
-	
-		amstrad_52_divider = 0;
-		amstrad_52_divider_vsync_reset = 0;
-	
-		cpu_setbankhandler_r(1, MRA_BANK1);
-		cpu_setbankhandler_r(2, MRA_BANK2);
-		cpu_setbankhandler_r(3, MRA_BANK3);
-		cpu_setbankhandler_r(4, MRA_BANK4);
-		cpu_setbankhandler_r(5, MRA_BANK5);
-		cpu_setbankhandler_r(6, MRA_BANK6);
-		cpu_setbankhandler_r(7, MRA_BANK7);
-		cpu_setbankhandler_r(8, MRA_BANK8);
-	
-		cpu_setbankhandler_w(9, MWA_BANK9);
-		cpu_setbankhandler_w(10, MWA_BANK10);
-		cpu_setbankhandler_w(11, MWA_BANK11);
-		cpu_setbankhandler_w(12, MWA_BANK12);
-		cpu_setbankhandler_w(13, MWA_BANK13);
-		cpu_setbankhandler_w(14, MWA_BANK14);
-		cpu_setbankhandler_w(15, MWA_BANK15);
-		cpu_setbankhandler_w(16, MWA_BANK16);
-	
-		amstrad_cycles_at_frame_end = 0;
-		amstrad_cycles_last_write = 0;
-			time_delta_fraction = 0;
-	
-		cpu_0_irq_line_vector_w.handler(0, 0x0ff);
-	
-		nec765_init(amstrad_nec765_interface,NEC765A/*?*/);
-	
-		floppy_drives_init();
-		//floppy_drive_set_flag_state(0, FLOPPY_DRIVE_PRESENT, 1);
-		//floppy_drive_set_flag_state(1, FLOPPY_DRIVE_PRESENT, 1);
-		floppy_drive_set_geometry(0, floppy_type.FLOPPY_DRIVE_SS_40);
-		floppy_drive_set_geometry(1, floppy_type.FLOPPY_DRIVE_SS_40);
-	
-			/* Juergen is a cool dude! */
-			/*TODO*////cpu_set_irq_callback(0, amstrad_cpu_acknowledge_int);
-	
-			/* The opcode timing in the Amstrad is different to the opcode
-			timing in the core for the Z80 CPU.
-	
-			The Amstrad hardware issues a HALT for each memory fetch.
-			This has the effect of stretching the timing for Z80 opcodes,
-			so that they are all multiple of 4 T states long. All opcode
-			timings are a multiple of 1us in length. */
-	
-			/*TODO*////previous_op_table = cpu_get_cycle_table(Z80_TABLE_op);
-			/*TODO*////previous_cb_table = cpu_get_cycle_table(Z80_TABLE_cb);
-			/*TODO*////previous_ed_table = cpu_get_cycle_table(Z80_TABLE_ed);
-			/*TODO*////previous_xy_table = cpu_get_cycle_table(Z80_TABLE_xy);
-			/*TODO*////previous_xycb_table = cpu_get_cycle_table(Z80_TABLE_xycb);
-			/*TODO*////previous_ex_table = cpu_get_cycle_table(Z80_TABLE_ex);
-	
-			/* Using the cool code Juergen has provided, I will override
-			the timing tables with the values for the amstrad */
-			/*TODO*////cpu_set_cycle_tbl(Z80_TABLE_op, amstrad_cycle_table_op);
-			/*TODO*////cpu_set_cycle_tbl(Z80_TABLE_cb, amstrad_cycle_table_cb);
-			/*TODO*////cpu_set_cycle_tbl(Z80_TABLE_ed, amstrad_cycle_table_ed);
-			/*TODO*////cpu_set_cycle_tbl(Z80_TABLE_xy, amstrad_cycle_table_xy);
-			/*TODO*////cpu_set_cycle_tbl(Z80_TABLE_xycb, amstrad_cycle_table_xycb);
-			/*TODO*////cpu_set_cycle_tbl(Z80_TABLE_ex, amstrad_cycle_table_ex);
+            /* set all colours to black */
+            int i;
+
+            for (i = 0; i < 17; i++)
+            {
+                    AmstradCPC_PenColours[i] = 0x014;
+            }
+
+            ppi8255_init(amstrad_ppi8255_interface);
+
+            AmstradCPC_GA_RomConfiguration = 0;
+            amstrad_interrupt_timer = null;
+                    amstrad_interrupt_timer = timer_pulse(TIME_IN_USEC(64), 0,amstrad_interrupt_timer_callback);
+
+            amstrad_52_divider = 0;
+            amstrad_52_divider_vsync_reset = 0;
+
+            cpu_setbankhandler_r(1, MRA_BANK1);
+            cpu_setbankhandler_r(2, MRA_BANK2);
+            cpu_setbankhandler_r(3, MRA_BANK3);
+            cpu_setbankhandler_r(4, MRA_BANK4);
+            cpu_setbankhandler_r(5, MRA_BANK5);
+            cpu_setbankhandler_r(6, MRA_BANK6);
+            cpu_setbankhandler_r(7, MRA_BANK7);
+            cpu_setbankhandler_r(8, MRA_BANK8);
+
+            cpu_setbankhandler_w(9, MWA_BANK9);
+            cpu_setbankhandler_w(10,MWA_BANK10);
+            cpu_setbankhandler_w(11,MWA_BANK11);
+            cpu_setbankhandler_w(12,MWA_BANK12);
+            cpu_setbankhandler_w(13,MWA_BANK13);
+            cpu_setbankhandler_w(14,MWA_BANK14);
+            cpu_setbankhandler_w(15,MWA_BANK15);
+            cpu_setbankhandler_w(16,MWA_BANK16);
+
+            amstrad_cycles_at_frame_end = 0;
+            amstrad_cycles_last_write = 0;
+            time_delta_fraction = 0;
+
+            cpu_irq_line_vector_w(0, 0,0x0ff);
+
+            nec765_init(amstrad_nec765_interface,NEC765A);
+
+            floppy_drive_set_geometry(0, floppy_type.FLOPPY_DRIVE_SS_40);
+            floppy_drive_set_geometry(1, floppy_type.FLOPPY_DRIVE_SS_40);
+
+            /* Juergen is a cool dude! */
+            cpu_set_irq_callback(0, amstrad_cpu_acknowledge_int);
+
+            /* The opcode timing in the Amstrad is different to the opcode
+            timing in the core for the Z80 CPU.
+
+            The Amstrad hardware issues a HALT for each memory fetch.
+            This has the effect of stretching the timing for Z80 opcodes,
+            so that they are all multiple of 4 T states long. All opcode
+            timings are a multiple of 1us in length. */
+            
+            previous_op_table = cpu_get_cycle_table(Z80_TABLE_op);
+            previous_cb_table = cpu_get_cycle_table(Z80_TABLE_cb);
+            previous_ed_table = cpu_get_cycle_table(Z80_TABLE_ed);
+            previous_xy_table = cpu_get_cycle_table(Z80_TABLE_xy);
+            previous_xycb_table = cpu_get_cycle_table(Z80_TABLE_xycb);
+            previous_ex_table = cpu_get_cycle_table(Z80_TABLE_ex);
+
+            /* Using the cool code Juergen has provided, I will override
+            the timing tables with the values for the amstrad */
+            cpu_set_cycle_tbl(Z80_TABLE_op, amstrad_cycle_table_op);
+            cpu_set_cycle_tbl(Z80_TABLE_cb, amstrad_cycle_table_cb);
+            cpu_set_cycle_tbl(Z80_TABLE_ed, amstrad_cycle_table_ed);
+            cpu_set_cycle_tbl(Z80_TABLE_xy, amstrad_cycle_table_xy);
+            cpu_set_cycle_tbl(Z80_TABLE_xycb, amstrad_cycle_table_xycb);
+            cpu_set_cycle_tbl(Z80_TABLE_ex, amstrad_cycle_table_ex);
 	}
 	
 	public static InitMachinePtr amstrad_init_machine = new InitMachinePtr() { public void handler() 
 	{
-		amstrad_common_init();
-	
-		amstrad_setup_machine();
-	
-		/* bits 1,2,3 are connected to links on the PCB, these
-		define the machine name.
-	
-		000 = Isp
-		001 = Triumph
-		010 = Saisho
-		011 = Solavox
-		100 = Awa
-		101 = Schneider
-		110 = Orion
-		111 = Amstrad
-	
-		bit 4 is connected to a link on the PCB used to define screen
-		refresh rate. 1 = 50Hz, 0 = 60Hz */
-	
-		ppi_port_inputs[1] = readinputport(10) & 0x01e;
-	
-		multiface_init();
+            int i;
+            int machine_name_and_refresh_rate;
+
+            for (i=0; i<256; i++)
+            {
+                    Amstrad_ROM_Table[i] = new UBytePtr(memory_region(REGION_CPU1), 0x014000);
+            }
+
+            Amstrad_ROM_Table[7] = new UBytePtr(memory_region(REGION_CPU1), 0x018000);
+
+            amstrad_common_init();
+
+            amstrad_setup_machine();
+
+            machine_name_and_refresh_rate = readinputport(10);
+            ppi_port_inputs[1] = ((machine_name_and_refresh_rate & 0x07)<<1) | (machine_name_and_refresh_rate & 0x010);
+
+            multiface_init();
 	} };
 	
 	public static InitMachinePtr kccomp_init_machine = new InitMachinePtr() { 
             public void handler() {
-		amstrad_common_init();
-	
-		amstrad_setup_machine();
-	
-		/* bit 1 = /TEST. When 0, KC compact will enter data transfer
-		sequence, where another system using the expansion port signals
-		DATA2,DATA1, /STROBE and DATA7 can transfer 256 bytes of program.
-		When the program has been transfered, it will be executed. This
-		is not supported in the driver */
-		/* bit 3,4 are tied to +5V, bit 2 is tied to 0V */
-		ppi_port_inputs[1] = (1<<4) | (1<<3) | 2;
+		int i;
+
+                for (i=0; i<256; i++)
+                {
+                        Amstrad_ROM_Table[i] = new UBytePtr(memory_region(REGION_CPU1), 0x014000);
+                }
+
+                amstrad_common_init();
+
+                amstrad_setup_machine();
+
+                /* bit 1 = /TEST. When 0, KC compact will enter data transfer
+                sequence, where another system using the expansion port signals
+                DATA2,DATA1, /STROBE and DATA7 can transfer 256 bytes of program.
+                When the program has been transfered, it will be executed. This
+                is not supported in the driver */
+                /* bit 3,4 are tied to +5V, bit 2 is tied to 0V */
+                ppi_port_inputs[1] = (1<<4) | (1<<3) | 2;
 	}};
 	
 	
@@ -2415,7 +2449,7 @@ public class amstrad
 		/* set ram config 0 */
 		AmstradCPC_GA_Write(0x0c0);
 	
-			multiface_reset();
+		multiface_reset();
 	}
 	
 	
@@ -2474,6 +2508,7 @@ public class amstrad
 	be paged into bank 0 and bank 3. */
 	static MemoryReadAddress readmem_amstrad[] =
 	{
+            
 		new MemoryReadAddress(0x00000, 0x01fff, MRA_BANK1),
 		new MemoryReadAddress(0x02000, 0x03fff, MRA_BANK2),
 		new MemoryReadAddress(0x04000, 0x05fff, MRA_BANK3),
@@ -2733,12 +2768,12 @@ public class amstrad
 			}
 	
 			/* restore previous tables */
-			/*TODO*////cpu_set_cycle_tbl(Z80_TABLE_op, previous_op_table);
-			/*TODO*////cpu_set_cycle_tbl(Z80_TABLE_cb, previous_cb_table);
-			/*TODO*////cpu_set_cycle_tbl(Z80_TABLE_ed, previous_ed_table);
-			/*TODO*////cpu_set_cycle_tbl(Z80_TABLE_xy, previous_xy_table);
-			/*TODO*////cpu_set_cycle_tbl(Z80_TABLE_xycb, previous_xycb_table);
-			/*TODO*////cpu_set_cycle_tbl(Z80_TABLE_ex, previous_ex_table);
+			cpu_set_cycle_tbl(Z80_TABLE_op, previous_op_table);
+			cpu_set_cycle_tbl(Z80_TABLE_cb, previous_cb_table);
+			cpu_set_cycle_tbl(Z80_TABLE_ed, previous_ed_table);
+			cpu_set_cycle_tbl(Z80_TABLE_xy, previous_xy_table);
+			cpu_set_cycle_tbl(Z80_TABLE_xycb, previous_xycb_table);
+			cpu_set_cycle_tbl(Z80_TABLE_ex, previous_ex_table);
 	
 			/*TODO*////cpu_set_irq_callback(0, null);
 	
@@ -2947,7 +2982,7 @@ public class amstrad
 			1,							/* count */
 			"sna\0",                    /* file extensions */
 			IO_RESET_ALL,				/* reset if file changed */
-			amstrad_snapshot_id,		/* id */
+			null,		/* id */
 			amstrad_snapshot_load,		/* init */
 			amstrad_snapshot_exit,		/* exit */
 			null,						/* info */
@@ -2967,7 +3002,7 @@ public class amstrad
 			"dsk\0",                    /* file extensions */
 			IO_RESET_NONE,				/* reset if file changed */
 			null,				/* id */
-			dsk_floppy_load,			/* init */
+			amstrad_floppy_init,			/* init */
 			dsk_floppy_exit,			/* exit */
 			null,						/* info */
 			null,						/* open */
