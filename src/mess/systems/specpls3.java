@@ -157,12 +157,12 @@ public class specpls3 {
 			                        
                         if ((spectrum_128_port_7ffd_data & 8) != 0)
 			{
-					logerror("+3 SCREEN 1: BLOCK 7\n");
+					//logerror("+3 SCREEN 1: BLOCK 7\n");
 					spectrum_128_screen_location = new UBytePtr(spectrum_128_ram, (7<<14));
 			}
 			else
 			{
-					logerror("+3 SCREEN 0: BLOCK 5\n");
+					//logerror("+3 SCREEN 0: BLOCK 5\n");
 					spectrum_128_screen_location = new UBytePtr(spectrum_128_ram, (5<<14));
 			}
 	
@@ -181,7 +181,7 @@ public class specpls3 {
 					cpu_setbank(4, ram_data);
 					cpu_setbank(8, ram_data);
 	
-					logerror("RAM at 0xc000: %02x\n",ram_page);
+					//logerror("RAM at 0xc000: %02x\n",ram_page);
 	
 					cpu_setbank(2, new UBytePtr(spectrum_128_ram, (5<<14)));
 					cpu_setbank(6, new UBytePtr(spectrum_128_ram, (5<<14)));
@@ -189,29 +189,15 @@ public class specpls3 {
 					cpu_setbank(3, new UBytePtr(spectrum_128_ram, (2<<14)));
 					cpu_setbank(7, new UBytePtr(spectrum_128_ram, (2<<14)));
 	
-	
-					// Select active ROM
-                                        switch ((spectrum_128_port_7ffd_data & 0x10) | (spectrum_plus3_port_1ffd_data & 0x04)) {
-                                            case 0x00:
-                                                    ROMSelection = 0;
-                                                    break;
-                                            case 0x10:
-                                                    ROMSelection = 1;
-                                                    break;
-                                            case 0x04:
-                                                    ROMSelection = 2;
-                                                    break;
-                                            case 0x14:
-                                                    ROMSelection = 3;
-                                                    break;
-                                        }
-					
+                                        ROMSelection = ((spectrum_128_port_7ffd_data>>4) & 0x01) |
+					((spectrum_plus3_port_1ffd_data>>1) & 0x02);
+						
 					ChosenROM = new UBytePtr(memory_region(REGION_CPU1), 0x010000 + (ROMSelection<<14));
 	
 					cpu_setbank(1, ChosenROM);
 					cpu_setbankhandler_w(5, MWA_ROM);
 	
-					logerror("rom switch: %02x\n", ROMSelection);
+					//logerror("rom switch: %02x\n", ROMSelection);
 			}
 			else
 			{
@@ -241,7 +227,7 @@ public class specpls3 {
 					cpu_setbank(4, ram_data);
 					cpu_setbank(8, ram_data);
 	
-					logerror("extended memory paging: %02x\n",MemorySelection);
+					//logerror("extended memory paging: %02x\n",MemorySelection);
 			 }
 	}
 	
@@ -261,11 +247,13 @@ public class specpls3 {
 	
 			/* update memory */
 			spectrum_plus3_update_memory();
+                        
 	}
 	
 	static void spectrum_plus3_port_1ffd_w(int offset, int data)
 	{
-	
+	//System.out.println("OffsetW: "+offset);
+        //System.out.println("dataW: "+data);
 			/* D0-D1: ROM/RAM paging */
 			/* D2: Affects if d0-d1 work on ram/rom */
 			/* D3 - Disk motor on/off */
@@ -296,42 +284,20 @@ public class specpls3 {
 
                 if ((offset & 2)==0)
                 {
-                        switch ((offset>>14) & 0x03)
-                        {
-                               /* +3 fdc,memory,centronics */
-                               case 0:
-                               {
-                                       switch ((offset>>12) & 0x03)
-                                       {
-                                               /* +3 centronics */
-                                               case 0:
-                                                       break;
-
-                                               /* +3 fdc status */
-                                               case 2:
-                                                       return spectrum_plus3_port_2ffd_r(offset);
-                                               /* +3 fdc data */
-                                               case 3:
-                                                       return spectrum_plus3_port_3ffd_r(offset);
-
-                                               default:
-                                                       break;
-                                       }
-                               }
-                               break;
-
-                               /* 128k AY data */
-                               case 3:
-                                       return spectrum_128_port_fffd_r(offset);
-
-                               default:
-                                       break;
-                        }
+                        switch ((offset>>8) & 0xff)
+		 {
+				case 0xff: return spectrum_128_port_fffd_r(offset);
+				case 0x2f: return spectrum_plus3_port_2ffd_r(offset);
+				case 0x3f: return spectrum_plus3_port_3ffd_r(offset);
+				case 0x1f: return spectrum_port_1f_r(offset);
+				case 0x7f: return spectrum_port_7f_r(offset);
+				case 0xdf: return spectrum_port_df_r(offset);
+		 }
                 }
 	
 		 logerror("Read from +3 port: %04x\n", offset);
 	
-		 return (cpu_getscanline()<193)?spectrum_128_screen_location.read(0x1800|(cpu_getscanline()&0xf8)<<2):0xff;
+		 return 0xff;
 	}};
 	
 	//WRITE_HANDLER ( spectrum_plus3_port_w )
@@ -345,54 +311,29 @@ public class specpls3 {
 		
 		if ((offset & 2)==0)
 		{
-			switch ((offset>>14) & 0x03)
-			{
-				/* +3 fdc,memory,centronics */
-				case 0:
+			switch ((offset>>8) & 0xf0)
 				{
-					switch ((offset>>12) & 0x03)
-					{
-						/* +3 centronics */
-						case 0:
-						{
-
-
-						}
-						break;
-
-						/* +3 memory */
-						case 1:
-							spectrum_plus3_port_1ffd_w(offset, data);
-							break;
-							
-						/* +3 fdc data */
-						case 3:
-							spectrum_plus3_port_3ffd_w(offset,data);
-							break;
-
+						case 0x70:
+								spectrum_plus3_port_7ffd_w(offset, data);
+								break;
+						case 0xb0:
+								spectrum_128_port_bffd_w(offset, data);
+								break;
+						case 0xf0:
+								spectrum_128_port_fffd_w(offset, data);
+								break;
+						case 0x10:
+								spectrum_plus3_port_1ffd_w(offset, data);
+								break;
+						case 0x30:
+								spectrum_plus3_port_3ffd_w(offset, data);
 						default:
-							break;
-					}
-				}
-				break;
-
-				/* 128k memory */
-				case 1:
-					spectrum_plus3_port_7ffd_w(offset, data);
-					break;
-
-				/* 128k AY data */
-				case 2:
-					spectrum_128_port_bffd_w(offset, data);
-					break;
-
-				/* 128K AY register */
-				case 3:
-					spectrum_128_port_fffd_w(offset, data);
-			
-				default:
-					break;
-			}
+								logerror("Write %02x to +3 port: %04x\n", data, offset);
+				}                        
+		}
+                else
+		{
+			logerror("Write %02x to +3 port: %04x\n", data, offset);
 		}
 	}};
 
@@ -408,6 +349,69 @@ public class specpls3 {
 	static IOWritePort spectrum_plus3_writeport[] ={
 			new IOWritePort(0x0000, 0xffff, spectrum_plus3_port_w),
 			new IOWritePort( -1 )
+	};
+        
+	static IODevice io_specpls3[] = {
+		new IODevice(
+			IO_SNAPSHOT,		/* type */
+			1,					/* count */
+			"sna\0z80\0",       /* file extensions */
+			IO_RESET_ALL,		/* reset if file changed */
+			spectrum_rom_id,	/* id */
+			spectrum_rom_load,	/* init */
+			spectrum_rom_exit,	/* exit */
+			//null, /* exit */
+                        null, /* info */
+                        null, /* open */
+                        null, /* close */
+                        null, /* status */
+                        null, /* seek */
+                        null, /* tell */
+                        null, /* input */
+                        null, /* output */
+                        null, /* input_chunk */
+                        null /* output_chunk */
+                ),
+			IODEVICE_SPEC_QUICK,
+			new IODevice(
+                IO_CASSETTE,		/* type */
+		1,					/* count */
+		"wav\0tap\0",       /* file extensions */
+		IO_RESET_NONE,		/* reset if file changed */
+		null,	/* id */
+		spectrum_cassette_init,	/* init */
+		spectrum_cassette_exit,	/* exit */
+                wave_info,			/* info */						
+                wave_open,			/* open */						
+                wave_close, 		/* close */ 					
+                wave_status,		/* status */					
+                wave_seek,			/* seek */						
+                wave_tell,			/* tell */						
+                wave_input, 		/* input */ 					
+                wave_output,		/* output */					
+                wave_input_chunk,	/* input_chunk */				
+                wave_output_chunk	/* output_chunk */
+                ),
+		new IODevice(
+			IO_FLOPPY,			/* type */
+			2,					/* count */
+			"dsk\0",            /* file extensions */
+			IO_RESET_NONE,		/* reset if file changed */
+			null,		/* id */
+			dsk_floppy_load,	/* init */
+			dsk_floppy_exit,	/* exit */
+			null, /* info */
+                        null, /* open */
+                        null, /* close */
+                        floppy_status, /* status */
+                        null, /* seek */
+                        null, /* tell */
+                        null, /* input */
+                        null, /* output */
+                        null, /* input_chunk */
+                        null /* output_chunk */
+                ),
+		new IODevice(IO_END)
 	};
 	
 	static MachineDriver machine_driver_spectrum_plus3 = new MachineDriver
