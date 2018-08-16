@@ -91,7 +91,7 @@ public class nec765
                 /* version of fdc to emulate */
                 int version;
                 /* main status register */
-                int    FDC_main;
+                int    FDC_main=0;
                 /* data register */
                 int nec765_data_reg;
 
@@ -723,7 +723,7 @@ public class nec765
         //READ_HANDLER(nec765_status_r)
         public static ReadHandlerPtr nec765_status_r = new ReadHandlerPtr() {
             public int handler(int offset) {
-                System.out.println("nec765_status_r "+fdc.FDC_main);
+                //System.out.println("nec765_status_r "+fdc.FDC_main);
                 return fdc.FDC_main;
         }};
 

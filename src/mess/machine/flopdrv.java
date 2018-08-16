@@ -39,10 +39,10 @@ public class flopdrv
 	
 	public static floppy_drive[] drives = new floppy_drive[MAX_DRIVES];
         
-        static {
+        /*static {
             for (int i=0 ; i<MAX_DRIVES ; i++)
                 drives[i] = new floppy_drive();
-        };
+        };*/
 	
 	/* this is called once in init_devices */
         /* initialise all floppy drives */
@@ -86,6 +86,8 @@ public class flopdrv
                         pDrive.id_index = 0;
                         /* initialise track */
                         pDrive.current_track = 0;
+                        
+                        drives[i]=pDrive;
                 }
         }
 
@@ -109,6 +111,8 @@ public class flopdrv
                                 timer_remove(pDrive.index_timer);
                                 pDrive.index_timer = null;
                         }
+                        
+                        drives[i]=pDrive;
                 }
 
         }
@@ -126,6 +130,8 @@ public class flopdrv
 
                             if (pDrive.index_pulse_callback != null)
                                     pDrive.index_pulse_callback.handler(id);
+                            
+                            drives[id]=pDrive;
                     }
             }
         };
@@ -142,6 +148,8 @@ public class flopdrv
                 pDrive = drives[id];
 
                 pDrive.index_pulse_callback = callback;
+                
+                drives[id]=pDrive;
         }
 
         /*************************************************************************/
@@ -177,6 +185,8 @@ public class flopdrv
                         floppy_drive_set_flag_state(id, FLOPPY_DRIVE_CONNECTED, (new_status & FLOPPY_DRIVE_CONNECTED));
                         floppy_drive_set_flag_state(id, FLOPPY_DRIVE_DISK_WRITE_PROTECTED, (new_status & FLOPPY_DRIVE_DISK_WRITE_PROTECTED));
                 }
+                
+                drives[id]=pDrive;
 
                 /* return current status */
                 return floppy_drive_get_flag_state(id,0x0ff);
@@ -200,9 +210,13 @@ public class flopdrv
 
                 if (iface==null)
                         return;
+                
+                if (drives[id]==null)
+                    drives[id] = new floppy_drive();
 
                 //memcpy(&drives[id].interface, iface, sizeof(floppy_interface));
                 drives[id].f_interface = iface;
+                
         }
 
         /* set flag state */
@@ -221,6 +235,7 @@ public class flopdrv
 
         public static void floppy_drive_set_motor_state(int drive, int state)
         {
+            //System.out.println("floppy_drive_set_motor_state "+state);
                 int new_motor_state = 0;
                 int previous_state = 0;
 
@@ -273,6 +288,8 @@ public class flopdrv
                                 {
                                         /* on->off */
                                 }
+                                
+                                drives[drive]=pDrive;
                         }
                 }
 
@@ -370,13 +387,19 @@ public class flopdrv
                         /* single sided, 40 track drive e.g. Amstrad CPC internal 3" drive */
                         case FLOPPY_DRIVE_SS_40:
                         {
+                                if (drives[id]==null){
+                                    drives[id] = new floppy_drive();
+                                }
+                                
                                 drives[id].max_track = 42;
-                                drives[id].num_sides = 1;
+                                drives[id].num_sides = 1;                                
                         }
                         break;
 
                         case FLOPPY_DRIVE_DS_80:
                         {
+                                if (drives[id]==null)
+                                    drives[id] = new floppy_drive();
                                 drives[id].max_track = 83;
                                 drives[id].num_sides = 2;
                         }
@@ -417,7 +440,8 @@ public class flopdrv
                 /* inform disk image of step operation so it can cache information */
                 //if (pDrive.interface.seek_callback)
                         pDrive.f_interface.seek_callback(id, pDrive.current_track);
-
+                
+                drives[id]=pDrive;
         }
 
 

@@ -60,32 +60,39 @@ public class dsk {
         public static floppy_interface dsk_floppy_interface=new floppy_interface(){
             @Override
             public void seek_callback(int drive, int physical_track) {
+                //System.out.println("seek_callback ["+drive+"]/"+physical_track);
                 dsk_seek_callback(drive, physical_track);
+                
             }
 
             @Override
             public int get_sectors_per_track(int drive, int physical_side) {
-                return dsk_get_sectors_per_track(drive, drive);
+                System.out.println("get_sectors_per_track");
+                return dsk_get_sectors_per_track(drive, physical_side);
             }
 
             @Override
             public void get_id_callback(int drive, chrn_id chrn, int id_index, int physical_side) {
-                dsk_get_id_callback(drive, chrn, id_index, drive);
+                System.out.println("get_id_callback");
+                dsk_get_id_callback(drive, chrn, id_index, physical_side);
             }
 
             @Override
             public void read_sector_data_into_buffer(int drive, int side, int data_id, char[] data, int length) {
-                dsk_read_sector_data_into_buffer(drive, side, side, data, length);
+                System.out.println("read_sector_data_into_buffer");
+                dsk_read_sector_data_into_buffer(drive, side, data_id, data, length);
             }
 
             @Override
             public void write_sector_data_from_buffer(int drive, int side, int data_id, char[] data, int length, int ddam) {
+                System.out.println("write_sector_data_from_buffer");
                 dsk_write_sector_data_from_buffer(drive, side, data_id, data, length, ddam);
             }
 
             @Override
             public void read_track_data_info_buffer(int drive, int side, char[] ptr, int length) {
                 // nothing to do
+                System.out.println("read_track_data_info_buffer");
             }
 
             @Override
@@ -190,6 +197,7 @@ public class dsk {
                     
                     if (thedrive == null){
                         thedrive=new dsk_drive();
+                        drives[id]=thedrive;
                     }
                     if (thedrive.data != null)
                     {
@@ -197,7 +205,7 @@ public class dsk {
                         floppy_drive_set_disk_image_interface(id,dsk_floppy_interface);
                         floppy_drive_set_flag_state(id, FLOPPY_DRIVE_READY, 1);
 			
-                        
+                        drives[id]=thedrive;
                                 
                         if(dsk_floppy_verify(thedrive.data) == IMAGE_VERIFY_PASS)
                             return 0;
@@ -258,6 +266,8 @@ public class dsk {
                         //free(thedrive->data);
                 }
                 thedrive.data = null;
+                
+                drives[id]=thedrive;
                 
                 return 1;
         }};
@@ -484,6 +494,7 @@ public class dsk {
 
         static UBytePtr get_floppy_data(int drive)
         {
+            System.out.println("dsk get_floppy_data");
             drive = drive & 0x03;
             return drives[drive].data;
         }
@@ -614,6 +625,8 @@ public class dsk {
             sector_offset = thedrive.sector_offsets[sector_index];
 
             data = get_floppy_data(drive);
+            
+            drives[drive]=thedrive;
 
             if (data==null)
                     return null;
