@@ -20,7 +20,7 @@ public interface flopdrvH {
     /* CRC error in data field */
     public static final int ID_FLAG_CRC_ERROR_IN_DATA_FIELD =  0x0004;
 
-    int 	floppy_status(int id, int new_status);
+    //int 	floppy_status(int id, int new_status);
 
     public static class chrn_id
     {
