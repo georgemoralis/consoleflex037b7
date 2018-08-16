@@ -17,7 +17,6 @@ package mess.vidhrdw;
 import static WIP.arcadeflex.fucPtr.*;
 import static WIP.arcadeflex.libc_v2.*;
 import static mame.commonH.*;
-import static mess.includes.prasterH.*;
 import static old.mame.common.*;
 import static old.arcadeflex.osdepend.logerror;
 
