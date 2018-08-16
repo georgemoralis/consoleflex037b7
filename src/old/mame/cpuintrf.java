@@ -616,17 +616,17 @@ public class cpuintrf {
         timer_set(TIME_NOW, (cpunum & 7) | (state << 3), cpu_haltcallback);
     }
 
-    /*TODO*///	
-/*TODO*///	/***************************************************************************
-/*TODO*///	
-/*TODO*///	  Use this function to install a callback for IRQ acknowledge
-/*TODO*///	
-/*TODO*///	***************************************************************************/
-/*TODO*///	void cpu_set_irq_callback(int cpunum, int (*callback)(int))
-/*TODO*///	{
-/*TODO*///		drv_irq_callbacks[cpunum] = callback;
-/*TODO*///	}
-/*TODO*///	
+
+	/***************************************************************************
+	
+	  Use this function to install a callback for IRQ acknowledge
+	
+	***************************************************************************/
+	public static void cpu_set_irq_callback(int cpunum, irqcallbacksPtr callback)
+	{
+		drv_irq_callbacks[cpunum] = callback;
+	}
+	
     /**
      * *************************************************************************
      * This function returns CPUNUM current status (running or halted)
@@ -857,7 +857,7 @@ public class cpuintrf {
                 SETIRQLINE(0, irqline, CLEAR_LINE);
                 irq_line_state[0 * MAX_IRQ_LINES + irqline] = CLEAR_LINE;
             }
-            logerror("cpu_##num##_irq_callback(%d) $%04x\n", irqline, vector);
+            //logerror("cpu_##num##_irq_callback(%d) $%04x\n", irqline, vector);
             if (drv_irq_callbacks[0] != null) {
                 return (drv_irq_callbacks[0]).handler(vector);
             }
@@ -871,7 +871,7 @@ public class cpuintrf {
                 SETIRQLINE(1, irqline, CLEAR_LINE);
                 irq_line_state[1 * MAX_IRQ_LINES + irqline] = CLEAR_LINE;
             }
-            logerror("cpu_##num##_irq_callback(%d) $%04x\n", irqline, vector);
+            //logerror("cpu_##num##_irq_callback(%d) $%04x\n", irqline, vector);
             if (drv_irq_callbacks[1] != null) {
                 return (drv_irq_callbacks[1]).handler(vector);
             }
@@ -988,7 +988,7 @@ public class cpuintrf {
         cpunum &= (MAX_CPU - 1);
         irqline &= (MAX_IRQ_LINES - 1);
         if (irqline < cpu.get(cpunum).intf.num_irqs) {
-            logerror("cpu_irq_line_vector_w(%d,%d,$%04x)\n", cpunum, irqline, vector);
+            //logerror("cpu_irq_line_vector_w(%d,%d,$%04x)\n", cpunum, irqline, vector);
             irq_line_vector[cpunum * MAX_IRQ_LINES + irqline] = vector;
             return;
         }
@@ -1053,7 +1053,7 @@ public class cpuintrf {
             return;
         }
 
-        logerror("cpu_set_nmi_line(%d,%d)\n", cpunum, state);
+        //logerror("cpu_set_nmi_line(%d,%d)\n", cpunum, state);
         timer_set(TIME_NOW, (cpunum & 7) | (state << 3), cpu_manualnmicallback);
     }
 
@@ -1108,7 +1108,7 @@ public class cpuintrf {
         public void handler(int offset, int data) {
             int cpunum = (activecpu < 0) ? 0 : activecpu;
             if (interrupt_vector[cpunum] != data) {
-                logerror("CPU#%d interrupt_vector_w $%02x\n", cpunum, data);
+                //logerror("CPU#%d interrupt_vector_w $%02x\n", cpunum, data);
                 interrupt_vector[cpunum] = data;
 
                 /* make sure there are no queued interrupts */
@@ -1295,7 +1295,7 @@ public class cpuintrf {
             if (cpu.get(activecpu).save_context != 0) {
                 SETCONTEXT(activecpu, cpu.get(activecpu).context);
             }
-            logerror("cpu_manualnmicallback %d,%d\n", cpunum, state);
+            //logerror("cpu_manualnmicallback %d,%d\n", cpunum, state);
 
             switch (state) {
                 case PULSE_LINE:
@@ -1344,7 +1344,7 @@ public class cpuintrf {
             if (cpu.get(activecpu).save_context != 0) {
                 SETCONTEXT(activecpu, cpu.get(activecpu).context);
             }
-            logerror("cpu_manualirqcallback %d,%d,%d\n", cpunum, irqline, state);
+            //logerror("cpu_manualirqcallback %d,%d,%d\n", cpunum, irqline, state);
 
             irq_line_state[cpunum * MAX_IRQ_LINES + irqline] = state;
             switch (state) {
