@@ -32,7 +32,7 @@ public class m6845
 	public static final int Display_Enabled_Delay_Flag = 4;
 	public static final int Display_Disable_Delay_Flag = 8;
         
-        static crtc6845_state crtc=new crtc6845_state();
+        public static crtc6845_state crtc=new crtc6845_state();
 	
 	/* total number of chr -1 */
 	static int R0_horizontal_total = crtc.registers[0];
