@@ -54,6 +54,8 @@ import static mess.vidhrdw.m6845.*;
 import static mess.machine._8255ppiH.*;
 import static mess.machine._8255ppi.*;
 
+import static mess.machine.dsk.*;
+
 public class amstrad
 {
 	//
@@ -66,6 +68,15 @@ public class amstrad
 	
 	public static UBytePtr Amstrad_Memory;
 	static int snapshot_loaded=0;
+        
+        public static io_initPtr amstrad_floppy_init = new io_initPtr() {
+            public int handler(int id) {
+                if (device_filename(IO_FLOPPY, id)==null)
+                    return 1;
+
+        	return dsk_floppy_load.handler(id);
+        }};
+            
 	
 	/* used to setup computer if a snapshot was specified */
 	//OPBASE_HANDLER( amstrad_opbaseoverride )
@@ -352,15 +363,25 @@ public class amstrad
 	//int amstrad_snapshot_load(int id)
 	public static io_initPtr amstrad_snapshot_load = new io_initPtr() {
             public int handler(int id) {
-		snapshot_loaded = 0;
-	
-		if (amstrad_load(IO_SNAPSHOT,id,snapshot) != 0)
-		{
-			snapshot_loaded = 1;
-			return INIT_OK;
-		}
-	
-		return INIT_FAILED;
+		/* machine can be started without a snapshot */
+	/* if filename not specified, then init is ok */
+	if (device_filename(IO_SNAPSHOT, id)==null)
+		return 1;
+
+                /* filename specified */
+                snapshot_loaded = 0;
+
+                /* load and verify image */
+                if (amstrad_load(IO_SNAPSHOT,id,snapshot) != 0)
+                {
+                        snapshot_loaded = 1;
+                        if (memcmp(snapshot.memory, 0, "MV - SNA", 8)==0)
+                                return 1;
+                        else
+                                return 0;
+                }
+
+                return 0;
 	}};
 	
 	/* check if a snapshot file is valid to load */
