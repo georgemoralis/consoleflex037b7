@@ -1829,10 +1829,10 @@ public class z80 extends cpu_interface {
      */
     @Override
     public int[] get_cycle_table(int which) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-/*TODO*///	if (which >= 0 && which <= Z80_TABLE_xycb)
-/*TODO*///		return cc[which];
-/*TODO*///	return NULL;
+        //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+	if (which >= 0 && which <= Z80_TABLE_xycb)
+		return cc[which];
+	return null;
     }
 
     /**
@@ -1842,9 +1842,9 @@ public class z80 extends cpu_interface {
      */
     @Override
     public void set_cycle_table(int which, int[] new_table) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-/*TODO*///	if (which >= 0 && which <= Z80_TABLE_ex)
-/*TODO*///		cc[which] = new_table;
+        //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+	if (which >= 0 && which <= Z80_TABLE_ex)
+		cc[which] = new_table;
     }
 
     /**
