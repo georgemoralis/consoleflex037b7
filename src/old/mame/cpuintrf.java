@@ -149,8 +149,14 @@ public class cpuintrf {
         cpu.get(index).intf.set_context(context);
     }
 
-    /*TODO*///	#define GETCYCLETBL(index,which)		((*cpu_old[index].intf.get_cycle_table)(which))
-/*TODO*///	#define SETCYCLETBL(index,which,cnts)	((*cpu_old[index].intf.set_cycle_table)(which,cnts))
+    static int[] GETCYCLETBL(int index,int which) {
+        //((*cpu_old[index].intf.get_cycle_table)(which))
+        return cpu.get(index).intf.get_cycle_table(which);
+    }
+    static void SETCYCLETBL(int index, int which, int[] cnts) {
+        //((*cpu_old[index].intf.set_cycle_table)(which,cnts))
+        cpu.get(index).intf.set_cycle_table(which, cnts);
+    }
     static int GETPC(int index) {
         return cpu.get(index).intf.get_pc();
     }
@@ -2243,18 +2249,18 @@ public class cpuintrf {
 /*TODO*///	  Retrieve or set a cycle counts lookup table for the active CPU
 /*TODO*///	***************************************************************************/
 /*TODO*///	
-/*TODO*///	void *cpu_get_cycle_table(int which)
-/*TODO*///	{
-/*TODO*///		int cpunum = (activecpu < 0) ? 0 : activecpu;
-/*TODO*///		return GETCYCLETBL(cpunum,which);
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	void cpu_set_cycle_tbl(int which, void *new_table)
-/*TODO*///	{
-/*TODO*///		int cpunum = (activecpu < 0) ? 0 : activecpu;
-/*TODO*///		SETCYCLETBL(cpunum,which,new_table);
-/*TODO*///	}
-/*TODO*///	
+	public static int[] cpu_get_cycle_table(int which)
+	{
+		int cpunum = (activecpu < 0) ? 0 : activecpu;
+		return GETCYCLETBL(cpunum,which);
+	}
+	
+	public static void cpu_set_cycle_tbl(int which, int[] new_table)
+	{
+		int cpunum = (activecpu < 0) ? 0 : activecpu;
+		SETCYCLETBL(cpunum,which,new_table);
+	}
+	
     /**
      * *************************************************************************
      * Retrieve or set the value of a specific register of the active CPU
