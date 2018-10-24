@@ -2996,25 +2996,25 @@ public class amstrad
 			null,						/* input_chunk */
 			null						/* output_chunk */
             ),
-		new IODevice(
-			IO_FLOPPY,					/* type */
-			2,							/* count */
-			"dsk\0",                    /* file extensions */
-			IO_RESET_NONE,				/* reset if file changed */
-			null,				/* id */
-			amstrad_floppy_init,			/* init */
-			dsk_floppy_exit,			/* exit */
-			null,						/* info */
-			null,						/* open */
-			null,						/* close */
-			floppy_status,						/* status */
-			null,						/* seek */
-			null,						/* tell */
-			null,						/* input */
-			null,						/* output */
-			null,						/* input_chunk */
-			null						/* output_chunk */
-                ),
+            /*TODO*////new IODevice(
+            /*TODO*////IO_FLOPPY,					/* type */
+            /*TODO*////2,							/* count */
+            /*TODO*////"dsk\0",                    /* file extensions */
+            /*TODO*////IO_RESET_NONE,				/* reset if file changed */
+            /*TODO*////null,				/* id */
+            /*TODO*////amstrad_floppy_init,			/* init */
+            /*TODO*////dsk_floppy_exit,			/* exit */
+            /*TODO*////null,						/* info */
+            /*TODO*////null,						/* open */
+            /*TODO*////null,						/* close */
+            /*TODO*////null,						/* status */
+            /*TODO*////null,						/* seek */
+            /*TODO*////null,						/* tell */
+            /*TODO*////null,						/* input */
+            /*TODO*////null,						/* output */
+            /*TODO*////null,						/* input_chunk */
+            /*TODO*////null						/* output_chunk */
+            /*TODO*////    ),
 		/*TODO*////IO_CASSETTE_WAVE(1,"wav\0",null,amstrad_cassette_init,amstrad_cassette_exit),
 	
 		new IODevice(IO_END)
