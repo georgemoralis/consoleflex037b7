@@ -29,7 +29,6 @@ import static arcadeflex.libc.cstring.memset;
 import static mess.machine.flopdrv.*;
 import static WIP.arcadeflex.libc.memcpy.*;
 
-import static mess.machine.flopdrv.*;
 
 public class dsk {
     //* TODO include in MESSH these constants
@@ -53,7 +52,7 @@ public class dsk {
 		UBytePtr data; /* the whole image data */
 		int[] track_offsets = new int[dsk_MAX_TRACKS*dsk_MAX_SIDES]; /* offset within data for each track */
 		int[] sector_offsets = new int[dsk_SECTORS_PER_TRACK]; /* offset within current track for sector data */
-		int current_track;		/* current track */
+		int current_track=0;		/* current track */
 		int disk_image_type;  /* image type: standard or extended */
 	};
 
@@ -66,14 +65,15 @@ public class dsk {
             }
 
             @Override
-            public int get_sectors_per_track(int drive, int physical_side) {
-                System.out.println("get_sectors_per_track");
-                return dsk_get_sectors_per_track(drive, physical_side);
+            public int get_sectors_per_track(int drive, int physical_side) {                
+                int res=dsk_get_sectors_per_track(drive, physical_side);
+                System.out.println("get_sectors_per_track="+res);
+                return res;
             }
 
             @Override
             public void get_id_callback(int drive, chrn_id chrn, int id_index, int physical_side) {
-                System.out.println("get_id_callback");
+                System.out.println("get_id_callback "+chrn);
                 dsk_get_id_callback(drive, chrn, id_index, physical_side);
             }
 
@@ -156,11 +156,13 @@ public class dsk {
 	
 					/* ok! */
 					//return INIT_OK;
-                                        drives[id]=new dsk_drive();
-                                        drives[id].data=new UBytePtr(data);
+                                        if (drives[id]==null)
+                                        	drives[id]=new dsk_drive();
                                         
-                                        
-                                        //flopdrv.drives[id].f_interface=dsk_floppy_interface;
+                                        drives[id].data=new UBytePtr(diskimage_data);
+                                        //flopdrv.drives[id]=new floppy_drive();
+                                        flopdrv.drives[id].f_interface=dsk_floppy_interface;
+                                        //flopdrv.drives[id].id_buffer=new UBytePtr(data).memory;
                                         
                                         return 1;
 				}
@@ -202,15 +204,19 @@ public class dsk {
                     if (thedrive.data != null)
                     {
                         dsk_disk_image_init(thedrive); /* initialise dsk */
+                        drives[id]=thedrive;
                         floppy_drive_set_disk_image_interface(id,dsk_floppy_interface);
                         floppy_drive_set_flag_state(id, FLOPPY_DRIVE_READY, 1);
 			
                         drives[id]=thedrive;
                                 
-                        if(dsk_floppy_verify(thedrive.data) == IMAGE_VERIFY_PASS)
+                        if(dsk_floppy_verify(thedrive.data) == IMAGE_VERIFY_PASS){
+                            System.out.println("Devuelvo 0");
                             return 0;
-                        else
+                        }else{
+                            System.out.println("Devuelvo 1");
                             return 1;
+                        }
                         
                         
 				
@@ -276,6 +282,7 @@ public class dsk {
 
         public static void dsk_dsk_init_track_offsets(dsk_drive thedrive)
         {
+            System.out.println("dsk_dsk_init_track_offsets---------------->>>>>>>>>>>>>");
             int track_offset;
             int i;
             int track_size;
@@ -311,7 +318,7 @@ public class dsk {
             offs = 0;
             for (i=0; i<length; i++)
             {
-                    thedrive.track_offsets[offs] = track_offset;
+                    thedrive.track_offsets[offs]=track_offset;
                     track_offset+=track_size;
                     offs+=skip;
             }
@@ -357,15 +364,21 @@ public class dsk {
 
         public static void dsk_extended_dsk_init_track_offsets(dsk_drive thedrive)
         {
+            System.out.println("EXTENDED!!!!!!!!!!!!!!!!!!!!");
             int track_offset;
+
+	
             int i;
             int track_size;
             int tracks, sides;
             int offs, skip, length;
-            UBytePtr file_loaded = thedrive.data;
+            //UBytePtr file_loaded = thedrive.data;
 
-            sides = file_loaded.read(0x031);
-            tracks = file_loaded.read(0x030);
+            sides = thedrive.data.read(0x031);
+            tracks = thedrive.data.read(0x030);
+            
+            System.out.println("SIDES="+sides);
+            System.out.println("TRACKS="+tracks);
 
             if (sides==1)
             {
@@ -381,6 +394,7 @@ public class dsk {
             /* main header is 0x0100 in size */
             track_offset = 0x0100;
             offs = 0;
+            
             for (i=0; i<length; i++)
             {
                     int track_size_high_byte;
@@ -389,7 +403,8 @@ public class dsk {
                     by 256 to get size in bytes. If 0, track doesn't exist and
                     is unformatted, otherwise it exists. Track size includes 0x0100
                     header */
-                    track_size_high_byte = file_loaded.read(0x034 + i);
+                    track_size_high_byte = thedrive.data.read(0x034 + i);
+                    //System.out.println("track_size_high_byte="+track_size_high_byte);
 
                     if (track_size_high_byte != 0)
                     {
@@ -397,22 +412,26 @@ public class dsk {
                             track_size = track_size_high_byte<<8;
 
                             thedrive.track_offsets[offs] = track_offset;
+                            //System.out.println("Escribo "+track_offset+" en "+offs);
                             track_offset+=track_size;
                     }
 
                     offs+=skip;
             }
+            //System.out.println("FIN EXTENDED-A- "+(int)thedrive.track_offsets[0]);
         }
 
 
         public static void dsk_extended_dsk_init_sector_offsets(dsk_drive thedrive,int track,int side)
         {
-            int track_offset;
+            int track_offset=0;
 
             side = side & 0x01;
 
             /* get offset to track header in image */
             track_offset = thedrive.track_offsets[(track<<1) + side];
+            
+            System.out.println(track+" dsk_extended_dsk_init_sector_offsets!!!!!!!!"+track_offset);
 
             if (track_offset!=0)
             {
@@ -437,6 +456,7 @@ public class dsk {
                     for (i=0; i<spt; i++)
                     {
                             sector_size = id_info.read((i<<3) + 6) + (id_info.read((i<<3) + 7)<<8);
+                            
 
                             thedrive.sector_offsets[i] = sector_offset;
                             sector_offset+=sector_size;
@@ -470,14 +490,16 @@ public class dsk {
 
                     /* extended disk image */
                     dsk_extended_dsk_init_track_offsets(thedrive);
+                    //System.out.println("FIN EXTENDED "+(int)thedrive.track_offsets[0]);
             }
+            
         }
 
 
         public static void dsk_seek_callback(int drive, int physical_track)
         {
             drive = drive & 0x03;
-            drives[drive].current_track = physical_track;
+            flopdrv.drives[drive].current_track = physical_track;
         }
 
         static int get_track_offset(int drive, int side)
@@ -488,6 +510,8 @@ public class dsk {
             side = side & 0x01;
 
             thedrive = drives[drive];
+            System.out.println("thedrive: "+thedrive+" drive: "+drive+" side: "+side);
+            System.out.println(thedrive.track_offsets[(thedrive.current_track<<1) + side]);
 
             return thedrive.track_offsets[(thedrive.current_track<<1) + side];
         }
@@ -496,53 +520,64 @@ public class dsk {
         {
             System.out.println("dsk get_floppy_data");
             drive = drive & 0x03;
+            //System.out.println(drives[drive].data);
             return drives[drive].data;
         }
 
         public static void dsk_get_id_callback(int drive, chrn_id id, int id_index, int side)
         {
             int id_offset;
-            int track_offset;
-            UBytePtr track_header;
-            UBytePtr data;
+	int track_offset;
+	UBytePtr track_header;
+	UBytePtr data;
 
-            drive = drive & 0x03;
-            side = side & 0x01;
+	drive = drive & 0x03;
+	side = side & 0x01;
 
-            /* get offset to track header in image */
-            track_offset = get_track_offset(drive, side);
+	/* get offset to track header in image */
+	track_offset = get_track_offset(drive, side);
 
-            /* track exists? */
-            if (track_offset==0)
-                    return;
+	/* track exists? */
+	if (track_offset==0)
+		return;
 
-            /* yes */
-            data = get_floppy_data(drive);
+	/* yes */
+	data = get_floppy_data(drive);
+        
+        System.out.println("DataNULL: "+data);
 
-            if (data==null)
-                    return;
+	if (data==null)
+		return;
 
-            track_header = new UBytePtr(data, track_offset);
+	track_header = new UBytePtr(data, track_offset);
 
-            id_offset = 0x018 + (id_index<<3);
+	id_offset = 0x018 + (id_index<<3);
 
-            id.C = track_header.read(id_offset + 0);
-            id.H = track_header.read(id_offset + 1);
-            id.R = track_header.read(id_offset + 2);
-            id.N = track_header.read(id_offset + 3);
-            id.flags = 0;
-            id.data_id = id_index;
+	id.C = track_header.read(id_offset + 0);
+	id.H = track_header.read(id_offset + 1);
+        id.R = track_header.read(id_offset + 2);
+	id.N = track_header.read(id_offset + 3);
+	id.flags = 0;
+	id.data_id = id_index;
+        
+        System.out.println((int)id.C);
+        System.out.println((int)id.H);
+        System.out.println((int)id.R);
+        System.out.println((int)id.N);
+        
 
-            if ((track_header.read(id_offset + 5) & 0x040) != 0)
-            {
-                    id.flags |= ID_FLAG_DELETED_DATA;
-            }
+        System.out.println("VALOR: ----->"+(int)track_header.read((id_offset + 5) & 0x040));
+	if (track_header.read((id_offset + 5) & 0x040) != 0)
+	{
+		id.flags |= ID_FLAG_DELETED_DATA;
+	}
+
+        System.out.println((int)id.flags);
+        System.out.println((int)id.data_id);
 
 
-
-
-            //	id->ST0 = track_header[id_offset + 4];
-            //	id->ST1 = track_header[id_offset + 5];
+//	id->ST0 = track_header[id_offset + 4];
+//	id->ST1 = track_header[id_offset + 5];
 
         }
 
@@ -585,6 +620,7 @@ public class dsk {
 
         public static UBytePtr dsk_get_sector_ptr_callback(int drive, int sector_index, int side)
         {
+            System.out.println("dsk_get_sector_ptr_callback-------!!!!!!!");
             int track_offset;
             int sector_offset;
             int track;
@@ -652,13 +688,25 @@ public class dsk {
         public static void dsk_read_sector_data_into_buffer(int drive, int side, int index1, char[] ptr, int length)
         {
             UBytePtr pSectorData;
+            
+            System.out.println(index1);
 
             pSectorData = dsk_get_sector_ptr_callback(drive, index1, side);
+            
+            System.out.println(pSectorData);
 
             if (pSectorData!=null)
             {
-                    memcpy(ptr, pSectorData.memory, length);
-
+                    //memcpy(ptr, pSectorData.memory, length);
+                    
+                    for (int i=0 ; i<length ; i++){
+                        System.out.print(pSectorData.read(i)+"-");
+                        ptr[i]=pSectorData.read(i);
+                    }
+                    System.out.println("END");
+                    for (int i=0 ; i<length ; i++)
+                        System.out.print(ptr[i]+"-");
+                    System.out.println("END");
             }
         }
 
@@ -673,6 +721,8 @@ public class dsk {
 
             /* get offset to track header in image */
             track_offset = get_track_offset(drive, side);
+            
+            System.out.println("track_offset -------- "+track_offset);
 
             /* track exists? */
             if (track_offset==0)

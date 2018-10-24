@@ -50,6 +50,7 @@ public class flopdrv
         public static void floppy_drives_init()
         {
                 int i;
+                System.out.println("floppy_drives_init!!!!!!!!!!!!!!!!!!!");
 
                 /* if no floppies, no point setting this up */
                 if (device_count(IO_FLOPPY)==0)
@@ -60,11 +61,16 @@ public class flopdrv
                 for (i=0; i<MAX_DRIVES; i++)
                 {
                         floppy_drive pDrive = drives[i];
+                        
+                        if (pDrive == null)
+                        	pDrive=new floppy_drive();
 
                         /* initialise flags */
                         pDrive.flags = FLOPPY_DRIVE_HEAD_AT_TRACK_0;
                         pDrive.index_pulse_callback = null;
                         pDrive.index_timer = null;
+                        
+                        drives[i]=pDrive;
 
                         if (i==0)
                         {
@@ -211,8 +217,8 @@ public class flopdrv
                 if (iface==null)
                         return;
                 
-                if (drives[id]==null)
-                    drives[id] = new floppy_drive();
+                //if (drives[id]==null)
+                //    drives[id] = new floppy_drive();
 
                 //memcpy(&drives[id].interface, iface, sizeof(floppy_interface));
                 drives[id].f_interface = iface;
@@ -372,6 +378,8 @@ public class flopdrv
                 }
 
                 flags &= flag;
+                
+                System.out.println("FLAGS!!!! "+ flags);
 
                 return flags;
         }
@@ -439,6 +447,7 @@ public class flopdrv
 
                 /* inform disk image of step operation so it can cache information */
                 //if (pDrive.interface.seek_callback)
+                if (pDrive.f_interface != null)
                         pDrive.f_interface.seek_callback(id, pDrive.current_track);
                 
                 drives[id]=pDrive;
@@ -456,6 +465,7 @@ public class flopdrv
                         spt = drives[drive].f_interface.get_sectors_per_track(drive, side);
 
                 /* set index */
+                System.out.println("INDEX antes "+drives[drive].id_index);
                 if ((drives[drive].id_index==(spt-1)) || (spt==0))
                 {
                         floppy_drive_set_flag_state(drive, FLOPPY_DRIVE_INDEX, 1);
@@ -471,6 +481,14 @@ public class flopdrv
                         //if (drives[drive].f_interface.get_id_callback)
                         //{
                                 drives[drive].f_interface.get_id_callback(drive, id, drives[drive].id_index, side);
+                                System.out.println("RECIBIDO");
+                                System.out.println((int)id.C);
+                                System.out.println((int)id.H);
+                                System.out.println((int)id.R);
+                                System.out.println((int)id.N);
+                                System.out.println((int)id.flags);
+                                System.out.println((int)id.data_id);
+                                System.out.println("FIN RECIBIDO");
                         //}
                 }
 
@@ -483,7 +501,8 @@ public class flopdrv
                 {
                         drives[drive].id_index = 0;
                 }
-
+                System.out.println("INDEX despues "+drives[drive].id_index);
+                System.out.println("SPT "+spt);
                 if (spt==0)
                         return 0;
 

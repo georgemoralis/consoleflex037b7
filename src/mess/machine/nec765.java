@@ -53,10 +53,12 @@ public class nec765
         
 	
         /* uncomment the following line for verbose information */
-        public static final boolean VERBOSE=false;
+        public static final boolean VERBOSE=true;
 
         /* uncomment this to not allow end of cylinder "error" */
-        public static final boolean NO_END_OF_CYLINDER=false;
+        public static final boolean NO_END_OF_CYLINDER=true;
+        
+        public static chrn_id id=new chrn_id();
 
         //#ifdef VERBOSE
         /* uncomment the following line for super-verbose information i.e. data
@@ -87,50 +89,50 @@ public class nec765
 
         public static class NEC765
         {
-                int	sector_counter;
+                int	sector_counter=0;
                 /* version of fdc to emulate */
-                int version;
+                int version=0;
                 /* main status register */
                 int    FDC_main=0;
                 /* data register */
-                int nec765_data_reg;
+                int nec765_data_reg=0;
 
-                int c,h,r,n;
+                int c,h,r,n=0;
 
-                int sector_id;
+                int sector_id=0;
 
-                int data_type;
+                int data_type=0;
 
-                char[] format_data=new char[4];
+                char[] format_data={0,0,0,0};
 
-                NEC765_PHASE    nec765_phase;
-                char[] nec765_command_bytes=new char[16];
-                char[] nec765_result_bytes=new char[16];
-                int    nec765_transfer_bytes_remaining;
-                int    nec765_transfer_bytes_count;
-                char[]    nec765_status=new char[4];
+                NEC765_PHASE    nec765_phase=NEC765_PHASE.NEC765_COMMAND_PHASE_FIRST_BYTE;
+                int[] nec765_command_bytes={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+                int[] nec765_result_bytes={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+                int    nec765_transfer_bytes_remaining=0;
+                int    nec765_transfer_bytes_count=0;
+                int[]    nec765_status={0,0,0,0};
                 /* present cylinder number per drive */
-                int[]    pcn=new int[4];
+                int[]    pcn={0,0,0,0};
 
                 /* drive being accessed. drive outputs from fdc */
-                int    drive;
+                int    drive=0;
                 /* side being accessed: side output from fdc */
-                int	side;
+                int	side=0;
 
 
                 /* step rate time in us */
-                long	srt_in_ms;
+                long	srt_in_ms=0;
 
-                int	ncn;
+                int	ncn=0;
 
         //	unsigned int    nec765_id_index;
                 char[] execution_phase_data;
-                int	nec765_flags;
+                int	nec765_flags=0;
 
         //	unsigned char specify[2];
         //	unsigned char perpendicular_mode[1];
 
-                int command;
+                int command=0;
 
                 timer_entry seek_timer;
                 timer_entry timer;
@@ -196,7 +198,8 @@ public class nec765
 
         static void nec765_set_data_request()
         {
-                fdc.FDC_main |= 0x080;
+            System.out.println("nec765_set_data_request");    
+            fdc.FDC_main |= 0x080;
         }
 
         static void nec765_clear_data_request()
@@ -206,6 +209,7 @@ public class nec765
 
         static void nec765_seek_complete()
         {
+            System.out.println("nec765_seek_complete");
                         /* tested on Amstrad CPC */
 
                         /* if a seek is done without drive connected: */
@@ -260,12 +264,12 @@ public class nec765
                 */
 
                 fdc.pcn[fdc.drive] = fdc.ncn;
-
+                System.out.println("VAMOS...");
                 /* drive ready? */
                 if ((floppy_drive_get_flag_state(fdc.drive, FLOPPY_DRIVE_READY) != 0))
                 {
                         /* yes */
-
+                        System.out.println("READY");
                         /* recalibrate? */
                         if ((fdc.nec765_flags & NEC765_SEEK_OPERATION_IS_RECALIBRATE) != 0)
                         {
@@ -275,18 +279,20 @@ public class nec765
                                 if (floppy_drive_get_flag_state(fdc.drive, FLOPPY_DRIVE_HEAD_AT_TRACK_0) != 0)
                                 {
                                         /* yes. Seek complete */
+                                    System.out.println("SEEK COMPLETE");
                                         fdc.nec765_status[0] = 0x020;
                                 }
                                 else
                                 {
                                         /* no, track 0 failed after 77 steps */
+                                    System.out.println("NO TRACK");
                                         fdc.nec765_status[0] = 0x040 | 0x020 | 0x010;
                                 }
                         }
                         else
                         {
                                 /* no, seek */
-
+                                System.out.println("NO SEEK");
                                 /* seek complete */
                                 fdc.nec765_status[0] = 0x020;
                         }
@@ -294,6 +300,7 @@ public class nec765
                 else
                 {
                         /* abnormal termination, not ready */
+                    System.out.println("ABNORMAL");
                         fdc.nec765_status[0] = 0x040 | 0x020 | 0x08;		
                 }
 
@@ -320,6 +327,7 @@ public class nec765
         //static void nec765_timer_callback(int param)
         public static timer_callback nec765_timer_callback = new timer_callback() {
             public void handler(int param) {
+                System.out.println("nec765_timer_callback "+fdc.timer_type);
                 /* type 0 = data transfer mode in execution phase */
                 if (fdc.timer_type==0)
                 {
@@ -328,7 +336,7 @@ public class nec765
 
                         fdc.timer_type = 4;
 
-                        if (!((fdc.nec765_flags & NEC765_DMA_MODE) != 0))
+                        if (((fdc.nec765_flags & NEC765_DMA_MODE) == 0))
                         {
                                 if (fdc.timer != null)
                                 {
@@ -428,7 +436,7 @@ public class nec765
                         fdc.timer = null;
                 }
 
-                if (!((fdc.nec765_flags & NEC765_DMA_MODE) != 0))
+                if (((fdc.nec765_flags & NEC765_DMA_MODE) == 0))
                 {
                         fdc.timer = timer_set(TIME_IN_USEC(32-27)	/*NEC765_DATA_RATE)*bytes*/, 0, nec765_timer_callback);
                 }
@@ -441,6 +449,7 @@ public class nec765
         /* setup result data request */
         static void nec765_setup_timed_result_data_request()
         {
+                System.out.println("nec765_setup_timed_result_data_request");
                 fdc.timer_type = 2;
                 if (fdc.timer != null)
                 {
@@ -448,13 +457,16 @@ public class nec765
                         timer_remove(fdc.timer);
                         fdc.timer = null;
                 }
-                if (!((fdc.nec765_flags & NEC765_DMA_MODE) != 0))
+                if (((fdc.nec765_flags & NEC765_DMA_MODE) == 0))
                 {
-                        fdc.timer = timer_set(TIME_IN_USEC(NEC765_DATA_RATE)*2, 0, nec765_timer_callback);
+                    System.out.println("nec765_setup_timed_result_data_request -1-"+fdc.nec765_flags);    
+                    fdc.timer = timer_set(TIME_IN_USEC(NEC765_DATA_RATE)*2, 0, nec765_timer_callback);
                 }
                 else
                 {
-                        nec765_timer_callback.handler(fdc.timer_type);
+                        
+                    System.out.println("nec765_setup_timed_result_data_request -2-");
+                    nec765_timer_callback.handler(fdc.timer_type);
                 }
         }
 
@@ -498,7 +510,7 @@ public class nec765
                         /* if drive is already at track 0, or drive is not ready */
                         if (
                                 (floppy_drive_get_flag_state(fdc.drive, FLOPPY_DRIVE_HEAD_AT_TRACK_0)!=0) || 
-                                (!(floppy_drive_get_flag_state(fdc.drive, FLOPPY_DRIVE_READY)!=0))
+                                ((floppy_drive_get_flag_state(fdc.drive, FLOPPY_DRIVE_READY)==0))
                                 )
                         {
                                 /* seek completed */
@@ -549,7 +561,7 @@ public class nec765
                         signed_tracks = fdc.ncn - fdc.pcn[fdc.drive];
 
                         /* if no tracks to seek, or drive is not ready, seek is complete */
-                        if ((signed_tracks==0) || (!(floppy_drive_get_flag_state(fdc.drive, FLOPPY_DRIVE_READY) != 0)))
+                        if ((signed_tracks==0) || ((floppy_drive_get_flag_state(fdc.drive, FLOPPY_DRIVE_READY) == 0)))
                         {
                                 nec765_seek_complete();
                         }
@@ -597,13 +609,15 @@ public class nec765
 
         static void     nec765_setup_result_phase(int byte_count)
         {
+                System.out.println("nec765_setup_result_phase");
                 fdc.FDC_main |= 0x040;                     /* FDC->CPU */
                 fdc.FDC_main &= ~0x020;                    /* not execution phase */
 
                 fdc.nec765_transfer_bytes_count = 0;
                 fdc.nec765_transfer_bytes_remaining = byte_count;
+                
                 fdc.nec765_phase = NEC765_PHASE.NEC765_RESULT_PHASE;
-
+                System.out.println(byte_count);
                 nec765_setup_timed_result_data_request();
         }
 
@@ -634,6 +648,7 @@ public class nec765
         /* set dma request output */
         public static void nec765_set_dma_drq(int state)
         {
+                System.out.println("nec765_set_dma_drq!!!!!!!");
                 fdc.nec765_flags &= ~NEC765_DMA_DRQ;
 
                 if (state != 0)
@@ -651,7 +666,7 @@ public class nec765
                 fdc.timer = null;	//timer_set(TIME_NEVER, 0, nec765_timer_callback);
                 fdc.seek_timer = null;
                 //memset(&nec765_iface, 0, sizeof(nec765_interface));
-
+                
                 if (iface != null)
                 {
                         //memcpy(&nec765_iface, iface, sizeof(nec765_interface));
@@ -801,7 +816,7 @@ public class nec765
                 /* get sector id's */
                 do
             {
-                        chrn_id id=null;
+                        
 
                         nec765_get_next_id(id);
 
@@ -923,7 +938,11 @@ public class nec765
                         return;
                 }
                 if (VERBOSE){
-                    logerror("sector c: %02x h: %02x r: %02x n: %02x\n",fdc.nec765_command_bytes[2], fdc.nec765_command_bytes[3],fdc.nec765_command_bytes[4], fdc.nec765_command_bytes[5]);
+                    //logerror("sector c: %02x h: %02x r: %02x n: %02x\n",fdc.nec765_command_bytes[2], fdc.nec765_command_bytes[3],fdc.nec765_command_bytes[4], fdc.nec765_command_bytes[5]);
+                	System.out.println(fdc.nec765_command_bytes[2]);
+                	System.out.println(fdc.nec765_command_bytes[3]);
+                	System.out.println(fdc.nec765_command_bytes[4]);
+                	System.out.println(fdc.nec765_command_bytes[5]);
                 }
         
                 /* find a sector to read data from */
@@ -1829,11 +1848,11 @@ public class nec765
 
                         case 0x0a:      /* read id */
                         {
-                                chrn_id id=null;
+                                id=new chrn_id();
 
                                 nec765_setup_drive_and_side();
 
-                                fdc.nec765_status[0] = (char) (fdc.drive | (fdc.side<<2));
+                                fdc.nec765_status[0] = (fdc.drive | (fdc.side<<2));
                                 fdc.nec765_status[1] = 0;
                                 fdc.nec765_status[2] = 0;
 
@@ -1860,9 +1879,22 @@ public class nec765
                                                         /* get next id from disc */
                                                         if (floppy_drive_get_next_id(fdc.drive, fdc.side,id) != 0)
                                                         {
+                                                                System.out.println("TENGO un ID!!!!!");
+                                                                System.out.println("RECIBIDO3");
+                                                                System.out.println((int)id.C);
+                                                                System.out.println((int)id.H);
+                                                                System.out.println((int)id.R);
+                                                                System.out.println((int)id.N);
+                                                                System.out.println("FLAGS: "+(int)id.flags);
+                                                                System.out.println((int)id.data_id);
+                                                                System.out.println("FIN RECIBIDO3");
                                                                 /* got an id - quit */
                                                                 break;
+                                                        } else {
+                                                            System.out.println("NO TENGO un ID!!!!!");
                                                         }
+                                                        
+                                                        System.out.println("Salida 1!!!!!");
 
                                                         if (floppy_drive_get_flag_state(fdc.drive, FLOPPY_DRIVE_INDEX) != 0)
                                                         {
@@ -1871,6 +1903,8 @@ public class nec765
                                                         }
                                                 }
                                                 while (index_count!=2);
+                                                
+                                                System.out.println("Salida 2!!!!!");
 
                                                 /* at this point, we have seen a id or two index pulses have occured! */
                                                 fdc.nec765_result_bytes[0] = fdc.nec765_status[0];
@@ -1889,6 +1923,7 @@ public class nec765
                                                 /* this occurs on the PC */
                                                 /* in this case, the command never quits! */
                                                 /* there are no index pulses to stop the command! */
+                                            System.out.println("Salida 3!!!!!");
                                         }
                                 }
                                 else
