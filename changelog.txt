@@ -1,6 +1,6 @@
 24/10/2018
 ==========
--Added MSX driver (WIP, not working)
+-Added MSX driver (bios working)
 -Added DAC and SCC sound drivers
 -Added device_input in mess class
 
