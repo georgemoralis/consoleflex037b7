@@ -17,6 +17,8 @@ import static mess.systems.timex.*;
 
 import static mess.systems.amstrad.*;
 
+import static mess.systems.msx.*;
+
 public class system {
 
     public static GameDriver drivers[] = {
@@ -345,9 +347,13 @@ public class system {
         /*TODO*///
         /*TODO*///	/* ASCII & MICROSOFT */
         /*TODO*///	DRIVER( msx )		/* MSX											  */
+        driver_msx,
         /*TODO*///	DRIVER( msxj )		/* MSX Jap										  */
+        driver_msxj,
         /*TODO*///	DRIVER( msxkr ) 	/* MSX Korean									  */
+        driver_msxkr,
         /*TODO*///	DRIVER( msxuk ) 	/* MSX UK										  */
+        driver_msxuk,
         /*TODO*///
         /*TODO*///	/* NASCOM MICROCOMPUTERS */
         /*TODO*///	DRIVER( nascom1 )	/* Nascom 1 									  */
