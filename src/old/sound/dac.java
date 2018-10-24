@@ -159,5 +159,4 @@ public class dac extends snd_interface {
     {
         DAC_signed_data_w(1,data);
     } };
-
 }
