@@ -23,6 +23,9 @@ import static old.mame.input.*;
 import static old.mame.inputH.*;
 import static WIP.mame.mame.*;
 
+import static mess.machine.flopdrv.*;
+import static mess.includes.flopdrvH.*;
+
 public class mess {
 
     /*TODO*///extern struct GameOptions options;
@@ -511,14 +514,14 @@ public class mess {
 /*TODO*/// * Return the 'id'th extrainfo info for a device of type 'type',
 /*TODO*/// * NULL if not enough image names of that type are available.
 /*TODO*/// */
-/*TODO*///const char *device_extrainfo(int type, int id)
-/*TODO*///{
-/*TODO*///	if (type >= IO_COUNT)
-/*TODO*///		return NULL;
-/*TODO*///	if (id < count[type])
-/*TODO*///		return images[type][id].extrainfo;
-/*TODO*///	return NULL;
-/*TODO*///}
+    public static String device_extrainfo(int type, int id)
+    {
+    	if (type >= IO_COUNT)
+    		return null;
+    	if (id < count[type])
+    		return images[type][id].extrainfo;
+    	return null;
+    }
 
     /*
     * Copy the image names from options.image_files[] to
@@ -600,6 +603,9 @@ public class mess {
         IODevice[] dev = gamedrv.dev;
         int dev_ptr = 0;
         int id;
+        
+        /* Initialise all floppy drives here if the device is Setting can be overriden by the drivers and UI */
+    	floppy_drives_init();
 
         /* initialize all devices */
         while (dev[dev_ptr].count != 0) {
@@ -623,6 +629,8 @@ public class mess {
                          */
  /*					return 1; */
                     }
+                    
+                    
                 }
             } else {
                 logerror("%s does not support id!\n", device_typename(dev[dev_ptr].type));
@@ -633,6 +641,13 @@ public class mess {
                 /* all instances */
                 for (id = 0; id < dev[dev_ptr].count; id++) {
                     int result;
+                    
+                    /* init succeeded */
+    				/* if floppy, perform common init */
+    				if ((dev[dev_ptr].type == IO_FLOPPY) & (device_filename(dev[dev_ptr].type, id) != null))
+    				{
+    					floppy_device_common_init(id);
+    				}
 
                     /* initialize */
                     logerror("%s init (%s)\n", device_typename_id(dev[dev_ptr].type, id), device_filename(dev[dev_ptr].type, id) != null ? device_filename(dev[dev_ptr].type, id) : "NULL");
@@ -650,6 +665,27 @@ public class mess {
             dev_ptr++;
         }
         return 0;
+    }
+    
+    /* common init for all IO_FLOPPY devices */
+    static void	floppy_device_common_init(int id)
+    {
+    	System.out.println("floppy_device_common_init["+id+"]");
+    	logerror("floppy device common init: id: %02x\n",id);
+    	/* disk inserted */
+    	floppy_drive_set_flag_state(id, FLOPPY_DRIVE_DISK_INSERTED, 1);
+    	/* drive connected */
+    	floppy_drive_set_flag_state(id, FLOPPY_DRIVE_CONNECTED, 1);
+    }
+
+    /* common exit for all IO_FLOPPY devices */
+    static void floppy_device_common_exit(int id)
+    {
+    	logerror("floppy device common exit: id: %02x\n",id);
+    	/* disk removed */
+    	floppy_drive_set_flag_state(id, FLOPPY_DRIVE_DISK_INSERTED, 0);
+    	/* drive disconnected */
+    	floppy_drive_set_flag_state(id, FLOPPY_DRIVE_CONNECTED, 0);
     }
 
     /*TODO*///
@@ -826,21 +862,20 @@ public class mess {
         return 0;
     }
 
-    /*TODO*///
-/*TODO*///void device_output(int type, int id, int data)
-/*TODO*///{
-/*TODO*///	const struct IODevice *dev = Machine->gamedrv->dev;
-/*TODO*///	while( dev && dev->count )
-/*TODO*///	{
-/*TODO*///		if( type == dev->type && dev->output )
-/*TODO*///		{
-/*TODO*///			(*dev->output)(id,data);
-/*TODO*///			return;
-/*TODO*///		}
-/*TODO*///		dev++;
-/*TODO*///	}
-/*TODO*///}
-/*TODO*///
+    
+    public static void device_output(int type, int id, int data)
+    {
+    	IODevice[] dev = Machine.gamedrv.dev;
+        int dev_ptr = 0;
+        while (dev != null && dev[dev_ptr].count != 0) {
+    		if( type == dev[dev_ptr].type && dev[dev_ptr].output  != null){
+    			dev[dev_ptr].output.handler(id, data);
+    			return;
+    		}
+		dev_ptr++;
+        }
+    }
+
 /*TODO*///int device_input_chunk(int type, int id, void *dst, int chunks)
 /*TODO*///{
 /*TODO*///	const struct IODevice *dev = Machine->gamedrv->dev;
