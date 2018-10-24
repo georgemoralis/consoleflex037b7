@@ -1,3 +1,7 @@
+24/10/2018
+==========
+-Added MSX driver (WIP, not working)
+
 16/08/2018
 ==========
 -Implemented cpu_get_cycle_table and cpu_set_cycle_tbl methods
