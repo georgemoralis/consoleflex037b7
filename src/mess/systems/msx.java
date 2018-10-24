@@ -501,17 +501,20 @@ public class msx
 	
 	public static VhStartPtr msx_vh_start = new VhStartPtr() { public int handler() 
 	{
+		System.out.println("msx_vh_start");
 	    return TMS9928A_start(TMS99x8A, 0x4000);
 	} };
 	
 	public static VhStopPtr msx_vh_stop = new VhStopPtr() {
         public void handler() {
+        	System.out.println("msx_vh_stop");
             TMS9928A_stop();
         }
     };
     
     public static VhUpdatePtr msx_vh_screenrefresh = new VhUpdatePtr() {
         public void handler(osd_bitmap bitmap, int full_refresh) {
+        	//System.out.println("msx_vh_screenrefresh");
             TMS9928A_refresh(bitmap, full_refresh);
         }
     };
@@ -634,8 +637,8 @@ public class msx
 
 	static RomLoadPtr rom_msx = new RomLoadPtr(){ public void handler(){
 	    ROM_REGION (0x10000, REGION_CPU1);
-	    //ROM_LOAD ("msx.rom", 0x0000, 0x8000, 0x94ee12f3);
-	    ROM_LOAD ("msx.rom", 0x0000, 0x8000, 0x8205795e);
+	    ROM_LOAD ("msx.rom", 0x0000, 0x8000, 0x94ee12f3);
+	    //ROM_LOAD ("msx.rom", 0x0000, 0x8000, 0x8205795e);
 	    
 	    ROM_END(); }};
 	

@@ -16,7 +16,7 @@ public class msxH {
 	    public int type=0;
 	    public int bank_mask=0; //new int[4];
 	    public int[] banks=new int[4];
-	    public UBytePtr mem;
+	    public UBytePtr mem=new UBytePtr(MSX_MAX_ROMSIZE);
 	    public String sramfile;
 	    public boolean pacsram=false;
 	};

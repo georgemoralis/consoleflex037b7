@@ -362,7 +362,7 @@ public class msx
 	        {
 	            if (p != 0)
 	            {
-	            	System.out.println("TODO");
+	            	//System.out.println("TODO");
 	                /* shift up 16kB; custom memcpy so overlapping memory
 	                   isn't corrupted. ROM starts in page 1 (0x4000) */
 	            	p = 1;
@@ -541,7 +541,7 @@ public class msx
 	    int res=0;
 	
 	    F = osd_fopen (Machine.gamedrv.name, filename, OSD_FILETYPE_MEMCARD, 1);
-	    System.out.println("save_sram");
+	    
 	    /*TODO*///res = F && (osd_fwrite (F, pmem, size) == size);
 	    if (F != null) osd_fclose (F);
 	    return res;
@@ -606,7 +606,6 @@ public class msx
 	public static INTCallbackPtr msx_vdp_interrupt = new INTCallbackPtr() { 
 
 		public void handler(int i) {
-			System.out.println("msx_vdp_interrupt");
 			cpu_set_irq_line (0, 0, (i != 0 ? HOLD_LINE : CLEAR_LINE));
 	
 	}};
@@ -614,7 +613,6 @@ public class msx
 	public static InitMachinePtr msx_ch_reset = new InitMachinePtr() { public void handler() 
 	{
 	
-		System.out.println("msx_ch_reset");
 		TMS9928A_reset ();
 	    SCCResetChip (0);
 	    /* set interrupt stuff */
@@ -645,7 +643,6 @@ public class msx
 	
 	public static InitDriverPtr init_msx = new InitDriverPtr() { public void handler() 
 	{
-		System.out.println("init_msx");
 		/* this function is called at a very early stage, and not after a reset. */
 	    TMS9928A_int_callback(msx_vdp_interrupt);
 	} };
@@ -666,7 +663,6 @@ public class msx
 	//READ_HANDLER ( msx_vdp_r )
 	public static ReadHandlerPtr msx_vdp_r = new ReadHandlerPtr() {
         public int handler(int offset) {
-        	System.out.println("msx_vdp_r");
         	if ((offset & 0x01) != 0)
     	        return TMS9928A_register_r();
     	    else
@@ -677,8 +673,7 @@ public class msx
 	//WRITE_HANDLER ( msx_vdp_w )
     public static WriteHandlerPtr msx_vdp_w = new WriteHandlerPtr() { 
     	public void handler(int offset, int data){
-    		System.out.println("msx_vdp_w");
-		    if ((offset & 0x01) != 0)
+    		if ((offset & 0x01) != 0)
 		        TMS9928A_register_w(data);
 		    else
 		        TMS9928A_vram_w(data);
@@ -688,15 +683,13 @@ public class msx
 	//READ_HANDLER ( msx_psg_r )
 	public static ReadHandlerPtr msx_psg_r = new ReadHandlerPtr() {
         public int handler(int offset) {
-        	System.out.println("msx_psg_r");
         	return AY8910_read_port_0_r.handler(offset);
 	}};
 	
 	//WRITE_HANDLER ( msx_psg_w )
 	public static WriteHandlerPtr msx_psg_w = new WriteHandlerPtr() { 
     	public void handler(int offset, int data){
-    		System.out.println("msx_psg_w");
-		    if ((offset & 0x01) != 0)
+    		if ((offset & 0x01) != 0)
 		        AY8910_write_port_0_w.handler(offset, data);
 		    else
 		        AY8910_control_port_0_w.handler(offset, data);
@@ -705,7 +698,6 @@ public class msx
 	//READ_HANDLER ( msx_psg_port_a_r )
 	public static ReadHandlerPtr msx_psg_port_a_r = new ReadHandlerPtr() {
         public int handler(int offset) {
-        	System.out.println("msx_psg_port_a_r");
         	
 		    int data;
 		
@@ -793,12 +785,7 @@ public class msx
 	static void msx_set_slot_1 (int page) {
 	    int i,n;
 	
-	    System.out.println("msx1"+msx1);
-	    System.out.println("msx1.cart"+msx1.cart);
-	    System.out.println("msx1.cart[0]"+msx1.cart[0]);
 	    
-	    System.out.println("msx1.cart[0]"+msx1.cart[0]);
-	    System.out.println("msx1.cart[0].type:"+msx1.cart[0].type);
 	    if ((msx1.cart[0].type == 0) && (msx1.cart[0].mem != null))
 	    {
 	        //cpu_setbank (1 + page * 2, msx1.cart[0].mem + page * 0x4000);
@@ -858,8 +845,8 @@ public class msx
 		cpu_setbank (2 + page * 2, new UBytePtr(msx1.ram, page * 0x4000 + 0x2000));
 	}
 	
-	static void msx_set_slot(int page, int slot) {
-		System.out.println("msx_set_slot: page:"+page+" Slot:"+slot);
+	static void msx_set_slot(int slot, int page) {
+		
 			switch (slot) {
 				case 0:
 					msx_set_slot_0(page);
@@ -880,7 +867,7 @@ public class msx
 	static void msx_set_all_mem_banks ()
 	{
 	    int i;
-	    System.out.println("msx_set_all_mem_banks");
+	    
 	    for (i=0;i<4;i++) {
 	    	msx_set_slot((ppi8255_0_r.handler(0)>>(i*2))&3,(i));
 	    }
