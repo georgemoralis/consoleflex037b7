@@ -1,3 +1,14 @@
+19/11/2018
+==========
+-Added a2600 driver (not working)
+-Added zx80 driver (not working)
+-Added zx81 driver (not working)
+-Added ts1000 driver (not working)
+-Added aszmic driver (not working)
+-Added pc8300 driver (not working)
+-Added pow3000 driver (not working)
+-Implemented install_mem_write_handler in WIP.mame.memory
+
 24/10/2018
 ==========
 -Added MSX driver (bios working)
