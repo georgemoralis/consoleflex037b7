@@ -1900,6 +1900,10 @@ public class memory {
     public static UBytePtr install_mem_write_handler(int cpu, int start, int end, WriteHandlerPtr _handler) {
         return install_mem_write_handler(cpu, start, end, _handler, -15000);
     }
+    
+    public static UBytePtr install_mem_write_handler(int cpu, int start, int end, int handler) {
+        return install_mem_write_handler(cpu, start, end, null, handler);
+    }
 
     public static UBytePtr install_mem_write_handler(int cpu, int start, int end, WriteHandlerPtr _handler, int handler) {
         char u8_hardware = 0;
