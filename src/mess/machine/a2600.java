@@ -636,7 +636,7 @@ public class a2600 {
 	public static WriteHandlerPtr a2600_TIA_w = new WriteHandlerPtr() {
 		public void handler(int offset, int data){
 		
-		System.out.println("a2600_TIA_w "+offset+"-"+data);	
+		//System.out.println("a2600_TIA_w "+offset+"-"+data);	
 		UBytePtr ROM = memory_region(REGION_CPU1);
 	
 		int pc;
