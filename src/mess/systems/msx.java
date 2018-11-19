@@ -466,17 +466,17 @@ public class msx
 	    new WriteHandlerPtr[] { msx_psg_port_b_w }
 	);
 	
-	static CustomSound_interface scc_custom_interface = new CustomSound_interface
-	(
-	     SCC_sh_start,
-	     null, null
-	);
+	/*TODO*///static CustomSound_interface scc_custom_interface = new CustomSound_interface
+	/*TODO*///(
+	/*TODO*///     SCC_sh_start,
+	/*TODO*///     null, null
+	/*TODO*///);
 	
-	static DACinterface dac_interface = new DACinterface
-	(
-	    1,
-	    new int[] { 10 }
-	);
+	/*TODO*///static DACinterface dac_interface = new DACinterface
+	/*TODO*///(
+	/*TODO*///    1,
+	/*TODO*///    new int[] { 10 }
+	/*TODO*///);
 	
 	static YM2413interface ym2413_interface = new YM2413interface
 	(
@@ -549,19 +549,19 @@ public class msx
 	
 	    /* sound hardware */
 	    0,0,0,0,
-	    /*new MachineSound[] {
+	    new MachineSound[] {
 	        new MachineSound(
 	            SOUND_AY8910,
 	            ay8910_interface
 	        ),
-	        new MachineSound(
+	        /*new MachineSound(
 	            SOUND_CUSTOM,
 	            scc_custom_interface
-	        ),
-	        new MachineSound(
+	        ),*/
+	        /*new MachineSound(
 	            SOUND_DAC,
 	            dac_interface
-	        ),
+	        ),*/
 	        new MachineSound(
 	            SOUND_YM2413,
 	            ym2413_interface
@@ -570,8 +570,7 @@ public class msx
 	            SOUND_WAVE,
 	            wave_interface
 	        )
-	    }*/
-	    null
+	    }
 	);
 	
 	static MachineDriver machine_driver_msx_pal = new MachineDriver
@@ -604,19 +603,19 @@ public class msx
 	
 	    /* sound hardware */
 	    0,0,0,0,
-	    /*new MachineSound[] {
+	    new MachineSound[] {
 	        new MachineSound(
 	            SOUND_AY8910,
 	            ay8910_interface
 	        ),
-	        new MachineSound(
+	        /*new MachineSound(
 	            SOUND_CUSTOM,
 	            scc_custom_interface
-	        ),
-	        new MachineSound(
+	        ),*/
+	        /*new MachineSound(
 	            SOUND_DAC,
 	            dac_interface
-	        ),
+	        ),*/
 	        new MachineSound(
 	            SOUND_YM2413,
 	            ym2413_interface
@@ -625,8 +624,7 @@ public class msx
 	            SOUND_WAVE,
 	            wave_interface
 	        )
-	    }*/
-	    null
+	    }
 	);
 	
 	/***************************************************************************
@@ -678,25 +676,25 @@ public class msx
 					null,                       /* input_chunk */
 					null                        /* output_chunk */
 		),
-			/*TODO*///	new IODevice(
-			/*TODO*///            IO_CASSETTE,		/* type */
-			/*TODO*///	1,					/* count */
-			/*TODO*///	"wav\0",       /* file extensions */
-			/*TODO*///	IO_RESET_NONE,		/* reset if file changed */
-			/*TODO*///	null,	/* id */
-			/*TODO*///	msx_cassette_init,	/* init */
-			/*TODO*///	msx_cassette_exit,	/* exit */
-			/*TODO*///             wave_info,			/* info */						
-			/*TODO*///             wave_open,			/* open */						
-			/*TODO*///             wave_close, 		/* close */ 					
-			/*TODO*///            wave_status,		/* status */					
-			/*TODO*///             wave_seek,			/* seek */						
-			/*TODO*///            wave_tell,			/* tell */						
-			/*TODO*///            wave_input, 		/* input */ 					
-			/*TODO*///            wave_output,		/* output */					
-			/*TODO*///            wave_input_chunk,	/* input_chunk */				
-			/*TODO*///            wave_output_chunk	/* output_chunk */
-			/*TODO*///            ),		
+		new IODevice(
+                    IO_CASSETTE,		/* type */
+                    1,					/* count */
+                    "wav\0",       /* file extensions */
+                    IO_RESET_NONE,		/* reset if file changed */
+                    null,	/* id */
+                    msx_cassette_init,	/* init */
+                    msx_cassette_exit,	/* exit */
+                    wave_info,			/* info */						
+                    wave_open,			/* open */						
+                    wave_close, 		/* close */ 					
+                    wave_status,		/* status */					
+                    wave_seek,			/* seek */						
+                    wave_tell,			/* tell */						
+                    wave_input, 		/* input */ 					
+                    wave_output,		/* output */					
+                    wave_input_chunk,	/* input_chunk */				
+                    wave_output_chunk	/* output_chunk */
+		),		
 	    new IODevice(IO_END)
 	};
 	
@@ -708,7 +706,7 @@ public class msx
 	//COMP( 1983, msx, 0, msx_pal, msx, msx, "ASCII & Microsoft", "MSX1" )
 	public static GameDriver driver_msx = new GameDriver("1983", "msx", "msx.java", rom_msx, null, machine_driver_msx, input_ports_msx, null, io_msx, "ASCII & Microsoft", "MSX1");
 	//COMP( 1983, msxj, msx, msx, msxj, msx, "ASCII & Microsoft", "MSX1 (Japan)" )
-	public static GameDriver driver_msxj = new GameDriver("1983", "msxj", "msx.java", rom_msxj, null, machine_driver_msx, input_ports_msx, null, io_msx, "ASCII & Microsoft", "MSX1 (Japan)");
+	public static GameDriver driver_msxj = new GameDriver("1983", "msxj", "msx.java", rom_msxj, null, machine_driver_msx, input_ports_msxj, null, io_msx, "ASCII & Microsoft", "MSX1 (Japan)");
 	//COMP( 1983, msxkr, msx, msx, msxj, msx, "ASCII & Microsoft", "MSX1 (Korean)" )
 	public static GameDriver driver_msxkr = new GameDriver("1983", "msxkr", "msx.java", rom_msxkr, null, machine_driver_msx, input_ports_msx, null, io_msx, "ASCII & Microsoft", "MSX1 (Korean)");
 	//COMP( 1983, msxuk, msx, msx_pal, msxuk, msx, "ASCII & Microsoft", "MSX1 (UK)" )
