@@ -428,7 +428,7 @@ public class a2600 {
 	//int a2600_riot_r(int offset)
 	public static ReadHandlerPtr a2600_riot_r = new ReadHandlerPtr() {
         public int handler(int offset) {
-        	System.out.println("a2600_riot_r "+offset);
+        	//System.out.println("a2600_riot_r "+offset);
         	UBytePtr ROM = memory_region(REGION_CPU1);
 			int riotdiff = (global_tia_cycle + TIME_TO_CYCLES(0, timer_timeelapsed(HSYNC_timer))) - previous_tia_cycle;
 		
@@ -683,8 +683,8 @@ public class a2600 {
 				flashycolour = flashycolour & 0x0f;
 	
 				currentline = 0;
-				System.out.println(stella_bitmap);
-				System.out.println(stella_backbuffer);
+				//System.out.println(stella_bitmap);
+				//System.out.println(stella_backbuffer);
 				copybitmap(stella_bitmap, stella_backbuffer, 0, 0, 0, 0, stella_size, TRANSPARENCY_NONE, 0);
 	
 	
@@ -911,7 +911,7 @@ public class a2600 {
 		case AUDV1:						/* audio volume 1 */
 	
 			/*TODO*///tia_w.handler(offset, data);
-			a2600_TIA_w.handler(offset, data);
+			//a2600_TIA_w.handler(offset, data);
 			break;
 	
 	
@@ -1724,7 +1724,7 @@ public class a2600 {
 	/* This routine is called at the start of vblank to refresh the screen */
 	public static VhUpdatePtr a2600_vh_screenrefresh = new VhUpdatePtr() { public void handler(osd_bitmap bitmap,int full_refresh) 
 	{
-		System.out.println("a2600_vh_screenrefresh");
+		//System.out.println("a2600_vh_screenrefresh");
 		copybitmap(bitmap, stella_bitmap, 0, 0, 0, 0, Machine.visible_area, TRANSPARENCY_NONE, 0);
 	} };
 }
