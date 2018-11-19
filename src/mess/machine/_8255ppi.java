@@ -59,7 +59,7 @@ public class _8255ppi {
 
     public static int ppi8255_r(int which, int offset) {
         ppi8255 chip;
-
+        //System.out.println("ppi8255_r "+which+"-"+offset);
         /* Some bounds checking */
         if (which > intf.num) {
             logerror("Attempting to read an unmapped 8255 chip\n");

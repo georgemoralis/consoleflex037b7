@@ -24,6 +24,7 @@ import static mess.machine._8255ppi.*;
 
 import static mame.commonH.*;
 import static old.mame.common.*;
+import static old.arcadeflex.fileio.osd_fwrite;
 
 import WIP.arcadeflex.fucPtr.InitMachinePtr;
 import WIP.arcadeflex.fucPtr.ReadHandlerPtr;
@@ -133,6 +134,7 @@ public class msx
 	
 	public static io_idPtr msx_id_rom = new io_idPtr() {
         public int handler(int id) {
+            System.out.println("msx_id_rom");
 		    Object F;
 		    char[] magic=new char[2];
 		
@@ -206,6 +208,7 @@ public class msx
 	
 	public static io_initPtr msx_load_rom = new io_initPtr() {
         public int handler(int id) {
+            System.out.println("msx_load_rom");
 	    Object F;
 	    UBytePtr pmem,m;
 	    int size,size_aligned,n,p,i;
@@ -228,7 +231,7 @@ public class msx
 	    /* get mapper type */
 	    pext = (device_extrainfo (IO_CARTSLOT, id));
 	    //if ( (pext != null) || (1 != sscanf (pext, "%d", type) ) )
-	    if ( (pext != null) )
+	    if ( (pext == null) )
 	    {
 	        logerror("Cart #%d No extra info found in crc file\n", id);
 	        type = -1;
@@ -251,7 +254,7 @@ public class msx
 	    //pmem = (UINT8*)malloc (size_aligned);
 	    pmem=new UBytePtr(size_aligned);
 	    
-	    if (pmem != null)
+	    if (pmem == null)
 	    {
 	        logerror("malloc () failed\n");
 	        osd_fclose (F);
@@ -362,13 +365,17 @@ public class msx
 	        {
 	            if (p != 0)
 	            {
-	            	//System.out.println("TODO");
+	            	System.out.println("TODO");
 	                /* shift up 16kB; custom memcpy so overlapping memory
 	                   isn't corrupted. ROM starts in page 1 (0x4000) */
 	            	p = 1;
 	                n = 0xc000; 
 	                m = new UBytePtr(pmem, 0xffff);
 	                /*TODO*///while (n--) { *m = *(m - 0x4000); m--; }
+                        while((n--)!=0){
+                            m.write(m.read()-0x400); 
+                            m.dec();
+                        }
 	                memset (pmem, 0xff, 0x4000);
 	            }
 	        }
@@ -537,12 +544,13 @@ public class msx
 	
 	static int save_sram (int id, String filename, UBytePtr pmem, int size)
 	{
-	    Object F;
+	    System.out.println("save_sram");
+            Object F;
 	    int res=0;
 	
 	    F = osd_fopen (Machine.gamedrv.name, filename, OSD_FILETYPE_MEMCARD, 1);
 	    
-	    /*TODO*///res = F && (osd_fwrite (F, pmem, size) == size);
+	    res = ((F!=null) && ((osd_fwrite (F, pmem, size)) == size))? 1:0;
 	    if (F != null) osd_fclose (F);
 	    return res;
 	}
@@ -663,6 +671,7 @@ public class msx
 	//READ_HANDLER ( msx_vdp_r )
 	public static ReadHandlerPtr msx_vdp_r = new ReadHandlerPtr() {
         public int handler(int offset) {
+            System.out.println("msx_vdp_r");
         	if ((offset & 0x01) != 0)
     	        return TMS9928A_register_r();
     	    else
@@ -673,6 +682,7 @@ public class msx
 	//WRITE_HANDLER ( msx_vdp_w )
     public static WriteHandlerPtr msx_vdp_w = new WriteHandlerPtr() { 
     	public void handler(int offset, int data){
+            System.out.println("msx_vdp_w");
     		if ((offset & 0x01) != 0)
 		        TMS9928A_register_w(data);
 		    else
@@ -683,12 +693,14 @@ public class msx
 	//READ_HANDLER ( msx_psg_r )
 	public static ReadHandlerPtr msx_psg_r = new ReadHandlerPtr() {
         public int handler(int offset) {
+            System.out.println("msx_psg_r");
         	return AY8910_read_port_0_r.handler(offset);
 	}};
 	
 	//WRITE_HANDLER ( msx_psg_w )
 	public static WriteHandlerPtr msx_psg_w = new WriteHandlerPtr() { 
     	public void handler(int offset, int data){
+            System.out.println("msx_psg_w");
     		if ((offset & 0x01) != 0)
 		        AY8910_write_port_0_w.handler(offset, data);
 		    else
@@ -698,7 +710,7 @@ public class msx
 	//READ_HANDLER ( msx_psg_port_a_r )
 	public static ReadHandlerPtr msx_psg_port_a_r = new ReadHandlerPtr() {
         public int handler(int offset) {
-        	
+        	System.out.println("msx_psg_port_a_r");
 		    int data;
 		
 		    data = (device_input (IO_CASSETTE, 0) > 255 ? 0x80 : 0);
@@ -714,6 +726,7 @@ public class msx
 	//READ_HANDLER ( msx_psg_port_b_r )
 	public static ReadHandlerPtr msx_psg_port_b_r = new ReadHandlerPtr() {
         public int handler(int offset) {
+            System.out.println("msx_psg_port_b_r");
         	return msx1.psg_b;
 	}};
 	
@@ -736,7 +749,8 @@ public class msx
 	//WRITE_HANDLER ( msx_printer_w )
 	public static WriteHandlerPtr msx_printer_w = new WriteHandlerPtr() {
 		public void handler(int offset, int data){
-			System.out.println("msx_printer_w");
+			System.out.println("msx_printer_w "+offset);
+                        
 		     if (offset == 1) {
 		        /* SIMPL emulation */
 		        DAC_signed_data_w (0, data);
@@ -897,13 +911,17 @@ public class msx
 	    int n,i;
 	    UBytePtr p;
 	    
-	    //System.out.println("Cart: "+cart);
-	    //System.out.println("msx1.cart: "+msx1.cart);
+	    System.out.println("Cart: "+cart);
+            System.out.println("Offset: "+offset);
+            System.out.println("Data: "+data);
+	    System.out.println("msx1.cart: "+msx1.cart);
 	    
 	    if (msx1.cart[cart] == null) {
 	    	msx1.cart[cart]=new MSX_CART();
 	    	
 	    }
+            
+            System.out.println("msx1.cart[cart].type: "+msx1.cart[cart].type);
 	
 	    switch (msx1.cart[cart].type)
 	    {
@@ -1173,6 +1191,7 @@ public class msx
 	//WRITE_HANDLER ( msx_writemem1 )
 	public static WriteHandlerPtr msx_writemem1 = new WriteHandlerPtr() { 
     	public void handler(int offset, int data){
+            System.out.println("msx_writemem1");
 		    switch (ppi8255_0_r.handler(0) & 0x0c)
 		    {
 		    case 0x04:
@@ -1189,6 +1208,7 @@ public class msx
 	//WRITE_HANDLER ( msx_writemem2 )
 	public static WriteHandlerPtr msx_writemem2 = new WriteHandlerPtr() { 
     	public void handler(int offset, int data){
+            System.out.println("msx_writemem2");
 		    switch (ppi8255_0_r.handler(0) & 0x30)
 		    {
 		    case 0x10:
@@ -1205,8 +1225,12 @@ public class msx
 	//WRITE_HANDLER ( msx_writemem3 )
 	public static WriteHandlerPtr msx_writemem3 = new WriteHandlerPtr() { 
     	public void handler(int offset, int data){
-		    if ( (ppi8255_0_r.handler(0) & 0xc0) == 0xc0)
+            int da=ppi8255_0_r.handler(0);
+            //System.out.println("msx_writemem3 "+da);
+		    if ( (da & 0xc0) == 0xc0){
+                        //System.out.println("Escribo en "+0xc000+offset+":"+data);
 		        msx1.ram.write(0xc000+offset, data);
+                    }
 	}};
 	
 	/*
