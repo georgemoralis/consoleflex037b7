@@ -33,11 +33,43 @@ import static WIP.arcadeflex.fucPtr.*;
 
 import static old.sound.streams.*;
 import static WIP.mame.mame.Machine;
+import static WIP.mame.sndintrf.*;
 
 import static arcadeflex.libc.cstdio.*;
 
-public class scc
+public class scc extends snd_interface
 {
+
+    @Override
+    public int chips_num(MachineSound msound) {
+        return MAX_SCC;
+    }
+
+    @Override
+    public int chips_clock(MachineSound msound) {
+        //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return 0;
+    }
+
+    @Override
+    public int start(MachineSound msound) {
+        return 1;
+    }
+
+    @Override
+    public void stop() {
+        //NO FUNCTIONAL CODE IS NECCESARY
+    }
+
+    @Override
+    public void update() {
+        //NO FUNCTIONAL CODE IS NECCESARY
+    }
+
+    @Override
+    public void reset() {
+        //NO FUNCTIONAL CODE IS NECCESARY
+    }
 	
 	/* the struct */
 	public static class KONSCC {
@@ -181,11 +213,11 @@ public class scc
 	                int clock,int volume,int sample_rate,int sample_bits) {
 	    String name="SCC";
 	    //int vol;
-	
+            System.out.println("SCCInit");
 	    //memset (SCC[chip],0,sizeof (struct KONSCC) );
 	    SCC= new KONSCC[MAX_SCC];
-	    /*for (int i=0;i<MAX_SCC;i++)
-	    	SCC[i]=new KONSCC();*/
+	    for (int i=0;i<MAX_SCC;i++)
+	    	SCC[i]=new KONSCC();
 	    System.out.println(sample_rate);
 	    System.out.println(chip);
 	    SCC[chip]=new KONSCC();
@@ -195,8 +227,9 @@ public class scc
 	
 	    /*SCC[chip].Channel = stream_init (name,volume,sample_rate,sample_bits,chip,
 		(sample_bits == 16) ? SCCUpdate16 : SCCUpdate8);*/
-	
+	System.out.println("Antes "+SCC[chip].Channel);
 		SCC[chip].Channel = stream_init (name,volume,sample_rate,chip,SCCUpdate16);
+                System.out.println("Despues "+SCC[chip].Channel);
 	
 	    if (SCC[chip].Channel == -1) return 1;
 	
@@ -208,6 +241,7 @@ public class scc
 	
 	public static ShStartPtr SCC_sh_start = new ShStartPtr() { 
 		public int handler(MachineSound msound)  {
+                    System.out.println("SCC_sh_start");
 		    int chip;
 		    //const struct CustomSound_interface *intf = msound.sound_interface;
 		
