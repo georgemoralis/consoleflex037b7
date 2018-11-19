@@ -19,13 +19,16 @@ import static mess.systems.amstrad.*;
 
 import static mess.systems.msx.*;
 
+import static mess.systems.a2600.*;
+import static mess.systems.zx.*;
+
 public class system {
 
     public static GameDriver drivers[] = {
         /*TODO*////****************CONSOLES****************************************************/
         /*TODO*///
         /*TODO*///	/* ATARI */
-        /*TODO*///	DRIVER( a2600 ) 	/* Atari 2600									  */
+        driver_a2600, 	/* Atari 2600									  */
         /*TODO*///	DRIVER( a5200 ) 	/* Atari 5200									  */
         /*TODO*///	DRIVER( a7800 ) 	/* Atari 7800									  */
         /*TODO*///
@@ -292,11 +295,17 @@ public class system {
         /*TODO*///#ifndef MESS_EXCLUDE_SINCLAIR
         /*TODO*///	/* SINCLAIR */
         /*TODO*///	DRIVER( zx80 )		/* Sinclair ZX-80								  */
+        driver_zx80,
         /*TODO*///	DRIVER( zx81 )		/* Sinclair ZX-81								  */
+        driver_zx81,
         /*TODO*///	DRIVER( ts1000 )	/* Timex Sinclair 1000							  */
+        driver_ts1000,
         /*TODO*///	DRIVER( aszmic )	/* ASZMIC ZX-81 ROM swap						  */
+        driver_aszmic,
         /*TODO*///	DRIVER( pc8300 )	/* Your Computer - PC8300						  */
+        driver_pc8300,
         /*TODO*///	DRIVER( pow3000 )	/* Creon Enterprises - Power 3000				  */
+        driver_pow3000,
         /*TODO*///
         //	DRIVER( spectrum )	/* Sinclair ZX Spectrum 48k
         driver_spectrum,
