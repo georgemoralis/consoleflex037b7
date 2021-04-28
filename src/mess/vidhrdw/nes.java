@@ -417,7 +417,7 @@ public class nes {
                     if (start_x + i >= 0) {
                         if (sd.read(i) != 0) {
                             plot_pixel.handler(Machine.scrbitmap, start_x + i, scanline, paldata.read(sd.read(i)));
-                            line_priority[start_x + i] |= 0x02;
+                            line_priority[(start_x + i)&0xff] |= 0x02;
                         }
                     }
                 }
@@ -615,15 +615,15 @@ public class nes {
                             /* Is this pixel non-transparent? */
                             if (sd.read(7 - j) != 0) {
                                 /* Has another sprite been drawn here? */
-                                if ((line_priority[x + j] & 0x01) == 0) {
+                                if ((line_priority[(x + j)&0xff] & 0x01) == 0) {
                                     /* No, draw */
                                     plot_pixel.handler(Machine.scrbitmap, x + j, scanline, paldata.read(sd.read(7 - j)));
-                                    line_priority[x + j] |= 0x01;
+                                    line_priority[(x + j)&0xff] |= 0x01;
                                     drawn = 1;
                                 }
 
                                 /* Set the "sprite 0 hit" flag if appropriate */
-                                if ((i == 0) && (line_priority[x + j] & 0x02) != 0) {
+                                if ((i == 0) && (line_priority[(x + j)&0xff] & 0x02) != 0) {
                                     PPU_Status |= PPU_status_sprite0_hit;
                                 }
                             }
@@ -633,15 +633,15 @@ public class nes {
                             /* Is this pixel non-transparent? */
                             if (sd.read(j) != 0) {
                                 /* Has another sprite been drawn here? */
-                                if ((line_priority[x + j] & 0x01) == 0) {
+                                if ((line_priority[(x + j)&0xff] & 0x01) == 0) {
                                     /* No, draw */
                                     plot_pixel.handler(Machine.scrbitmap, x + j, scanline, paldata.read(sd.read(j)));
-                                    line_priority[x + j] |= 0x01;
+                                    line_priority[(x + j)&0xff] |= 0x01;
                                     drawn = 1;
                                 }
 
                                 /* Set the "sprite 0 hit" flag if appropriate */
-                                if ((i == 0) && (line_priority[x + j] & 0x02) != 0) {
+                                if ((i == 0) && (line_priority[(x + j)&0xff] & 0x02) != 0) {
                                     PPU_Status |= PPU_status_sprite0_hit;
                                 }
                             }
