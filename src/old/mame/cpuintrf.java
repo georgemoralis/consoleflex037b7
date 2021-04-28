@@ -1866,7 +1866,7 @@ public class cpuintrf {
      * *************************************************************************
      */
     public static void cpu_vblankintcallback(int param) {
-        if (Machine.drv.cpu[param].vblank_interrupt.handler() != 0) {
+        if (Machine.drv.cpu[param].vblank_interrupt != null) {
             cpu_generate_interrupt(param, Machine.drv.cpu[param].vblank_interrupt, 0);
         }
 
