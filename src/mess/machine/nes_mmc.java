@@ -90,11 +90,12 @@ public class nes_mmc {
 
     public static WriteHandlerPtr nes_low_mapper_w = new WriteHandlerPtr() {
         public void handler(int offset, int data) {
-            throw new UnsupportedOperationException("Not supported yet.");
-            /*TODO*///		if (*mmc_write_low) (*mmc_write_low)(offset, data);
-/*TODO*///		else
-/*TODO*///		{
-/*TODO*///			logerror("Unimplemented LOW mapper write, offset: %04x, data: %02x\n", offset, data);
+            //throw new UnsupportedOperationException("Not supported yet.");
+            if (mmc_write_low != null) 
+                mmc_write_low.handler(offset, data);
+            else
+		{
+			logerror("Unimplemented LOW mapper write, offset: %04x, data: %02x\n", offset, data);
 /*TODO*///	#ifdef MAME_DEBUG
 /*TODO*///			if (! mapper_warning)
 /*TODO*///			{
@@ -102,7 +103,7 @@ public class nes_mmc {
 /*TODO*///				mapper_warning = 1;
 /*TODO*///			}
 /*TODO*///	#endif
-/*TODO*///		}
+		}
         }
     };
 
@@ -120,13 +121,14 @@ public class nes_mmc {
     };
     public static WriteHandlerPtr nes_mid_mapper_w = new WriteHandlerPtr() {
         public void handler(int offset, int data) {
-            throw new UnsupportedOperationException("Not supported yet.");
-            /*TODO*///		if (*mmc_write_mid) (*mmc_write_mid)(offset, data);
-/*TODO*///		else if (nes.mid_ram_enable)
-/*TODO*///			battery_ram[offset] = data;
-/*TODO*///	//	else
-/*TODO*///		{
-/*TODO*///			logerror("Unimplemented MID mapper write, offset: %04x, data: %02x\n", offset, data);
+            //throw new UnsupportedOperationException("Not supported yet.");
+            if (mmc_write_mid != null)
+                mmc_write_mid.handler(offset, data);
+            else if (_nes.u8_mid_ram_enable != 0)
+			battery_ram.write(offset, data);
+	//	else
+		{
+			logerror("Unimplemented MID mapper write, offset: %04x, data: %02x\n", offset, data);
 /*TODO*///	#ifdef MAME_DEBUG
 /*TODO*///			if (! mapper_warning)
 /*TODO*///			{
@@ -134,7 +136,7 @@ public class nes_mmc {
 /*TODO*///				mapper_warning = 1;
 /*TODO*///			}
 /*TODO*///	#endif
-/*TODO*///		}
+		}
         }
     };
     /*TODO*///	

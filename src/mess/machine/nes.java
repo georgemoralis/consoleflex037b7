@@ -109,7 +109,7 @@ public class nes {
                     install_mem_read_handler(0, 0x6000, 0xdfff, MRA_RAM);
                     install_mem_read_handler(0, 0xe000, 0xffff, MRA_ROM);
 
-/*TODO*///                    install_mem_write_handler(0, 0x4020, 0x402f, fds_w);
+                    install_mem_write_handler(0, 0x4020, 0x402f, fds_w);
                     install_mem_write_handler(0, 0x6000, 0xdfff, MWA_RAM);
                     install_mem_write_handler(0, 0xe000, 0xffff, MWA_ROM);
                     break;
@@ -452,7 +452,7 @@ public class nes {
             ret = M6502_INT_NONE;
 
             /* See if a mapper generated an irq */
- /*TODO*///	    if (*mmc_irq != null) ret = (*mmc_irq)(current_scanline);
+ 	    if (mmc_irq != null) ret = mmc_irq.handler(current_scanline);
             if (current_scanline <= BOTTOM_VISIBLE_SCANLINE) {
                 /* If background or sprites are enabled, copy the ppu address latch */
                 if ((PPU_Control1 & 0x18) != 0) {
@@ -573,7 +573,7 @@ public class nes {
                 case 7:
                     u8_retVal = u8_PPU_data_latch & 0xFF;
 
-                    /*TODO*///	            if (*ppu_latch != null) (*ppu_latch)(PPU_address & 0x3fff);
+                    if (ppu_latch != null) ppu_latch.handler(u16_PPU_address & 0x3fff);
                     if ((u16_PPU_address >= 0x2000) && (u16_PPU_address <= 0x3fef)) {
                         u8_PPU_data_latch = ppu_page[(u16_PPU_address & 0xc00) >> 10].read(u16_PPU_address & 0x3ff);
                     } else {
@@ -846,7 +846,7 @@ public class nes {
     static void Write_PPU(int data) {
         int tempAddr = u16_PPU_address & 0x3fff;
 
-        /*TODO*///	    if (*ppu_latch != null) (*ppu_latch)(tempAddr);
+        if (ppu_latch != null) ppu_latch.handler(tempAddr);
         if (tempAddr < 0x2000) {
             /* This ROM writes to the character gen portion of VRAM */
             dirtychar[tempAddr >> 4] = 1;
