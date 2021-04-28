@@ -105,7 +105,7 @@ public class nes {
     {
             case 20:
                     _nes.u8_slow_banking = 0;
-/*TODO*///                    install_mem_read_handler(0, 0x4030, 0x403f, fds_r);
+                    install_mem_read_handler(0, 0x4030, 0x403f, fds_r);
                     install_mem_read_handler(0, 0x6000, 0xdfff, MRA_RAM);
                     install_mem_read_handler(0, 0xe000, 0xffff, MRA_ROM);
 

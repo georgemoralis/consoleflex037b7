@@ -109,13 +109,13 @@ public class nes_mmc {
     /* Handle mapper reads from $4100-$5fff */
     public static ReadHandlerPtr nes_low_mapper_r = new ReadHandlerPtr() {
         public int handler(int offset) {
-            throw new UnsupportedOperationException("Not supported yet.");
-            /*TODO*///		if (*mmc_read_low)
-/*TODO*///			return (*mmc_read_low)(offset);
-/*TODO*///		else
-/*TODO*///			logerror("low mapper area read, addr: %04x\n", offset + 0x4100);
-/*TODO*///	
-/*TODO*///		return 0;
+            //throw new UnsupportedOperationException("Not supported yet.");
+            if (mmc_read_low != null)
+                    return mmc_read_low.handler(offset);
+            else
+                    logerror("low mapper area read, addr: %04x\n", offset + 0x4100);
+
+            return 0;
         }
     };
     public static WriteHandlerPtr nes_mid_mapper_w = new WriteHandlerPtr() {
@@ -148,30 +148,31 @@ public class nes_mmc {
 /*TODO*///
     public static WriteHandlerPtr nes_mapper_w = new WriteHandlerPtr() {
         public void handler(int offset, int data) {
-            throw new UnsupportedOperationException("Not supported yet.");
-            /*TODO*///		if (*mmc_write) (*mmc_write)(offset, data);
-/*TODO*///		else
-/*TODO*///		{
-/*TODO*///			logerror("Unimplemented mapper write, offset: %04x, data: %02x\n", offset, data);
+            //throw new UnsupportedOperationException("Not supported yet.");
+            if (mmc_write!=null) 
+                mmc_write.handler(offset, data);
+            else
+		{
+			logerror("Unimplemented mapper write, offset: %04x, data: %02x\n", offset, data);
 /*TODO*///	#if 1
-/*TODO*///			if (! mapper_warning)
-/*TODO*///			{
-/*TODO*///				printf ("This game is writing to the mapper area but no mapper is set. You may get better results by switching to a valid mapper.\n");
-/*TODO*///				mapper_warning = 1;
-/*TODO*///			}
-/*TODO*///	
-/*TODO*///			switch (offset)
-/*TODO*///			{
-/*TODO*///				/* Hacked mapper for the 24-in-1 NES_ROM. */
-/*TODO*///				/* It's really 35-in-1, and it's mostly different versions of Battle City. Unfortunately, the vrom dumps are bad */
-/*TODO*///				case 0x7fde:
-/*TODO*///					data &= (nes.prg_chunks - 1);
-/*TODO*///					cpu_setbank (3, &nes.rom[data * 0x4000 + 0x10000]);
-/*TODO*///					cpu_setbank (4, &nes.rom[data * 0x4000 + 0x12000]);
-/*TODO*///					break;
-/*TODO*///			}
+			if (mapper_warning != 0)
+			{
+				printf ("This game is writing to the mapper area but no mapper is set. You may get better results by switching to a valid mapper.\n");
+				mapper_warning = 1;
+			}
+	
+			switch (offset)
+			{
+				/* Hacked mapper for the 24-in-1 NES_ROM. */
+				/* It's really 35-in-1, and it's mostly different versions of Battle City. Unfortunately, the vrom dumps are bad */
+				case 0x7fde:
+					data &= (_nes.prg_chunks[0] - 1);
+					cpu_setbank (3, new UBytePtr(_nes.rom, data * 0x4000 + 0x10000));
+					cpu_setbank (4, new UBytePtr(_nes.rom, data * 0x4000 + 0x12000));
+					break;
+			}
 /*TODO*///	#endif
-/*TODO*///		}
+		}
         }
     };
 
@@ -210,15 +211,15 @@ public class nes_mmc {
 			cpu_setbank (3, new UBytePtr(_nes.rom, bank * 0x2000 + 0x10000));
 	}
 	
-/*TODO*///	static void prg8_ef (int bank)
-/*TODO*///	{
-/*TODO*///		/* assumes that bank references an 8k chunk */
-/*TODO*///		bank &= ((nes.prg_chunks << 1) - 1);
-/*TODO*///		if (nes.slow_banking)
-/*TODO*///			memcpy (&nes.rom[0xe000], &nes.rom[bank * 0x2000 + 0x10000], 0x2000);
-/*TODO*///		else
-/*TODO*///			cpu_setbank (4, &nes.rom[bank * 0x2000 + 0x10000]);
-/*TODO*///	}
+	static void prg8_ef (int bank)
+	{
+		/* assumes that bank references an 8k chunk */
+		bank &= ((_nes.prg_chunks[0] << 1) - 1);
+		if (_nes.u8_slow_banking != 0)
+			memcpy (new UBytePtr(_nes.rom, 0xe000), new UBytePtr(_nes.rom, bank * 0x2000 + 0x10000), 0x2000);
+		else
+			cpu_setbank (4, new UBytePtr(_nes.rom, bank * 0x2000 + 0x10000));
+	}
 	
 	static void prg16_89ab (int bank)
 	{
@@ -2105,55 +2106,58 @@ public class nes_mmc {
 		return ret;
             }
         };
+        
+        static int last_side = 0;
+	static int count = 0;
 	
-/*TODO*///	READ_HANDLER ( fds_r )
-/*TODO*///	{
-/*TODO*///		data_t ret = 0x00;
-/*TODO*///		static int last_side = 0;
-/*TODO*///		static int count = 0;
-/*TODO*///	
-/*TODO*///		switch (offset)
-/*TODO*///		{
-/*TODO*///			case 0x00: /* $4030 - disk status 0 */
-/*TODO*///				ret = nes_fds.status0;
-/*TODO*///				/* clear the disk IRQ detect flag */
-/*TODO*///				nes_fds.status0 &= ~0x01;
-/*TODO*///				break;
-/*TODO*///			case 0x01: /* $4031 - data latch */
-/*TODO*///				if (nes_fds.current_side)
-/*TODO*///					ret = nes_fds.data[(nes_fds.current_side-1) * 65500 + nes_fds.head_position++];
-/*TODO*///				else
-/*TODO*///					ret = 0;
-/*TODO*///				break;
-/*TODO*///			case 0x02: /* $4032 - disk status 1 */
-/*TODO*///				/* If we've switched disks, report "no disk" for a few reads */
-/*TODO*///				if (last_side != nes_fds.current_side)
-/*TODO*///				{
-/*TODO*///					ret = 1;
-/*TODO*///					count ++;
-/*TODO*///					if (count == 50)
-/*TODO*///					{
-/*TODO*///						last_side = nes_fds.current_side;
-/*TODO*///						count = 0;
-/*TODO*///					}
-/*TODO*///				}
-/*TODO*///				else
-/*TODO*///					ret = (nes_fds.current_side == 0); /* 0 if a disk is inserted */
-/*TODO*///				break;
-/*TODO*///			case 0x03: /* $4033 */
-/*TODO*///				ret = 0x80;
-/*TODO*///				break;
-/*TODO*///			default:
-/*TODO*///				ret = 0x00;
-/*TODO*///				break;
-/*TODO*///		}
-/*TODO*///	
+        public static ReadHandlerPtr fds_r = new ReadHandlerPtr() {
+            @Override
+            public int handler(int offset) {
+		int ret = 0x00;		
+	
+		switch (offset)
+		{
+			case 0x00: /* $4030 - disk status 0 */
+				ret = nes_fds.status0;
+				/* clear the disk IRQ detect flag */
+				nes_fds.status0 &= ~0x01;
+				break;
+			case 0x01: /* $4031 - data latch */
+				if (nes_fds.current_side != 0)
+					ret = nes_fds.data.read((nes_fds.current_side-1) * 65500 + nes_fds.head_position++);
+				else
+					ret = 0;
+				break;
+			case 0x02: /* $4032 - disk status 1 */
+				/* If we've switched disks, report "no disk" for a few reads */
+				if (last_side != nes_fds.current_side)
+				{
+					ret = 1;
+					count ++;
+					if (count == 50)
+					{
+						last_side = nes_fds.current_side;
+						count = 0;
+					}
+				}
+				else
+					ret = (nes_fds.current_side == 0)?1:0; /* 0 if a disk is inserted */
+				break;
+			case 0x03: /* $4033 */
+				ret = 0x80;
+				break;
+			default:
+				ret = 0x00;
+				break;
+		}
+	
 /*TODO*///	#ifdef LOG_FDS
 /*TODO*///		logerror ("fds_r, address: %04x, data: %02x\n", offset + 0x4030, ret);
 /*TODO*///	#endif
-/*TODO*///	
-/*TODO*///		return ret;
-/*TODO*///	}
+	
+		return ret;
+            }
+        };
 	
 	public static WriteHandlerPtr fds_w  = new WriteHandlerPtr() {
             public void handler(int offset, int data) {
@@ -4253,261 +4257,261 @@ public class nes_mmc {
 
         /* Point the WRAM/battery area to the first RAM bank */
         cpu_setbank(5, new UBytePtr(_nes.wram, 0x0000));
-        /*TODO*///	
-/*TODO*///		switch (mapperNum)
-/*TODO*///		{
-/*TODO*///			case 0:
+        	
+		switch (mapperNum)
+		{
+			case 0:
         err = 1;
         /* No mapper found */
         prg32(0);
-        /*TODO*///				break;
-/*TODO*///			case 1:
-/*TODO*///				/* Reset the latch */
-/*TODO*///				MMC1_reg = 0;
-/*TODO*///				MMC1_reg_count = 0;
-/*TODO*///	
-/*TODO*///				MMC1_Size_16k = 1;
-/*TODO*///				MMC1_Switch_Low = 1;
-/*TODO*///				MMC1_SizeVrom_4k = 0;
-/*TODO*///				MMC1_extended_bank = 0;
-/*TODO*///				MMC1_extended_swap = 0;
-/*TODO*///				MMC1_extended_base = 0x10000;
-/*TODO*///				MMC1_extended = ((nes.prg_chunks << 4) + nes.chr_chunks * 8) >> 9;
-/*TODO*///	
-/*TODO*///				if (!MMC1_extended)
-/*TODO*///					/* Set it to the end of the prg rom */
-/*TODO*///					MMC1_High = (nes.prg_chunks - 1) * 0x4000;
-/*TODO*///				else
-/*TODO*///					/* Set it to the end of the first 256k bank */
-/*TODO*///					MMC1_High = 15 * 0x4000;
-/*TODO*///	
-/*TODO*///				MMC1_bank1 = 0;
-/*TODO*///				MMC1_bank2 = 0x2000;
-/*TODO*///				MMC1_bank3 = MMC1_High;
-/*TODO*///				MMC1_bank4 = MMC1_High + 0x2000;
-/*TODO*///	
-/*TODO*///				cpu_setbank (1, &nes.rom[MMC1_extended_base + MMC1_bank1]);
-/*TODO*///				cpu_setbank (2, &nes.rom[MMC1_extended_base + MMC1_bank2]);
-/*TODO*///				cpu_setbank (3, &nes.rom[MMC1_extended_base + MMC1_bank3]);
-/*TODO*///				cpu_setbank (4, &nes.rom[MMC1_extended_base + MMC1_bank4]);
-/*TODO*///				logerror("-- page1: %06x\n", MMC1_bank1);
-/*TODO*///				logerror("-- page2: %06x\n", MMC1_bank2);
-/*TODO*///				logerror("-- page3: %06x\n", MMC1_bank3);
-/*TODO*///				logerror("-- page4: %06x\n", MMC1_bank4);
-/*TODO*///				break;
-/*TODO*///			case 2:
-/*TODO*///				/* These games don't switch VROM, but some ROMs incorrectly have CHR chunks */
-/*TODO*///				nes.chr_chunks = 0;
-/*TODO*///				prg16_89ab (0);
-/*TODO*///				prg16_cdef (nes.prg_chunks-1);
-/*TODO*///				break;
-/*TODO*///			case 3:
-/*TODO*///				/* Doesn't bank-switch */
-/*TODO*///				prg32(0);
-/*TODO*///				break;
-/*TODO*///			case 4:
-/*TODO*///			case 118:
-/*TODO*///				/* Can switch 8k prg banks */
-/*TODO*///				IRQ_enable = 0;
-/*TODO*///				IRQ_count = IRQ_count_latch = 0;
-/*TODO*///				MMC3_prg0 = 0xfe;
-/*TODO*///				MMC3_prg1 = 0xff;
-/*TODO*///				MMC3_cmd = 0;
-/*TODO*///				prg16_89ab (nes.prg_chunks-1);
-/*TODO*///				prg16_cdef (nes.prg_chunks-1);
-/*TODO*///				break;
-/*TODO*///			case 5:
-/*TODO*///				/* Can switch 8k prg banks, but they are saved as 16k in size */
-/*TODO*///				MMC5_rom_bank_mode = 3;
-/*TODO*///				MMC5_vrom_bank_mode = 0;
-/*TODO*///				MMC5_vram_protect = 0;
-/*TODO*///				IRQ_enable = 0;
-/*TODO*///				IRQ_count = 0;
-/*TODO*///				nes.mid_ram_enable = 0;
-/*TODO*///				prg16_89ab (nes.prg_chunks-2);
-/*TODO*///				prg16_cdef (nes.prg_chunks-1);
-/*TODO*///				break;
-/*TODO*///			case 7:
-/*TODO*///				/* Bankswitches 32k at a time */
-/*TODO*///				ppu_mirror_low ();
-/*TODO*///				prg16_89ab (0);
-/*TODO*///				prg16_cdef (nes.prg_chunks-1);
-/*TODO*///				break;
-/*TODO*///			case 8:
-/*TODO*///				/* Switches 16k banks at $8000, 1st 2 16k banks loaded on reset */
-/*TODO*///				prg32(0);
-/*TODO*///				break;
-/*TODO*///			case 9:
-/*TODO*///				/* Can switch 8k prg banks */
-/*TODO*///				/* Note that the iNES header defines the number of banks as 8k in size, rather than 16k */
-/*TODO*///				/* Reset VROM latches */
-/*TODO*///				MMC2_bank0 = MMC2_bank1 = 0;
-/*TODO*///				MMC2_bank0_hi = MMC2_bank1_hi = 0;
-/*TODO*///				MMC2_bank0_latch = MMC2_bank1_latch = 0xfe;
-/*TODO*///				cpu_setbank (1, &nes.rom[0x10000]);
-/*TODO*///				cpu_setbank (2, &nes.rom[(nes.prg_chunks-2) * 0x4000 + 0x12000]);
-/*TODO*///				cpu_setbank (3, &nes.rom[(nes.prg_chunks-1) * 0x4000 + 0x10000]);
-/*TODO*///				cpu_setbank (4, &nes.rom[(nes.prg_chunks-1) * 0x4000 + 0x12000]);
-/*TODO*///				break;
-/*TODO*///			case 10:
-/*TODO*///				/* Reset VROM latches */
-/*TODO*///				MMC2_bank0 = MMC2_bank1 = 0;
-/*TODO*///				MMC2_bank0_hi = MMC2_bank1_hi = 0;
-/*TODO*///				MMC2_bank0_latch = MMC2_bank1_latch = 0xfe;
-/*TODO*///				prg16_89ab (0);
-/*TODO*///				prg16_cdef (nes.prg_chunks-1);
-/*TODO*///				break;
-/*TODO*///			case 11:
-/*TODO*///				/* Switches 32k banks, 1st 32k bank loaded on reset (?) May be more like mapper 7... */
-/*TODO*///				prg16_89ab (0);
-/*TODO*///				prg16_cdef (nes.prg_chunks-1);
-/*TODO*///				break;
-/*TODO*///			case 15:
-/*TODO*///				/* Can switch 8k prg banks */
-/*TODO*///				prg32(0);
-/*TODO*///				break;
-/*TODO*///			case 16:
-/*TODO*///			case 17:
-/*TODO*///			case 18:
-/*TODO*///			case 19:
-/*TODO*///				prg16_89ab (0);
-/*TODO*///				prg16_cdef (nes.prg_chunks-1);
-/*TODO*///				break;
-/*TODO*///			case 20:
-/*TODO*///				IRQ_enable = IRQ_enable_latch = 0;
-/*TODO*///				IRQ_count = IRQ_count_latch = 0;
-/*TODO*///				nes_fds.motor_on = 0;
-/*TODO*///				nes_fds.door_closed = 0;
-/*TODO*///				nes_fds.current_side = 1;
-/*TODO*///				nes_fds.head_position = 0;
-/*TODO*///				nes_fds.status0 = 0;
-/*TODO*///				nes_fds.read_mode = nes_fds.write_reg = 0;
-/*TODO*///				break;
-/*TODO*///			case 21:
-/*TODO*///			case 25:
-/*TODO*///				IRQ_enable = IRQ_enable_latch = 0;
-/*TODO*///				IRQ_count = IRQ_count_latch = 0;
-/*TODO*///				/* fall through */
-/*TODO*///			case 22:
-/*TODO*///			case 23:
-/*TODO*///			case 32:
-/*TODO*///			case 33:
-/*TODO*///				prg16_89ab (0);
-/*TODO*///				prg16_cdef (nes.prg_chunks-1);
-/*TODO*///				break;
-/*TODO*///			case 24:
-/*TODO*///			case 26:
-/*TODO*///			case 73:
-/*TODO*///			case 75:
-/*TODO*///				IRQ_enable = IRQ_enable_latch = 0;
-/*TODO*///				IRQ_count = IRQ_count_latch = 0;
-/*TODO*///				prg16_89ab (0);
-/*TODO*///				prg16_cdef (nes.prg_chunks-1);
-/*TODO*///				break;
-/*TODO*///			case 34:
-/*TODO*///				/* Can switch 32k prg banks */
-/*TODO*///				prg32(0);
-/*TODO*///				break;
-/*TODO*///			case 40:
-/*TODO*///				IRQ_enable = 0;
-/*TODO*///				IRQ_count = 0;
-/*TODO*///				/* Who's your daddy? */
-/*TODO*///				memcpy (&nes.rom[0x6000], &nes.rom[6 * 0x2000 + 0x10000], 0x2000);
-/*TODO*///				prg8_89 (4);
-/*TODO*///				prg8_ab (5);
-/*TODO*///				prg8_cd (6);
-/*TODO*///				prg8_ef (7);
-/*TODO*///				break;
-/*TODO*///			case 64:
-/*TODO*///				/* Can switch 3 8k prg banks */
-/*TODO*///				prg16_89ab (nes.prg_chunks-1);
-/*TODO*///				prg16_cdef (nes.prg_chunks-1);
-/*TODO*///				break;
-/*TODO*///			case 65:
-/*TODO*///				IRQ_enable = 0;
-/*TODO*///				IRQ_count = 0;
-/*TODO*///				prg16_89ab (0);
-/*TODO*///				prg16_cdef (nes.prg_chunks-1);
-/*TODO*///				break;
-/*TODO*///			case 41:
-/*TODO*///			case 66:
-/*TODO*///				/* Can switch 32k prgm banks */
-/*TODO*///				prg32(0);
-/*TODO*///				break;
-/*TODO*///			case 70:
-/*TODO*///	//		case 86:
-/*TODO*///				prg16_89ab (nes.prg_chunks-2);
-/*TODO*///				prg16_cdef (nes.prg_chunks-1);
-/*TODO*///				break;
-/*TODO*///			case 67:
-/*TODO*///			case 68:
-/*TODO*///			case 69:
-/*TODO*///			case 71:
-/*TODO*///			case 72:
-/*TODO*///			case 77:
-/*TODO*///			case 78:
-/*TODO*///				IRQ_enable = IRQ_enable_latch = 0;
-/*TODO*///				IRQ_count = IRQ_count_latch = 0;
-/*TODO*///				prg16_89ab (0);
-/*TODO*///				prg16_cdef (nes.prg_chunks-1);
-/*TODO*///				break;
-/*TODO*///			case 79:
-/*TODO*///				/* Mirroring always horizontal...? */
-/*TODO*///	//			Mirroring = 1;
-/*TODO*///				prg32(0);
-/*TODO*///				break;
-/*TODO*///			case 80:
-/*TODO*///			case 82:
-/*TODO*///			case 85:
-/*TODO*///			case 86:
-/*TODO*///				prg16_89ab (0);
-/*TODO*///				prg16_cdef (nes.prg_chunks-1);
-/*TODO*///				break;
-/*TODO*///	//		case 70:
-/*TODO*///			case 87:
-/*TODO*///			case 228:
-/*TODO*///				prg16_89ab (0);
-/*TODO*///				prg16_cdef (nes.prg_chunks-1);
-/*TODO*///				break;
-/*TODO*///			case 91:
-/*TODO*///				ppu_mirror_v();
-/*TODO*///	//			cpu_setbank (1, &nes.rom[0x10000]);
-/*TODO*///	//			cpu_setbank (2, &nes.rom[0x12000]);
-/*TODO*///				prg16_89ab (nes.prg_chunks-1);
-/*TODO*///				prg16_cdef (nes.prg_chunks-1);
-/*TODO*///				break;
-/*TODO*///			case 93:
-/*TODO*///			case 94:
-/*TODO*///			case 95:
-/*TODO*///			case 96:
-/*TODO*///			case 101:
-/*TODO*///				prg16_89ab (0);
-/*TODO*///				prg16_cdef (nes.prg_chunks-1);
-/*TODO*///				break;
-/*TODO*///			case 97:
-/*TODO*///	//			cpu_setbank (1, &nes.rom[0x10000]);
-/*TODO*///	//			cpu_setbank (2, &nes.rom[0x12000]);
-/*TODO*///	//			cpu_setbank (3, &nes.rom[0x14000]);
-/*TODO*///	//			cpu_setbank (4, &nes.rom[0x16000]);
-/*TODO*///				prg16_89ab (nes.prg_chunks-2);
-/*TODO*///				prg16_cdef (nes.prg_chunks-1);
-/*TODO*///				break;
-/*TODO*///			case 225:
-/*TODO*///			case 226:
-/*TODO*///			case 227:
-/*TODO*///			case 229:
-/*TODO*///				prg16_89ab (0);
-/*TODO*///				prg16_cdef (0);
-/*TODO*///				break;
-/*TODO*///			case 231:
-/*TODO*///				prg16_89ab (nes.prg_chunks-2);
-/*TODO*///				prg16_cdef (nes.prg_chunks-1);
-/*TODO*///				break;
-/*TODO*///			default:
-/*TODO*///				/* Mapper not supported */
-/*TODO*///				err = 2;
-/*TODO*///				break;
-/*TODO*///		}
+        				break;
+			case 1:
+				/* Reset the latch */
+				MMC1_reg = 0;
+				MMC1_reg_count = 0;
+	
+				MMC1_Size_16k = 1;
+				MMC1_Switch_Low = 1;
+				MMC1_SizeVrom_4k = 0;
+				MMC1_extended_bank = 0;
+				MMC1_extended_swap = 0;
+				MMC1_extended_base = 0x10000;
+				MMC1_extended = ((_nes.prg_chunks[0] << 4) + _nes.chr_chunks[0] * 8) >> 9;
+	
+				if (MMC1_extended==0)
+					/* Set it to the end of the prg rom */
+					MMC1_High = (_nes.prg_chunks[0] - 1) * 0x4000;
+				else
+					/* Set it to the end of the first 256k bank */
+					MMC1_High = 15 * 0x4000;
+	
+				MMC1_bank1 = 0;
+				MMC1_bank2 = 0x2000;
+				MMC1_bank3 = MMC1_High;
+				MMC1_bank4 = MMC1_High + 0x2000;
+	
+				cpu_setbank (1, new UBytePtr(_nes.rom, MMC1_extended_base + MMC1_bank1));
+				cpu_setbank (2, new UBytePtr(_nes.rom, MMC1_extended_base + MMC1_bank2));
+				cpu_setbank (3, new UBytePtr(_nes.rom, MMC1_extended_base + MMC1_bank3));
+				cpu_setbank (4, new UBytePtr(_nes.rom, MMC1_extended_base + MMC1_bank4));
+				logerror("-- page1: %06x\n", MMC1_bank1);
+				logerror("-- page2: %06x\n", MMC1_bank2);
+				logerror("-- page3: %06x\n", MMC1_bank3);
+				logerror("-- page4: %06x\n", MMC1_bank4);
+				break;
+			case 2:
+				/* These games don't switch VROM, but some ROMs incorrectly have CHR chunks */
+				_nes.chr_chunks[0] = 0;
+				prg16_89ab (0);
+				prg16_cdef (_nes.prg_chunks[0]-1);
+				break;
+			case 3:
+				/* Doesn't bank-switch */
+				prg32(0);
+				break;
+			case 4:
+			case 118:
+				/* Can switch 8k prg banks */
+				IRQ_enable = 0;
+				IRQ_count = IRQ_count_latch = 0;
+				MMC3_prg0 = 0xfe;
+				MMC3_prg1 = 0xff;
+				MMC3_cmd = 0;
+				prg16_89ab (_nes.prg_chunks[0]-1);
+				prg16_cdef (_nes.prg_chunks[0]-1);
+				break;
+			case 5:
+				/* Can switch 8k prg banks, but they are saved as 16k in size */
+				MMC5_rom_bank_mode = 3;
+				MMC5_vrom_bank_mode = 0;
+				MMC5_vram_protect = 0;
+				IRQ_enable = 0;
+				IRQ_count = 0;
+				_nes.u8_mid_ram_enable = 0;
+				prg16_89ab (_nes.prg_chunks[0]-2);
+				prg16_cdef (_nes.prg_chunks[0]-1);
+				break;
+			case 7:
+				/* Bankswitches 32k at a time */
+				ppu_mirror_low ();
+				prg16_89ab (0);
+				prg16_cdef (_nes.prg_chunks[0]-1);
+				break;
+			case 8:
+				/* Switches 16k banks at $8000, 1st 2 16k banks loaded on reset */
+				prg32(0);
+				break;
+			case 9:
+				/* Can switch 8k prg banks */
+				/* Note that the iNES header defines the number of banks as 8k in size, rather than 16k */
+				/* Reset VROM latches */
+				MMC2_bank0 = MMC2_bank1 = 0;
+				MMC2_bank0_hi = MMC2_bank1_hi = 0;
+				MMC2_bank0_latch = MMC2_bank1_latch = 0xfe;
+				cpu_setbank (1, new UBytePtr(_nes.rom, 0x10000));
+				cpu_setbank (2, new UBytePtr(_nes.rom, (_nes.prg_chunks[0]-2) * 0x4000 + 0x12000));
+				cpu_setbank (3, new UBytePtr(_nes.rom, (_nes.prg_chunks[0]-1) * 0x4000 + 0x10000));
+				cpu_setbank (4, new UBytePtr(_nes.rom, (_nes.prg_chunks[0]-1) * 0x4000 + 0x12000));
+				break;
+			case 10:
+				/* Reset VROM latches */
+				MMC2_bank0 = MMC2_bank1 = 0;
+				MMC2_bank0_hi = MMC2_bank1_hi = 0;
+				MMC2_bank0_latch = MMC2_bank1_latch = 0xfe;
+				prg16_89ab (0);
+				prg16_cdef (_nes.prg_chunks[0]-1);
+				break;
+			case 11:
+				/* Switches 32k banks, 1st 32k bank loaded on reset (?) May be more like mapper 7... */
+				prg16_89ab (0);
+				prg16_cdef (_nes.prg_chunks[0]-1);
+				break;
+			case 15:
+				/* Can switch 8k prg banks */
+				prg32(0);
+				break;
+			case 16:
+			case 17:
+			case 18:
+			case 19:
+				prg16_89ab (0);
+				prg16_cdef (_nes.prg_chunks[0]-1);
+				break;
+			case 20:
+				IRQ_enable = IRQ_enable_latch = 0;
+				IRQ_count = IRQ_count_latch = 0;
+				nes_fds.motor_on = 0;
+				nes_fds.door_closed = 0;
+				nes_fds.current_side = 1;
+				nes_fds.head_position = 0;
+				nes_fds.status0 = 0;
+				nes_fds.read_mode = nes_fds.write_reg = 0;
+				break;
+			case 21:
+			case 25:
+				IRQ_enable = IRQ_enable_latch = 0;
+				IRQ_count = IRQ_count_latch = 0;
+				/* fall through */
+			case 22:
+			case 23:
+			case 32:
+			case 33:
+				prg16_89ab (0);
+				prg16_cdef (_nes.prg_chunks[0]-1);
+				break;
+			case 24:
+			case 26:
+			case 73:
+			case 75:
+				IRQ_enable = IRQ_enable_latch = 0;
+				IRQ_count = IRQ_count_latch = 0;
+				prg16_89ab (0);
+				prg16_cdef (_nes.prg_chunks[0]-1);
+				break;
+			case 34:
+				/* Can switch 32k prg banks */
+				prg32(0);
+				break;
+			case 40:
+				IRQ_enable = 0;
+				IRQ_count = 0;
+				/* Who's your daddy? */
+				memcpy (new UBytePtr(_nes.rom, 0x6000), new UBytePtr(_nes.rom, 6 * 0x2000 + 0x10000), 0x2000);
+				prg8_89 (4);
+				prg8_ab (5);
+				prg8_cd (6);
+				prg8_ef (7);
+				break;
+			case 64:
+				/* Can switch 3 8k prg banks */
+				prg16_89ab (_nes.prg_chunks[0]-1);
+				prg16_cdef (_nes.prg_chunks[0]-1);
+				break;
+			case 65:
+				IRQ_enable = 0;
+				IRQ_count = 0;
+				prg16_89ab (0);
+				prg16_cdef (_nes.prg_chunks[0]-1);
+				break;
+			case 41:
+			case 66:
+				/* Can switch 32k prgm banks */
+				prg32(0);
+				break;
+			case 70:
+	//		case 86:
+				prg16_89ab (_nes.prg_chunks[0]-2);
+				prg16_cdef (_nes.prg_chunks[0]-1);
+				break;
+			case 67:
+			case 68:
+			case 69:
+			case 71:
+			case 72:
+			case 77:
+			case 78:
+				IRQ_enable = IRQ_enable_latch = 0;
+				IRQ_count = IRQ_count_latch = 0;
+				prg16_89ab (0);
+				prg16_cdef (_nes.prg_chunks[0]-1);
+				break;
+			case 79:
+				/* Mirroring always horizontal...? */
+	//			Mirroring = 1;
+				prg32(0);
+				break;
+			case 80:
+			case 82:
+			case 85:
+			case 86:
+				prg16_89ab (0);
+				prg16_cdef (_nes.prg_chunks[0]-1);
+				break;
+	//		case 70:
+			case 87:
+			case 228:
+				prg16_89ab (0);
+				prg16_cdef (_nes.prg_chunks[0]-1);
+				break;
+			case 91:
+				ppu_mirror_v();
+	//			cpu_setbank (1, &nes.rom[0x10000]);
+	//			cpu_setbank (2, &nes.rom[0x12000]);
+				prg16_89ab (_nes.prg_chunks[0]-1);
+				prg16_cdef (_nes.prg_chunks[0]-1);
+				break;
+			case 93:
+			case 94:
+			case 95:
+			case 96:
+			case 101:
+				prg16_89ab (0);
+				prg16_cdef (_nes.prg_chunks[0]-1);
+				break;
+			case 97:
+	//			cpu_setbank (1, &nes.rom[0x10000]);
+	//			cpu_setbank (2, &nes.rom[0x12000]);
+	//			cpu_setbank (3, &nes.rom[0x14000]);
+	//			cpu_setbank (4, &nes.rom[0x16000]);
+				prg16_89ab (_nes.prg_chunks[0]-2);
+				prg16_cdef (_nes.prg_chunks[0]-1);
+				break;
+			case 225:
+			case 226:
+			case 227:
+			case 229:
+				prg16_89ab (0);
+				prg16_cdef (0);
+				break;
+			case 231:
+				prg16_89ab (_nes.prg_chunks[0]-2);
+				prg16_cdef (_nes.prg_chunks[0]-1);
+				break;
+			default:
+				/* Mapper not supported */
+				err = 2;
+				break;
+		}
 
         if (_nes.chr_chunks[0] != 0) {
             memcpy(videoram, _nes.vrom, 0x2000);

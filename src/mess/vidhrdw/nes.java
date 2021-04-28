@@ -62,7 +62,7 @@ public class nes {
     static char[] nes_palette = new char[3 * 64];
 
     static char[] line_priority = new char[0x100];
-    /*TODO*///	
+    
     /* Changed at runtime */
     static char nes_colortable[]
             = {
@@ -390,7 +390,7 @@ public class nes {
 
             address = index1 & 0x3ff;
             index2 = nes_vram[(ppu_page[page].read(address) >> 6) | PPU_tile_page] + (ppu_page[page].read(address) & 0x3f);
-            /*TODO*///	
+            
 /*TODO*///	#ifdef MMC5_VRAM
             /* Use the extended bits if necessary */
             if ((MMC5_vram_control & 0x01) != 0)
@@ -531,12 +531,12 @@ public class nes {
 
             //if (priority == 0)
 /*TODO*///	{
-/*TODO*///			if (*ppu_latch)
-/*TODO*///			{
-/*TODO*///	//			if ((tile == 0x1fd) || (tile == 0x1fe)) Debugger ();
-/*TODO*///				(*ppu_latch)((PPU_sprite_page << 10) | ((tile & 0xff) << 4));
-/*TODO*///			}
-/*TODO*///	//		continue;
+                if (ppu_latch != null)
+                {
+//			if ((tile == 0x1fd) || (tile == 0x1fe)) Debugger ();
+                        ppu_latch.handler((PPU_sprite_page << 10) | ((tile & 0xff) << 4));
+                }
+//		continue;
 /*TODO*///	}
             {
                 int sprite_line;
@@ -573,13 +573,13 @@ public class nes {
                             /* Is this pixel non-transparent? */
                             if (sd.read(7 - j) != 0) {
                                 /* Has the background (or another sprite) already been drawn here? */
-                                if (line_priority[x + j] == 0) {
+                                if (line_priority[(x + j)&0xff] == 0) {
                                     /* No, draw */
                                     plot_pixel.handler(Machine.scrbitmap, x + j, scanline, paldata.read(sd.read(7 - j)));
                                     drawn = 1;
                                 }
                                 /* Indicate that a sprite was drawn at this location, even if it's not seen */
-                                line_priority[x + j] |= 0x01;
+                                line_priority[(x + j)&0xff] |= 0x01;
 
                                 /* Set the "sprite 0 hit" flag if appropriate */
                                 if (i == 0) {
@@ -592,12 +592,12 @@ public class nes {
                             /* Is this pixel non-transparent? */
                             if (sd.read(j) != 0) {
                                 /* Has the background (or another sprite) already been drawn here? */
-                                if (line_priority[x + j] == 0) {
+                                if (line_priority[(x + j)&0xff] == 0) {
                                     plot_pixel.handler(Machine.scrbitmap, x + j, scanline, paldata.read(sd.read(j)));
                                     drawn = 1;
                                 }
                                 /* Indicate that a sprite was drawn at this location, even if it's not seen */
-                                line_priority[x + j] |= 0x01;
+                                line_priority[(x + j)&0xff] |= 0x01;
 
                                 /* Set the "sprite 0 hit" flag if appropriate */
                                 if (i == 0) {
