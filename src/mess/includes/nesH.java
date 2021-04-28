@@ -81,19 +81,19 @@ public class nesH {
 
     /*TODO*///extern struct nes_struct nes;
 
-    /*TODO*///struct fds_struct {
-/*TODO*///	UINT8 *data;
-/*TODO*///	UINT8 sides;
-/*TODO*///
-/*TODO*///	/* Variables which can change */
-/*TODO*///	UINT8 motor_on;
-/*TODO*///	UINT8 door_closed;
-/*TODO*///	UINT8 current_side;
-/*TODO*///	UINT32 head_position;
-/*TODO*///	UINT8 status0;
-/*TODO*///	UINT8 read_mode;
-/*TODO*///	UINT8 write_reg;
-/*TODO*///};
+    public static class fds_struct {
+	public UBytePtr data;
+	public int sides;
+
+	/* Variables which can change */
+	public int motor_on;
+	public int door_closed;
+	public int current_side;
+	public int head_position;
+	public int status0;
+	public int read_mode;
+	public int write_reg;
+    };
 
     /*TODO*///extern struct fds_struct nes_fds;
 }

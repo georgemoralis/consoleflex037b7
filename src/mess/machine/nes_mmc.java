@@ -19,7 +19,10 @@ import static WIP.mame.osdependH.*;
 import static mame.commonH.*;
 import static old.mame.common.*;
 import static WIP.arcadeflex.libc.memcpy.*;
+import static WIP.cpu.m6502.m6502H.M6502_INT_IRQ;
+import static WIP.cpu.m6502.m6502H.M6502_INT_NONE;
 import static WIP.mame.memoryH.cpu_setbank;
+import static WIP.sound.nes_apu.*;
 import static old.arcadeflex.libc_old.SEEK_SET;
 import static old.arcadeflex.libc_old.printf;
 import static old.arcadeflex.libc_old.strcmp;
@@ -28,62 +31,62 @@ import static mess.includes.nesH.*;
 import static mess.machine.nes.*;
 import static mess.vidhrdw.nes.*;
 import static mess.includes.nesH.*;
+import static mess.systems.nes.battery_ram;
+import static mess.machine.nes_mmcH.*;
 import static vidhrdw.generic.videoram;
 
 public class nes_mmc {
 
-    /*TODO*///	
-/*TODO*///	
 /*TODO*///	#define LOG_MMC
 /*TODO*///	#define LOG_FDS
-/*TODO*///	
+
     /* Global variables */
     public static int prg_mask;
-    /*TODO*///	
-/*TODO*///	int IRQ_enable, IRQ_enable_latch;
-/*TODO*///	UINT16 IRQ_count, IRQ_count_latch;
-/*TODO*///	UINT8 IRQ_status;
-/*TODO*///	UINT8 IRQ_mode_jaleco;
-/*TODO*///	
-/*TODO*///	int MMC1_extended;	/* 0 = normal MMC1 cart, 1 = 512k MMC1, 2 = 1024k MMC1 */
-/*TODO*///	
-/*TODO*///	void (*mmc_write_low)(int offset, int data);
-/*TODO*///	int (*mmc_read_low)(int offset);
-/*TODO*///	void (*mmc_write_mid)(int offset, int data);
-/*TODO*///	int (*mmc_read_mid)(int offset);
-/*TODO*///	void (*mmc_write)(int offset, int data);
-/*TODO*///	void (*ppu_latch)(int offset);
-/*TODO*///	int (*mmc_irq)(int scanline);
-/*TODO*///	
-/*TODO*///	static int vrom_bank[16];
-/*TODO*///	static int mult1, mult2;
-/*TODO*///	
-/*TODO*///	/* Local variables */
-/*TODO*///	static int MMC1_Size_16k;
-/*TODO*///	static int MMC1_High;
-/*TODO*///	static int MMC1_reg;
-/*TODO*///	static int MMC1_reg_count;
-/*TODO*///	static int MMC1_Switch_Low, MMC1_SizeVrom_4k;
-/*TODO*///	static int MMC1_bank1, MMC1_bank2, MMC1_bank3, MMC1_bank4;
-/*TODO*///	static int MMC1_extended_bank;
-/*TODO*///	static int MMC1_extended_base;
-/*TODO*///	static int MMC1_extended_swap;
-/*TODO*///	
-/*TODO*///	static int MMC2_bank0, MMC2_bank0_hi, MMC2_bank0_latch, MMC2_bank1, MMC2_bank1_hi, MMC2_bank1_latch;
-/*TODO*///	
-/*TODO*///	static int MMC3_cmd;
-/*TODO*///	static int MMC3_prg0, MMC3_prg1;
-/*TODO*///	static int MMC3_chr[6];
-/*TODO*///	
-/*TODO*///	static int MMC5_rom_bank_mode;
-/*TODO*///	static int MMC5_vrom_bank_mode;
-/*TODO*///	static int MMC5_vram_protect;
-/*TODO*///	static int MMC5_scanline;
-/*TODO*///	UINT8 MMC5_vram[0x400];
+    
+    public static int IRQ_enable, IRQ_enable_latch;
+    public static int IRQ_count, IRQ_count_latch;
+    public static int IRQ_status;
+    public static int IRQ_mode_jaleco;
+
+    public static int MMC1_extended;	/* 0 = normal MMC1 cart, 1 = 512k MMC1, 2 = 1024k MMC1 */
+	
+    public static WriteHandlerPtr mmc_write_low;
+    public static ReadHandlerPtr mmc_read_low;
+    public static WriteHandlerPtr mmc_write_mid;
+    public static ReadHandlerPtr mmc_read_mid;
+    public static WriteHandlerPtr mmc_write;
+    public static ReadHandlerPtr ppu_latch;
+    public static ReadHandlerPtr mmc_irq;                
+
+    public static int[] vrom_bank = new int[16];
+    public static int mult1, mult2;
+	
+    /* Local variables */
+    public static int MMC1_Size_16k;
+    public static int MMC1_High;
+    public static int MMC1_reg;
+    public static int MMC1_reg_count;
+    public static int MMC1_Switch_Low, MMC1_SizeVrom_4k;
+    public static int MMC1_bank1, MMC1_bank2, MMC1_bank3, MMC1_bank4;
+    public static int MMC1_extended_bank;
+    public static int MMC1_extended_base;
+    public static int MMC1_extended_swap;
+
+    public static int MMC2_bank0, MMC2_bank0_hi, MMC2_bank0_latch, MMC2_bank1, MMC2_bank1_hi, MMC2_bank1_latch;
+
+    public static int MMC3_cmd;
+    public static int MMC3_prg0, MMC3_prg1;
+    public static int[] MMC3_chr=new int[6];
+
+    public static int MMC5_rom_bank_mode;
+    public static int MMC5_vrom_bank_mode;
+    public static int MMC5_vram_protect;
+    public static int MMC5_scanline;
+    public static int[] MMC5_vram = new int[0x400];
     public static int MMC5_vram_control;
-    /*TODO*///	
-/*TODO*///	static int mapper41_chr, mapper41_reg2;
-    static int mapper_warning;
+    
+    public static int mapper41_chr, mapper41_reg2;
+    public static int mapper_warning;
 
     public static WriteHandlerPtr nes_low_mapper_w = new WriteHandlerPtr() {
         public void handler(int offset, int data) {
@@ -172,41 +175,41 @@ public class nes_mmc {
         }
     };
 
-    /*TODO*///	
-/*TODO*///	/*
-/*TODO*///	 * Some helpful routines used by the mappers
-/*TODO*///	 */
-/*TODO*///	
-/*TODO*///	static void prg8_89 (int bank)
-/*TODO*///	{
-/*TODO*///		/* assumes that bank references an 8k chunk */
-/*TODO*///		bank &= ((nes.prg_chunks << 1) - 1);
-/*TODO*///		if (nes.slow_banking)
-/*TODO*///			memcpy (&nes.rom[0x8000], &nes.rom[bank * 0x2000 + 0x10000], 0x2000);
-/*TODO*///		else
-/*TODO*///			cpu_setbank (1, &nes.rom[bank * 0x2000 + 0x10000]);
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void prg8_ab (int bank)
-/*TODO*///	{
-/*TODO*///		/* assumes that bank references an 8k chunk */
-/*TODO*///		bank &= ((nes.prg_chunks << 1) - 1);
-/*TODO*///		if (nes.slow_banking)
-/*TODO*///			memcpy (&nes.rom[0xa000], &nes.rom[bank * 0x2000 + 0x10000], 0x2000);
-/*TODO*///		else
-/*TODO*///			cpu_setbank (2, &nes.rom[bank * 0x2000 + 0x10000]);
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void prg8_cd (int bank)
-/*TODO*///	{
-/*TODO*///		/* assumes that bank references an 8k chunk */
-/*TODO*///		bank &= ((nes.prg_chunks << 1) - 1);
-/*TODO*///		if (nes.slow_banking)
-/*TODO*///			memcpy (&nes.rom[0xc000], &nes.rom[bank * 0x2000 + 0x10000], 0x2000);
-/*TODO*///		else
-/*TODO*///			cpu_setbank (3, &nes.rom[bank * 0x2000 + 0x10000]);
-/*TODO*///	}
-/*TODO*///	
+    	
+	/*
+	 * Some helpful routines used by the mappers
+	 */
+	
+	static void prg8_89 (int bank)
+	{
+		/* assumes that bank references an 8k chunk */
+		bank &= ((_nes.prg_chunks[0] << 1) - 1);
+		if (_nes.u8_slow_banking != 0)
+			memcpy (new UBytePtr(_nes.rom, 0x8000), new UBytePtr(_nes.rom, bank * 0x2000 + 0x10000), 0x2000);
+		else
+			cpu_setbank (1, new UBytePtr(_nes.rom, bank * 0x2000 + 0x10000));
+	}
+	
+	static void prg8_ab (int bank)
+	{
+		/* assumes that bank references an 8k chunk */
+		bank &= ((_nes.prg_chunks[0] << 1) - 1);
+		if (_nes.u8_slow_banking != 0)
+			memcpy (new UBytePtr(_nes.rom, 0xa000), new UBytePtr(_nes.rom, bank * 0x2000 + 0x10000), 0x2000);
+		else
+			cpu_setbank (2, new UBytePtr(_nes.rom, bank * 0x2000 + 0x10000));
+	}
+	
+	static void prg8_cd (int bank)
+	{
+		/* assumes that bank references an 8k chunk */
+		bank &= ((_nes.prg_chunks[0] << 1) - 1);
+		if (_nes.u8_slow_banking != 0)
+			memcpy (new UBytePtr(_nes.rom, 0xc000), new UBytePtr(_nes.rom, bank * 0x2000 + 0x10000), 0x2000);
+		else
+			cpu_setbank (3, new UBytePtr(_nes.rom, bank * 0x2000 + 0x10000));
+	}
+	
 /*TODO*///	static void prg8_ef (int bank)
 /*TODO*///	{
 /*TODO*///		/* assumes that bank references an 8k chunk */
@@ -216,32 +219,33 @@ public class nes_mmc {
 /*TODO*///		else
 /*TODO*///			cpu_setbank (4, &nes.rom[bank * 0x2000 + 0x10000]);
 /*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void prg16_89ab (int bank)
-/*TODO*///	{
-/*TODO*///		/* assumes that bank references a 16k chunk */
-/*TODO*///		bank &= (nes.prg_chunks - 1);
-/*TODO*///		if (nes.slow_banking)
-/*TODO*///			memcpy (&nes.rom[0x8000], &nes.rom[bank * 0x4000 + 0x10000], 0x4000);
-/*TODO*///		else
-/*TODO*///		{
-/*TODO*///			cpu_setbank (1, &nes.rom[bank * 0x4000 + 0x10000]);
-/*TODO*///			cpu_setbank (2, &nes.rom[bank * 0x4000 + 0x12000]);
-/*TODO*///		}
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void prg16_cdef (int bank)
-/*TODO*///	{
-/*TODO*///		/* assumes that bank references a 16k chunk */
-/*TODO*///		bank &= (nes.prg_chunks - 1);
-/*TODO*///		if (nes.slow_banking)
-/*TODO*///			memcpy (&nes.rom[0xc000], &nes.rom[bank * 0x4000 + 0x10000], 0x4000);
-/*TODO*///		else
-/*TODO*///		{
-/*TODO*///			cpu_setbank (3, &nes.rom[bank * 0x4000 + 0x10000]);
-/*TODO*///			cpu_setbank (4, &nes.rom[bank * 0x4000 + 0x12000]);
-/*TODO*///		}
-/*TODO*///	}
+	
+	static void prg16_89ab (int bank)
+	{
+		/* assumes that bank references a 16k chunk */
+		bank &= (_nes.prg_chunks[0] - 1);
+		if (_nes.u8_slow_banking != 0)
+			memcpy (new UBytePtr(_nes.rom, 0x8000), new UBytePtr(_nes.rom, bank * 0x4000 + 0x10000), 0x4000);
+		else
+		{
+			cpu_setbank (1, new UBytePtr(_nes.rom, bank * 0x4000 + 0x10000));
+			cpu_setbank (2, new UBytePtr(_nes.rom, bank * 0x4000 + 0x12000));
+		}
+	}
+	
+	static void prg16_cdef (int bank)
+	{
+		/* assumes that bank references a 16k chunk */
+		bank &= (_nes.prg_chunks[0] - 1);
+		if (_nes.u8_slow_banking != 0)
+			memcpy (new UBytePtr(_nes.rom, 0xc000), new UBytePtr(_nes.rom, bank * 0x4000 + 0x10000), 0x4000);
+		else
+		{
+			cpu_setbank (3, new UBytePtr(_nes.rom, bank * 0x4000 + 0x10000));
+			cpu_setbank (4, new UBytePtr(_nes.rom, bank * 0x4000 + 0x12000));
+		}
+	}
+        
     static void prg32(int bank) {
         /* assumes that bank references a 32k chunk */
         bank &= ((_nes.prg_chunks[0] >> 1) - 1);
@@ -255,121 +259,122 @@ public class nes_mmc {
         }
     }
 
-    /*TODO*///	
-/*TODO*///	static void chr8 (int bank)
-/*TODO*///	{
-/*TODO*///		int i;
-/*TODO*///	
-/*TODO*///		bank &= (nes.chr_chunks - 1);
-/*TODO*///		for (i = 0; i < 8; i ++)
-/*TODO*///			nes_vram[i] = bank * 512 + 64*i;
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void chr4_0 (int bank)
-/*TODO*///	{
-/*TODO*///		int i;
-/*TODO*///	
-/*TODO*///		bank &= ((nes.chr_chunks << 1) - 1);
-/*TODO*///		for (i = 0; i < 4; i ++)
-/*TODO*///			nes_vram[i] = bank * 256 + 64*i;
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void chr4_4 (int bank)
-/*TODO*///	{
-/*TODO*///		int i;
-/*TODO*///	
-/*TODO*///		bank &= ((nes.chr_chunks << 1) - 1);
-/*TODO*///		for (i = 4; i < 8; i ++)
-/*TODO*///			nes_vram[i] = bank * 256 + 64*(i-4);
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void chr2_0 (int bank)
-/*TODO*///	{
-/*TODO*///		int i;
-/*TODO*///	
-/*TODO*///		bank &= ((nes.chr_chunks << 2) - 1);
-/*TODO*///		for (i = 0; i < 2; i ++)
-/*TODO*///			nes_vram[i] = bank * 128 + 64*i;
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void chr2_2 (int bank)
-/*TODO*///	{
-/*TODO*///		int i;
-/*TODO*///	
-/*TODO*///		bank &= ((nes.chr_chunks << 2) - 1);
-/*TODO*///		for (i = 2; i < 4; i ++)
-/*TODO*///			nes_vram[i] = bank * 128 + 64*(i-2);
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void chr2_4 (int bank)
-/*TODO*///	{
-/*TODO*///		int i;
-/*TODO*///	
-/*TODO*///		bank &= ((nes.chr_chunks << 2) - 1);
-/*TODO*///		for (i = 4; i < 6; i ++)
-/*TODO*///			nes_vram[i] = bank * 128 + 64*(i-4);
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void chr2_6 (int bank)
-/*TODO*///	{
-/*TODO*///		int i;
-/*TODO*///	
-/*TODO*///		bank &= ((nes.chr_chunks << 2) - 1);
-/*TODO*///		for (i = 6; i < 8; i ++)
-/*TODO*///			nes_vram[i] = bank * 128 + 64*(i-6);
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void mapper1_w (int offset, int data)
-/*TODO*///	{
-/*TODO*///		int i;
-/*TODO*///		int reg;
-/*TODO*///	
-/*TODO*///		/* Find which register we are dealing with */
-/*TODO*///		/* Note that there is only one latch and shift counter, shared amongst the 4 regs */
-/*TODO*///		/* Space Shuttle will not work if they have independent variables. */
-/*TODO*///		reg = (offset >> 13);
-/*TODO*///	
-/*TODO*///		if ((data & 0x80) != 0)
-/*TODO*///		{
-/*TODO*///			MMC1_reg_count = 0;
-/*TODO*///			MMC1_reg = 0;
-/*TODO*///	
-/*TODO*///			/* Set these to their defaults - needed for Robocop 3, Dynowars */
-/*TODO*///			MMC1_Size_16k = 1;
-/*TODO*///			MMC1_Switch_Low = 1;
-/*TODO*///			/* TODO: should we switch banks at this time also? */
+    	
+	static void chr8 (int bank)
+	{
+		int i;
+	
+		bank &= (_nes.chr_chunks[0] - 1);
+		for (i = 0; i < 8; i ++)
+			nes_vram[i] = bank * 512 + 64*i;
+	}
+	
+	static void chr4_0 (int bank)
+	{
+		int i;
+	
+		bank &= ((_nes.chr_chunks[0] << 1) - 1);
+		for (i = 0; i < 4; i ++)
+			nes_vram[i] = bank * 256 + 64*i;
+	}
+	
+	static void chr4_4 (int bank)
+	{
+		int i;
+	
+		bank &= ((_nes.chr_chunks[0] << 1) - 1);
+		for (i = 4; i < 8; i ++)
+			nes_vram[i] = bank * 256 + 64*(i-4);
+	}
+	
+	static void chr2_0 (int bank)
+	{
+		int i;
+	
+		bank &= ((_nes.chr_chunks[0] << 2) - 1);
+		for (i = 0; i < 2; i ++)
+			nes_vram[i] = bank * 128 + 64*i;
+	}
+	
+	static void chr2_2 (int bank)
+	{
+		int i;
+	
+		bank &= ((_nes.chr_chunks[0] << 2) - 1);
+		for (i = 2; i < 4; i ++)
+			nes_vram[i] = bank * 128 + 64*(i-2);
+	}
+	
+	static void chr2_4 (int bank)
+	{
+		int i;
+	
+		bank &= ((_nes.chr_chunks[0] << 2) - 1);
+		for (i = 4; i < 6; i ++)
+			nes_vram[i] = bank * 128 + 64*(i-4);
+	}
+	
+	static void chr2_6 (int bank)
+	{
+		int i;
+	
+		bank &= ((_nes.chr_chunks[0] << 2) - 1);
+		for (i = 6; i < 8; i ++)
+			nes_vram[i] = bank * 128 + 64*(i-6);
+	}
+	
+	public static WriteHandlerPtr mapper1_w = new WriteHandlerPtr() {
+            @Override
+            public void handler(int offset, int data) {
+                int i;
+		int reg;
+	
+		/* Find which register we are dealing with */
+		/* Note that there is only one latch and shift counter, shared amongst the 4 regs */
+		/* Space Shuttle will not work if they have independent variables. */
+		reg = (offset >> 13);
+	
+		if ((data & 0x80) != 0)
+		{
+			MMC1_reg_count = 0;
+			MMC1_reg = 0;
+	
+			/* Set these to their defaults - needed for Robocop 3, Dynowars */
+			MMC1_Size_16k = 1;
+			MMC1_Switch_Low = 1;
+			/* TODO: should we switch banks at this time also? */
 /*TODO*///	#ifdef LOG_MMC
 /*TODO*///			logerror("=== MMC1 regs reset to default\n");
 /*TODO*///	#endif
-/*TODO*///			return;
-/*TODO*///		}
-/*TODO*///	
-/*TODO*///		if (MMC1_reg_count < 5)
-/*TODO*///		{
-/*TODO*///			if (MMC1_reg_count == 0) MMC1_reg = 0;
-/*TODO*///			MMC1_reg >>= 1;
-/*TODO*///			MMC1_reg |= (data & 0x01) ? 0x10 : 0x00;
-/*TODO*///			MMC1_reg_count ++;
-/*TODO*///		}
-/*TODO*///	
-/*TODO*///		if (MMC1_reg_count == 5)
-/*TODO*///		{
-/*TODO*///	//		logerror("   MMC1 reg#%02x val:%02x\n", offset, MMC1_reg);
-/*TODO*///			switch (reg)
-/*TODO*///			{
-/*TODO*///				case 0:
-/*TODO*///					MMC1_Switch_Low = MMC1_reg & 0x04;
-/*TODO*///					MMC1_Size_16k =   MMC1_reg & 0x08;
-/*TODO*///	
-/*TODO*///					switch (MMC1_reg & 0x03)
-/*TODO*///					{
-/*TODO*///						case 0: ppu_mirror_low (); break;
-/*TODO*///						case 1: ppu_mirror_high (); break;
-/*TODO*///						case 2: ppu_mirror_v (); break;
-/*TODO*///						case 3: ppu_mirror_h (); break;
-/*TODO*///					}
-/*TODO*///	
-/*TODO*///					MMC1_SizeVrom_4k = (MMC1_reg & 0x10);
+			return;
+		}
+	
+		if (MMC1_reg_count < 5)
+		{
+			if (MMC1_reg_count == 0) MMC1_reg = 0;
+			MMC1_reg >>= 1;
+			MMC1_reg |= (data & 0x01)!=0 ? 0x10 : 0x00;
+			MMC1_reg_count ++;
+		}
+	
+		if (MMC1_reg_count == 5)
+		{
+	//		logerror("   MMC1 reg#%02x val:%02x\n", offset, MMC1_reg);
+			switch (reg)
+			{
+				case 0:
+					MMC1_Switch_Low = MMC1_reg & 0x04;
+					MMC1_Size_16k =   MMC1_reg & 0x08;
+	
+					switch (MMC1_reg & 0x03)
+					{
+						case 0: ppu_mirror_low (); break;
+						case 1: ppu_mirror_high (); break;
+						case 2: ppu_mirror_v (); break;
+						case 3: ppu_mirror_h (); break;
+					}
+	
+					MMC1_SizeVrom_4k = (MMC1_reg & 0x10);
 /*TODO*///	#ifdef LOG_MMC
 /*TODO*///					logerror("   MMC1 reg #1 val:%02x\n", MMC1_reg);
 /*TODO*///						logerror("\t\tBank Size: ");
@@ -389,255 +394,265 @@ public class nes_mmc {
 /*TODO*///	
 /*TODO*///						logerror ("\t\tMirroring: %d\n", MMC1_reg & 0x03);
 /*TODO*///	#endif
-/*TODO*///					break;
-/*TODO*///	
-/*TODO*///				case 1:
-/*TODO*///					MMC1_extended_bank = (MMC1_extended_bank & ~0x01) | ((MMC1_reg & 0x10) >> 4);
-/*TODO*///					if (MMC1_extended == 2)
-/*TODO*///					{
-/*TODO*///						/* MMC1_SizeVrom_4k determines if we use the special 256k bank register */
-/*TODO*///					 	if (!MMC1_SizeVrom_4k)
-/*TODO*///					 	{
-/*TODO*///							/* Pick 1st or 4th 256k bank */
-/*TODO*///							MMC1_extended_base = 0xc0000 * (MMC1_extended_bank & 0x01) + 0x10000;
-/*TODO*///							cpu_setbank (1, &nes.rom[MMC1_extended_base + MMC1_bank1]);
-/*TODO*///							cpu_setbank (2, &nes.rom[MMC1_extended_base + MMC1_bank2]);
-/*TODO*///							cpu_setbank (3, &nes.rom[MMC1_extended_base + MMC1_bank3]);
-/*TODO*///							cpu_setbank (4, &nes.rom[MMC1_extended_base + MMC1_bank4]);
+					break;
+	
+				case 1:
+					MMC1_extended_bank = (MMC1_extended_bank & ~0x01) | ((MMC1_reg & 0x10) >> 4);
+					if (MMC1_extended == 2)
+					{
+						/* MMC1_SizeVrom_4k determines if we use the special 256k bank register */
+					 	if (MMC1_SizeVrom_4k==0)
+					 	{
+							/* Pick 1st or 4th 256k bank */
+							MMC1_extended_base = 0xc0000 * (MMC1_extended_bank & 0x01) + 0x10000;
+							cpu_setbank (1, new UBytePtr(_nes.rom, MMC1_extended_base + MMC1_bank1));
+							cpu_setbank (2, new UBytePtr(_nes.rom, MMC1_extended_base + MMC1_bank2));
+							cpu_setbank (3, new UBytePtr(_nes.rom, MMC1_extended_base + MMC1_bank3));
+							cpu_setbank (4, new UBytePtr(_nes.rom, MMC1_extended_base + MMC1_bank4));
 /*TODO*///	#ifdef LOG_MMC
 /*TODO*///							logerror("MMC1_extended 1024k bank (no reg) select: %02x\n", MMC1_extended_bank);
 /*TODO*///	#endif
-/*TODO*///						}
-/*TODO*///						else
-/*TODO*///						{
-/*TODO*///							/* Set 256k bank based on the 256k bank select register */
-/*TODO*///							if (MMC1_extended_swap != 0)
-/*TODO*///							{
-/*TODO*///								MMC1_extended_base = 0x40000 * MMC1_extended_bank + 0x10000;
-/*TODO*///								cpu_setbank (1, &nes.rom[MMC1_extended_base + MMC1_bank1]);
-/*TODO*///								cpu_setbank (2, &nes.rom[MMC1_extended_base + MMC1_bank2]);
-/*TODO*///								cpu_setbank (3, &nes.rom[MMC1_extended_base + MMC1_bank3]);
-/*TODO*///								cpu_setbank (4, &nes.rom[MMC1_extended_base + MMC1_bank4]);
+						}
+						else
+						{
+							/* Set 256k bank based on the 256k bank select register */
+							if (MMC1_extended_swap != 0)
+							{
+								MMC1_extended_base = 0x40000 * MMC1_extended_bank + 0x10000;
+								cpu_setbank (1, new UBytePtr(_nes.rom, MMC1_extended_base + MMC1_bank1));
+								cpu_setbank (2, new UBytePtr(_nes.rom, MMC1_extended_base + MMC1_bank2));
+								cpu_setbank (3, new UBytePtr(_nes.rom, MMC1_extended_base + MMC1_bank3));
+								cpu_setbank (4, new UBytePtr(_nes.rom, MMC1_extended_base + MMC1_bank4));
 /*TODO*///	#ifdef LOG_MMC
 /*TODO*///								logerror("MMC1_extended 1024k bank (reg 1) select: %02x\n", MMC1_extended_bank);
 /*TODO*///	#endif
-/*TODO*///								MMC1_extended_swap = 0;
-/*TODO*///							}
-/*TODO*///							else MMC1_extended_swap = 1;
-/*TODO*///						}
-/*TODO*///					}
-/*TODO*///					else if (MMC1_extended == 1 && nes.chr_chunks == 0)
-/*TODO*///					{
-/*TODO*///						/* Pick 1st or 2nd 256k bank */
-/*TODO*///						MMC1_extended_base = 0x40000 * (MMC1_extended_bank & 0x01) + 0x10000;
-/*TODO*///						cpu_setbank (1, &nes.rom[MMC1_extended_base + MMC1_bank1]);
-/*TODO*///						cpu_setbank (2, &nes.rom[MMC1_extended_base + MMC1_bank2]);
-/*TODO*///						cpu_setbank (3, &nes.rom[MMC1_extended_base + MMC1_bank3]);
-/*TODO*///						cpu_setbank (4, &nes.rom[MMC1_extended_base + MMC1_bank4]);
+								MMC1_extended_swap = 0;
+							}
+							else MMC1_extended_swap = 1;
+						}
+					}
+					else if (MMC1_extended == 1 && _nes.chr_chunks[0] == 0)
+					{
+						/* Pick 1st or 2nd 256k bank */
+						MMC1_extended_base = 0x40000 * (MMC1_extended_bank & 0x01) + 0x10000;
+						cpu_setbank (1, new UBytePtr(_nes.rom, MMC1_extended_base + MMC1_bank1));
+						cpu_setbank (2, new UBytePtr(_nes.rom, MMC1_extended_base + MMC1_bank2));
+						cpu_setbank (3, new UBytePtr(_nes.rom, MMC1_extended_base + MMC1_bank3));
+						cpu_setbank (4, new UBytePtr(_nes.rom, MMC1_extended_base + MMC1_bank4));
 /*TODO*///	#ifdef LOG_MMC
 /*TODO*///						logerror("MMC1_extended 512k bank select: %02x\n", MMC1_extended_bank & 0x01);
 /*TODO*///	#endif
-/*TODO*///					}
-/*TODO*///					else if (nes.chr_chunks > 0)
-/*TODO*///					{
-/*TODO*///	//					logerror("MMC1_SizeVrom_4k: %02x bank:%02x\n", MMC1_SizeVrom_4k, MMC1_reg);
-/*TODO*///	
-/*TODO*///						if (!MMC1_SizeVrom_4k)
-/*TODO*///						{
-/*TODO*///							int bank = MMC1_reg & ((nes.chr_chunks << 1) - 1);
-/*TODO*///	
-/*TODO*///							for (i = 0; i < 8; i ++)
-/*TODO*///								nes_vram[i] = bank * 256 + 64*i;
+					}
+					else if (_nes.chr_chunks[0] > 0)
+					{
+	//					logerror("MMC1_SizeVrom_4k: %02x bank:%02x\n", MMC1_SizeVrom_4k, MMC1_reg);
+	
+						if (MMC1_SizeVrom_4k==0)
+						{
+							int bank = MMC1_reg & ((_nes.chr_chunks[0] << 1) - 1);
+	
+							for (i = 0; i < 8; i ++)
+								nes_vram[i] = bank * 256 + 64*i;
 /*TODO*///	#ifdef LOG_MMC
 /*TODO*///							logerror("MMC1 8k VROM switch: %02x\n", MMC1_reg);
 /*TODO*///	#endif
-/*TODO*///						}
-/*TODO*///						else
-/*TODO*///						{
-/*TODO*///							int bank = MMC1_reg & ((nes.chr_chunks << 1) - 1);
-/*TODO*///	
-/*TODO*///							for (i = 0; i < 4; i ++)
-/*TODO*///								nes_vram[i] = bank * 256 + 64*i;
+						}
+						else
+						{
+							int bank = MMC1_reg & ((_nes.chr_chunks[0] << 1) - 1);
+	
+							for (i = 0; i < 4; i ++)
+								nes_vram[i] = bank * 256 + 64*i;
 /*TODO*///	#ifdef LOG_MMC
 /*TODO*///							logerror("MMC1 4k VROM switch (low): %02x\n", MMC1_reg);
 /*TODO*///	#endif
-/*TODO*///						}
-/*TODO*///					}
-/*TODO*///					break;
-/*TODO*///				case 2:
-/*TODO*///	//				logerror("MMC1_Reg_2: %02x\n",MMC1_Reg_2);
-/*TODO*///					MMC1_extended_bank = (MMC1_extended_bank & ~0x02) | ((MMC1_reg & 0x10) >> 3);
-/*TODO*///					if (MMC1_extended == 2 && MMC1_SizeVrom_4k)
-/*TODO*///					{
-/*TODO*///						if (MMC1_extended_swap != 0)
-/*TODO*///						{
-/*TODO*///							/* Set 256k bank based on the 256k bank select register */
-/*TODO*///							MMC1_extended_base = 0x40000 * MMC1_extended_bank + 0x10000;
-/*TODO*///							cpu_setbank (1, &nes.rom[MMC1_extended_base + MMC1_bank1]);
-/*TODO*///							cpu_setbank (2, &nes.rom[MMC1_extended_base + MMC1_bank2]);
-/*TODO*///							cpu_setbank (3, &nes.rom[MMC1_extended_base + MMC1_bank3]);
-/*TODO*///							cpu_setbank (4, &nes.rom[MMC1_extended_base + MMC1_bank4]);
+						}
+					}
+					break;
+				case 2:
+	//				logerror("MMC1_Reg_2: %02x\n",MMC1_Reg_2);
+					MMC1_extended_bank = (MMC1_extended_bank & ~0x02) | ((MMC1_reg & 0x10) >> 3);
+					if (MMC1_extended == 2 && MMC1_SizeVrom_4k!=0)
+					{
+						if (MMC1_extended_swap != 0)
+						{
+							/* Set 256k bank based on the 256k bank select register */
+							MMC1_extended_base = 0x40000 * MMC1_extended_bank + 0x10000;
+							cpu_setbank (1, new UBytePtr(_nes.rom, MMC1_extended_base + MMC1_bank1));
+							cpu_setbank (2, new UBytePtr(_nes.rom, MMC1_extended_base + MMC1_bank2));
+							cpu_setbank (3, new UBytePtr(_nes.rom, MMC1_extended_base + MMC1_bank3));
+							cpu_setbank (4, new UBytePtr(_nes.rom, MMC1_extended_base + MMC1_bank4));
 /*TODO*///	#ifdef LOG_MMC
 /*TODO*///							logerror("MMC1_extended 1024k bank (reg 2) select: %02x\n", MMC1_extended_bank);
 /*TODO*///	#endif
-/*TODO*///							MMC1_extended_swap = 0;
-/*TODO*///						}
-/*TODO*///						else
-/*TODO*///							MMC1_extended_swap = 1;
-/*TODO*///					}
-/*TODO*///					if (MMC1_SizeVrom_4k != 0)
-/*TODO*///					{
-/*TODO*///						int bank = MMC1_reg & ((nes.chr_chunks << 1) - 1);
-/*TODO*///	
-/*TODO*///						for (i = 4; i < 8; i ++)
-/*TODO*///							nes_vram[i] = bank * 256 + 64*(i-4);
+							MMC1_extended_swap = 0;
+						}
+						else
+							MMC1_extended_swap = 1;
+					}
+					if (MMC1_SizeVrom_4k != 0)
+					{
+						int bank = MMC1_reg & ((_nes.chr_chunks[0] << 1) - 1);
+	
+						for (i = 4; i < 8; i ++)
+							nes_vram[i] = bank * 256 + 64*(i-4);
 /*TODO*///	#ifdef LOG_MMC
 /*TODO*///							logerror("MMC1 4k VROM switch (high): %02x\n", MMC1_reg);
 /*TODO*///	#endif
-/*TODO*///					}
-/*TODO*///					break;
-/*TODO*///				case 3:
-/*TODO*///					/* Switching 1 32k bank of PRG ROM */
-/*TODO*///					MMC1_reg &= 0x0f;
-/*TODO*///					if (!MMC1_Size_16k)
-/*TODO*///					{
-/*TODO*///						int bank = MMC1_reg & (nes.prg_chunks - 1);
-/*TODO*///	
-/*TODO*///						MMC1_bank1 = bank * 0x4000;
-/*TODO*///						MMC1_bank2 = bank * 0x4000 + 0x2000;
-/*TODO*///						cpu_setbank (1, &nes.rom[MMC1_extended_base + MMC1_bank1]);
-/*TODO*///						cpu_setbank (2, &nes.rom[MMC1_extended_base + MMC1_bank2]);
-/*TODO*///						if (!MMC1_extended)
-/*TODO*///						{
-/*TODO*///							MMC1_bank3 = bank * 0x4000 + 0x4000;
-/*TODO*///							MMC1_bank4 = bank * 0x4000 + 0x6000;
-/*TODO*///							cpu_setbank (3, &nes.rom[MMC1_extended_base + MMC1_bank3]);
-/*TODO*///							cpu_setbank (4, &nes.rom[MMC1_extended_base + MMC1_bank4]);
-/*TODO*///						}
+					}
+					break;
+				case 3:
+					/* Switching 1 32k bank of PRG ROM */
+					MMC1_reg &= 0x0f;
+					if (MMC1_Size_16k==0)
+					{
+						int bank = MMC1_reg & (_nes.prg_chunks[0] - 1);
+	
+						MMC1_bank1 = bank * 0x4000;
+						MMC1_bank2 = bank * 0x4000 + 0x2000;
+						cpu_setbank (1, new UBytePtr(_nes.rom, MMC1_extended_base + MMC1_bank1));
+						cpu_setbank (2, new UBytePtr(_nes.rom, MMC1_extended_base + MMC1_bank2));
+						if (MMC1_extended==0)
+						{
+							MMC1_bank3 = bank * 0x4000 + 0x4000;
+							MMC1_bank4 = bank * 0x4000 + 0x6000;
+							cpu_setbank (3, new UBytePtr(_nes.rom, MMC1_extended_base + MMC1_bank3));
+							cpu_setbank (4, new UBytePtr(_nes.rom, MMC1_extended_base + MMC1_bank4));
+						}
 /*TODO*///	#ifdef LOG_MMC
 /*TODO*///						logerror("MMC1 32k bank select: %02x\n", MMC1_reg);
 /*TODO*///	#endif
-/*TODO*///					}
-/*TODO*///					else
-/*TODO*///					/* Switching one 16k bank */
-/*TODO*///					{
-/*TODO*///						if (MMC1_Switch_Low != 0)
-/*TODO*///						{
-/*TODO*///							int bank = MMC1_reg & (nes.prg_chunks - 1);
-/*TODO*///	
-/*TODO*///							MMC1_bank1 = bank * 0x4000;
-/*TODO*///							MMC1_bank2 = bank * 0x4000 + 0x2000;
-/*TODO*///	
-/*TODO*///							cpu_setbank (1, &nes.rom[MMC1_extended_base + MMC1_bank1]);
-/*TODO*///							cpu_setbank (2, &nes.rom[MMC1_extended_base + MMC1_bank2]);
-/*TODO*///							if (!MMC1_extended)
-/*TODO*///							{
-/*TODO*///								MMC1_bank3 = MMC1_High;
-/*TODO*///								MMC1_bank4 = MMC1_High + 0x2000;
-/*TODO*///								cpu_setbank (3, &nes.rom[MMC1_extended_base + MMC1_bank3]);
-/*TODO*///								cpu_setbank (4, &nes.rom[MMC1_extended_base + MMC1_bank4]);
-/*TODO*///							}
+					}
+					else
+					/* Switching one 16k bank */
+					{
+						if (MMC1_Switch_Low != 0)
+						{
+							int bank = MMC1_reg & (_nes.prg_chunks[0] - 1);
+	
+							MMC1_bank1 = bank * 0x4000;
+							MMC1_bank2 = bank * 0x4000 + 0x2000;
+	
+							cpu_setbank (1, new UBytePtr(_nes.rom, MMC1_extended_base + MMC1_bank1));
+							cpu_setbank (2, new UBytePtr(_nes.rom, MMC1_extended_base + MMC1_bank2));
+							if (MMC1_extended==0)
+							{
+								MMC1_bank3 = MMC1_High;
+								MMC1_bank4 = MMC1_High + 0x2000;
+								cpu_setbank (3, new UBytePtr(_nes.rom, MMC1_extended_base + MMC1_bank3));
+								cpu_setbank (4, new UBytePtr(_nes.rom, MMC1_extended_base + MMC1_bank4));
+							}
 /*TODO*///	#ifdef LOG_MMC
 /*TODO*///							logerror("MMC1 16k-low bank select: %02x\n", MMC1_reg);
 /*TODO*///	#endif
-/*TODO*///						}
-/*TODO*///						else
-/*TODO*///						{
-/*TODO*///							int bank = MMC1_reg & (nes.prg_chunks - 1);
-/*TODO*///	
-/*TODO*///							if (!MMC1_extended)
-/*TODO*///							{
-/*TODO*///	
-/*TODO*///								MMC1_bank1 = 0;
-/*TODO*///								MMC1_bank2 = 0x2000;
-/*TODO*///								MMC1_bank3 = bank * 0x4000;
-/*TODO*///								MMC1_bank4 = bank * 0x4000 + 0x2000;
-/*TODO*///	
-/*TODO*///								cpu_setbank (1, &nes.rom[MMC1_extended_base + MMC1_bank1]);
-/*TODO*///								cpu_setbank (2, &nes.rom[MMC1_extended_base + MMC1_bank2]);
-/*TODO*///								cpu_setbank (3, &nes.rom[MMC1_extended_base + MMC1_bank3]);
-/*TODO*///								cpu_setbank (4, &nes.rom[MMC1_extended_base + MMC1_bank4]);
-/*TODO*///							}
+						}
+						else
+						{
+							int bank = MMC1_reg & (_nes.prg_chunks[0] - 1);
+	
+							if (MMC1_extended==0)
+							{
+	
+								MMC1_bank1 = 0;
+								MMC1_bank2 = 0x2000;
+								MMC1_bank3 = bank * 0x4000;
+								MMC1_bank4 = bank * 0x4000 + 0x2000;
+	
+								cpu_setbank (1, new UBytePtr(_nes.rom, MMC1_extended_base + MMC1_bank1));
+								cpu_setbank (2, new UBytePtr(_nes.rom, MMC1_extended_base + MMC1_bank2));
+								cpu_setbank (3, new UBytePtr(_nes.rom, MMC1_extended_base + MMC1_bank3));
+								cpu_setbank (4, new UBytePtr(_nes.rom, MMC1_extended_base + MMC1_bank4));
+							}
 /*TODO*///	#ifdef LOG_MMC
 /*TODO*///							logerror("MMC1 16k-high bank select: %02x\n", MMC1_reg);
 /*TODO*///	#endif
-/*TODO*///						}
-/*TODO*///					}
-/*TODO*///	
+						}
+					}
+	
 /*TODO*///	#ifdef LOG_MMC
 /*TODO*///					logerror("-- page1: %06x\n", MMC1_bank1);
 /*TODO*///					logerror("-- page2: %06x\n", MMC1_bank2);
 /*TODO*///					logerror("-- page3: %06x\n", MMC1_bank3);
 /*TODO*///					logerror("-- page4: %06x\n", MMC1_bank4);
 /*TODO*///	#endif
-/*TODO*///					break;
-/*TODO*///			}
-/*TODO*///			MMC1_reg_count = 0;
-/*TODO*///		}
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void mapper2_w (int offset, int data)
-/*TODO*///	{
-/*TODO*///		prg16_89ab (data);
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void mapper3_w (int offset, int data)
-/*TODO*///	{
-/*TODO*///		chr8 (data);
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void mapper4_set_prg (void)
-/*TODO*///	{
-/*TODO*///		MMC3_prg0 &= prg_mask;
-/*TODO*///		MMC3_prg1 &= prg_mask;
-/*TODO*///	
-/*TODO*///		if ((MMC3_cmd & 0x40) != 0)
-/*TODO*///		{
-/*TODO*///			cpu_setbank (1, &nes.rom[(nes.prg_chunks-1) * 0x4000 + 0x10000]);
-/*TODO*///			cpu_setbank (3, &nes.rom[0x2000 * (MMC3_prg0) + 0x10000]);
-/*TODO*///		}
-/*TODO*///		else
-/*TODO*///		{
-/*TODO*///			cpu_setbank (1, &nes.rom[0x2000 * (MMC3_prg0) + 0x10000]);
-/*TODO*///			cpu_setbank (3, &nes.rom[(nes.prg_chunks-1) * 0x4000 + 0x10000]);
-/*TODO*///		}
-/*TODO*///		cpu_setbank (2, &nes.rom[0x2000 * (MMC3_prg1) + 0x10000]);
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void mapper4_set_chr (void)
-/*TODO*///	{
-/*TODO*///		UINT8 chr_page = (MMC3_cmd & 0x80) >> 5;
-/*TODO*///	
-/*TODO*///		nes_vram [chr_page] = MMC3_chr[0];
-/*TODO*///		nes_vram [chr_page+1] = nes_vram [chr_page] + 64;
-/*TODO*///		nes_vram [chr_page ^ 2] = MMC3_chr[1];
-/*TODO*///		nes_vram [(chr_page ^ 2)+1] = nes_vram [chr_page ^ 2] + 64;
-/*TODO*///		nes_vram [chr_page ^ 4] = MMC3_chr[2];
-/*TODO*///		nes_vram [chr_page ^ 5] = MMC3_chr[3];
-/*TODO*///		nes_vram [chr_page ^ 6] = MMC3_chr[4];
-/*TODO*///		nes_vram [chr_page ^ 7] = MMC3_chr[5];
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	int mapper4_irq (int scanline)
-/*TODO*///	{
-/*TODO*///		int ret = M6502_INT_NONE;
-/*TODO*///	
-/*TODO*///		if ((scanline < BOTTOM_VISIBLE_SCANLINE) || (scanline == ppu_scanlines_per_frame-1))
-/*TODO*///		{
-/*TODO*///			if ((IRQ_enable) && (PPU_Control1 & 0x18))
-/*TODO*///			{
-/*TODO*///				if (IRQ_count == 0)
-/*TODO*///				{
-/*TODO*///					IRQ_count = IRQ_count_latch;
-/*TODO*///					ret = M6502_INT_IRQ;
-/*TODO*///				}
-/*TODO*///				IRQ_count --;
-/*TODO*///			}
-/*TODO*///		}
-/*TODO*///	
-/*TODO*///		return ret;
-/*TODO*///	}
-/*TODO*///	
+					break;
+			}
+			MMC1_reg_count = 0;
+		}
+            }
+        };
+	
+	public static WriteHandlerPtr mapper2_w = new WriteHandlerPtr() {
+            @Override
+            public void handler(int offset, int data) {
+		prg16_89ab (data);
+            }
+        };
+	
+        public static WriteHandlerPtr mapper3_w = new WriteHandlerPtr() {
+            @Override
+            public void handler(int offset, int data) {
+		chr8 (data);
+            }
+        };
+
+        public static WriteHandlerPtr mapper4_w = new WriteHandlerPtr() {
+            @Override
+            public void handler(int offset, int data) {
+		MMC3_prg0 &= prg_mask;
+		MMC3_prg1 &= prg_mask;
+	
+		if ((MMC3_cmd & 0x40) != 0)
+		{
+			cpu_setbank (1, new UBytePtr(_nes.rom, (_nes.prg_chunks[0]-1) * 0x4000 + 0x10000));
+			cpu_setbank (3, new UBytePtr(_nes.rom, 0x2000 * (MMC3_prg0) + 0x10000));
+		}
+		else
+		{
+			cpu_setbank (1, new UBytePtr(_nes.rom, 0x2000 * (MMC3_prg0) + 0x10000));
+			cpu_setbank (3, new UBytePtr(_nes.rom, (_nes.prg_chunks[0]-1) * 0x4000 + 0x10000));
+		}
+		cpu_setbank (2, new UBytePtr(_nes.rom, 0x2000 * (MMC3_prg1) + 0x10000));
+            }
+	
+        };
+        
+	public static void mapper4_set_chr ()
+	{
+		int chr_page = (MMC3_cmd & 0x80) >> 5;
+	
+		nes_vram [chr_page] = MMC3_chr[0];
+		nes_vram [chr_page+1] = nes_vram [chr_page] + 64;
+		nes_vram [chr_page ^ 2] = MMC3_chr[1];
+		nes_vram [(chr_page ^ 2)+1] = nes_vram [chr_page ^ 2] + 64;
+		nes_vram [chr_page ^ 4] = MMC3_chr[2];
+		nes_vram [chr_page ^ 5] = MMC3_chr[3];
+		nes_vram [chr_page ^ 6] = MMC3_chr[4];
+		nes_vram [chr_page ^ 7] = MMC3_chr[5];
+	}
+	
+	public static ReadHandlerPtr mapper4_irq = new ReadHandlerPtr() {
+            @Override
+            public int handler(int scanline) {
+                int ret = M6502_INT_NONE;
+	
+		if ((scanline < BOTTOM_VISIBLE_SCANLINE) || (scanline == ppu_scanlines_per_frame-1))
+		{
+			if ((IRQ_enable!=0) && (PPU_Control1 & 0x18)!=0)
+			{
+				if (IRQ_count == 0)
+				{
+					IRQ_count = IRQ_count_latch;
+					ret = M6502_INT_IRQ;
+				}
+				IRQ_count --;
+			}
+		}
+	
+		return ret;
+            }
+        };
+        
 /*TODO*///	static void mapper4_w (int offset, int data)
 /*TODO*///	{
 /*TODO*///		static UINT8 last_bank = 0xff;
@@ -740,170 +755,195 @@ public class nes_mmc {
 /*TODO*///				break;
 /*TODO*///		}
 /*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void mapper118_w (int offset, int data)
-/*TODO*///	{
-/*TODO*///		static UINT8 last_bank = 0xff;
-/*TODO*///	
-/*TODO*///	//	logerror("mapper4_w offset: %04x, data: %02x, scanline: %d\n", offset, data, current_scanline);
-/*TODO*///	
-/*TODO*///		switch (offset & 0x7001)
-/*TODO*///		{
-/*TODO*///			case 0x0000: /* $8000 */
-/*TODO*///				MMC3_cmd = data;
-/*TODO*///	
-/*TODO*///				/* Toggle between switching $8000 and $c000 */
-/*TODO*///				if (last_bank != (data & 0xc0))
-/*TODO*///				{
-/*TODO*///					/* Reset the banks */
-/*TODO*///					mapper4_set_prg ();
-/*TODO*///					mapper4_set_chr ();
-/*TODO*///				}
-/*TODO*///				last_bank = data & 0xc0;
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///			case 0x0001: /* $8001 */
-/*TODO*///			{
-/*TODO*///				UINT8 cmd = MMC3_cmd & 0x07;
-/*TODO*///				switch (cmd)
-/*TODO*///				{
-/*TODO*///					case 0: case 1:
-/*TODO*///						data &= 0xfe;
-/*TODO*///						MMC3_chr[cmd] = data * 64;
-/*TODO*///						mapper4_set_chr ();
-/*TODO*///						break;
-/*TODO*///	
-/*TODO*///					case 2: case 3: case 4: case 5:
-/*TODO*///						MMC3_chr[cmd] = data * 64;
-/*TODO*///						mapper4_set_chr ();
-/*TODO*///						break;
-/*TODO*///	
-/*TODO*///					case 6:
-/*TODO*///						MMC3_prg0 = data;
-/*TODO*///						mapper4_set_prg ();
-/*TODO*///						break;
-/*TODO*///	
-/*TODO*///					case 7:
-/*TODO*///						MMC3_prg1 = data;
-/*TODO*///						mapper4_set_prg ();
-/*TODO*///						break;
-/*TODO*///				}
-/*TODO*///				break;
-/*TODO*///			}
-/*TODO*///			case 0x2000: /* $a000 */
+        
+        static void mapper4_set_prg ()
+	{
+		MMC3_prg0 &= prg_mask;
+		MMC3_prg1 &= prg_mask;
+	
+		if ((MMC3_cmd & 0x40) != 0)
+		{
+			cpu_setbank (1, new UBytePtr(_nes.rom, (_nes.prg_chunks[0]-1) * 0x4000 + 0x10000));
+			cpu_setbank (3, new UBytePtr(_nes.rom, 0x2000 * (MMC3_prg0) + 0x10000));
+		}
+		else
+		{
+			cpu_setbank (1, new UBytePtr(_nes.rom, 0x2000 * (MMC3_prg0) + 0x10000));
+			cpu_setbank (3, new UBytePtr(_nes.rom, (_nes.prg_chunks[0]-1) * 0x4000 + 0x10000));
+		}
+		cpu_setbank (2, new UBytePtr(_nes.rom, 0x2000 * (MMC3_prg1) + 0x10000));
+	}
+        
+        static int last_bank = 0xff;
+	
+	public static WriteHandlerPtr mapper118_w = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+		
+	
+	//	logerror("mapper4_w offset: %04x, data: %02x, scanline: %d\n", offset, data, current_scanline);
+	
+		switch (offset & 0x7001)
+		{
+			case 0x0000: /* $8000 */
+				MMC3_cmd = data;
+	
+				/* Toggle between switching $8000 and $c000 */
+				if (last_bank != (data & 0xc0))
+				{
+					/* Reset the banks */
+					mapper4_set_prg();
+					mapper4_set_chr ();
+				}
+				last_bank = data & 0xc0;
+				break;
+	
+			case 0x0001: /* $8001 */
+			{
+				int cmd = MMC3_cmd & 0x07;
+				switch (cmd)
+				{
+					case 0: case 1:
+						data &= 0xfe;
+						MMC3_chr[cmd] = data * 64;
+						mapper4_set_chr ();
+						break;
+	
+					case 2: case 3: case 4: case 5:
+						MMC3_chr[cmd] = data * 64;
+						mapper4_set_chr ();
+						break;
+	
+					case 6:
+						MMC3_prg0 = data;
+						mapper4_set_prg ();
+						break;
+	
+					case 7:
+						MMC3_prg1 = data;
+						mapper4_set_prg ();
+						break;
+				}
+				break;
+			}
+			case 0x2000: /* $a000 */
 /*TODO*///	#ifdef LOG_MMC
 /*TODO*///				logerror("     mapper 118 mirroring: %02x\n", data);
 /*TODO*///	#endif
-/*TODO*///				switch (data & 0x02)
-/*TODO*///				{
-/*TODO*///					case 0x00: ppu_mirror_low (); break;
-/*TODO*///					case 0x01: ppu_mirror_low(); break;
-/*TODO*///				}
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///			case 0x2001: /* $a001 - extra RAM enable/disable */
-/*TODO*///				nes.mid_ram_enable = data;
+				switch (data & 0x02)
+				{
+					case 0x00: ppu_mirror_low (); break;
+					case 0x01: ppu_mirror_low(); break;
+				}
+				break;
+	
+			case 0x2001: /* $a001 - extra RAM enable/disable */
+				_nes.u8_mid_ram_enable = data;
 /*TODO*///	#ifdef LOG_MMC
 /*TODO*///				logerror("     MMC3 mid_ram enable: %02x\n", data);
 /*TODO*///	#endif
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///			case 0x4000: /* $c000 - IRQ scanline counter */
-/*TODO*///				IRQ_count = data;
+				break;
+	
+			case 0x4000: /* $c000 - IRQ scanline counter */
+				IRQ_count = data;
 /*TODO*///	#ifdef LOG_MMC
 /*TODO*///				logerror("     MMC3 set irq count: %02x\n", data);
 /*TODO*///	#endif
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///			case 0x4001: /* $c001 - IRQ scanline latch */
-/*TODO*///				IRQ_count_latch = data;
+				break;
+	
+			case 0x4001: /* $c001 - IRQ scanline latch */
+				IRQ_count_latch = data;
 /*TODO*///	#ifdef LOG_MMC
 /*TODO*///				logerror("     MMC3 set irq count latch: %02x\n", data);
 /*TODO*///	#endif
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///			case 0x6000: /* $e000 - Disable IRQs */
-/*TODO*///				IRQ_enable = 0;
-/*TODO*///				IRQ_count = IRQ_count_latch; /* TODO: verify this */
+				break;
+	
+			case 0x6000: /* $e000 - Disable IRQs */
+				IRQ_enable = 0;
+				IRQ_count = IRQ_count_latch; /* TODO: verify this */
 /*TODO*///	#ifdef LOG_MMC
 /*TODO*///				logerror("     MMC3 disable irqs: %02x\n", data);
 /*TODO*///	#endif
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///			case 0x6001: /* $e001 - Enable IRQs */
-/*TODO*///				IRQ_enable = 1;
+				break;
+	
+			case 0x6001: /* $e001 - Enable IRQs */
+				IRQ_enable = 1;
 /*TODO*///	#ifdef LOG_MMC
 /*TODO*///				logerror("     MMC3 enable irqs: %02x\n", data);
 /*TODO*///	#endif
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///			default:
-/*TODO*///				logerror("mapper4_w uncaught: %04x value: %02x\n", offset + 0x8000, data);
-/*TODO*///				break;
-/*TODO*///		}
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	int mapper5_irq (int scanline)
-/*TODO*///	{
-/*TODO*///		int ret = M6502_INT_NONE;
-/*TODO*///	
+				break;
+	
+			default:
+				logerror("mapper4_w uncaught: %04x value: %02x\n", offset + 0x8000, data);
+				break;
+		}
+            }
+        };
+	
+	public static ReadHandlerPtr mapper5_irq = new ReadHandlerPtr() {
+            @Override
+            public int handler(int scanline) {
+		int ret = M6502_INT_NONE;
+	
 /*TODO*///	#if 1
-/*TODO*///		if (scanline == 0)
-/*TODO*///			IRQ_status |= 0x40;
-/*TODO*///		else if (scanline > BOTTOM_VISIBLE_SCANLINE)
-/*TODO*///			IRQ_status &= ~0x40;
+		if (scanline == 0)
+			IRQ_status |= 0x40;
+		else if (scanline > BOTTOM_VISIBLE_SCANLINE)
+			IRQ_status &= ~0x40;
 /*TODO*///	#endif
-/*TODO*///	
-/*TODO*///		if (scanline == IRQ_count)
-/*TODO*///		{
-/*TODO*///			if (IRQ_enable != 0)
-/*TODO*///				ret = M6502_INT_IRQ;
-/*TODO*///	
-/*TODO*///			IRQ_status = 0xff;
-/*TODO*///		}
-/*TODO*///	
-/*TODO*///		return ret;
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	int mapper5_l_r (int offset)
-/*TODO*///	{
-/*TODO*///		int retVal;
-/*TODO*///	
+	
+		if (scanline == IRQ_count)
+		{
+			if (IRQ_enable != 0)
+				ret = M6502_INT_IRQ;
+	
+			IRQ_status = 0xff;
+		}
+	
+		return ret;
+            }
+        };
+	
+	static ReadHandlerPtr mapper5_l_r = new ReadHandlerPtr() {
+            @Override
+            public int handler(int offset) {
+                int retVal;
+	
 /*TODO*///	#ifdef MMC5_VRAM
-/*TODO*///		/* $5c00 - $5fff: extended videoram attributes */
-/*TODO*///		if ((offset >= 0x1b00) && (offset <= 0x1eff))
-/*TODO*///		{
-/*TODO*///			return MMC5_vram[offset - 0x1b00];
-/*TODO*///		}
+		/* $5c00 - $5fff: extended videoram attributes */
+		if ((offset >= 0x1b00) && (offset <= 0x1eff))
+		{
+			return MMC5_vram[offset - 0x1b00];
+		}
 /*TODO*///	#endif
-/*TODO*///	
-/*TODO*///		switch (offset)
-/*TODO*///		{
-/*TODO*///			case 0x1104: /* $5204 */
+	
+		switch (offset)
+		{
+			case 0x1104: /* $5204 */
 /*TODO*///	#if 0
 /*TODO*///				if (current_scanline == MMC5_scanline) return 0x80;
 /*TODO*///				else return 0x00;
 /*TODO*///	#else
-/*TODO*///				retVal = IRQ_status;
-/*TODO*///				IRQ_status &= ~0x80;
-/*TODO*///				return retVal;
+				retVal = IRQ_status;
+				IRQ_status &= ~0x80;
+				return retVal;
 /*TODO*///	#endif
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///			case 0x1105: /* $5205 */
-/*TODO*///				return (mult1 * mult2) & 0xff;
-/*TODO*///				break;
-/*TODO*///			case 0x1106: /* $5206 */
-/*TODO*///				return ((mult1 * mult2) & 0xff00) >> 8;
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///			default:
-/*TODO*///				logerror("** MMC5 uncaught read, offset: %04x\n", offset + 0x4100);
-/*TODO*///				return 0x00;
-/*TODO*///				break;
-/*TODO*///		}
-/*TODO*///	}
-/*TODO*///	
+				//break;
+	
+			case 0x1105: /* $5205 */
+				return (mult1 * mult2) & 0xff;
+				//break;
+			case 0x1106: /* $5206 */
+				return ((mult1 * mult2) & 0xff00) >> 8;
+				//break;
+	
+			default:
+				logerror("** MMC5 uncaught read, offset: %04x\n", offset + 0x4100);
+				return 0x00;
+				//break;
+		}
+            }
+        };
+	
 /*TODO*///	static void mapper5_sync_vrom (int mode)
 /*TODO*///	{
 /*TODO*///		int i;
@@ -911,490 +951,496 @@ public class nes_mmc {
 /*TODO*///		for (i = 0; i < 8; i ++)
 /*TODO*///			nes_vram[i] = vrom_bank[0 + (mode * 8)] * 64;
 /*TODO*///	}
-/*TODO*///	
-/*TODO*///	void mapper5_l_w (int offset, int data)
-/*TODO*///	{
-/*TODO*///	//	static int vrom_next[4];
-/*TODO*///		static int vrom_page_a;
-/*TODO*///		static int vrom_page_b;
-/*TODO*///	
-/*TODO*///	//	logerror("Mapper 5 write, offset: %04x, data: %02x\n", offset + 0x4100, data);
-/*TODO*///		/* Send $5000-$5015 to the sound chip */
-/*TODO*///		if ((offset >= 0xf00) && (offset <= 0xf15))
-/*TODO*///		{
-/*TODO*///			NESPSG_0_w (offset & 0x1f, data);
-/*TODO*///			return;
-/*TODO*///		}
-/*TODO*///	
+        
+        //	static int vrom_next[4];
+        static int vrom_page_a;
+        static int vrom_page_b;
+        
+	public static WriteHandlerPtr mapper5_l_w = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+	
+	
+	//	logerror("Mapper 5 write, offset: %04x, data: %02x\n", offset + 0x4100, data);
+		/* Send $5000-$5015 to the sound chip */
+		if ((offset >= 0xf00) && (offset <= 0xf15))
+		{
+			NESPSG_0_w.handler(offset & 0x1f, data);
+			return;
+		}
+	
 /*TODO*///	#ifdef MMC5_VRAM
-/*TODO*///		/* $5c00 - $5fff: extended videoram attributes */
-/*TODO*///		if ((offset >= 0x1b00) && (offset <= 0x1eff))
-/*TODO*///		{
-/*TODO*///			if (MMC5_vram_protect == 0x03)
-/*TODO*///				MMC5_vram[offset - 0x1b00] = data;
-/*TODO*///			return;
-/*TODO*///		}
+		/* $5c00 - $5fff: extended videoram attributes */
+		if ((offset >= 0x1b00) && (offset <= 0x1eff))
+		{
+			if (MMC5_vram_protect == 0x03)
+				MMC5_vram[offset - 0x1b00] = data;
+			return;
+		}
 /*TODO*///	#endif
-/*TODO*///	
-/*TODO*///		switch (offset)
-/*TODO*///		{
-/*TODO*///			case 0x1000: /* $5100 */
-/*TODO*///				MMC5_rom_bank_mode = data & 0x03;
-/*TODO*///				logerror ("MMC5 rom bank mode: %02x\n", data);
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///			case 0x1001: /* $5101 */
-/*TODO*///				MMC5_vrom_bank_mode = data & 0x03;
-/*TODO*///				logerror ("MMC5 vrom bank mode: %02x\n", data);
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///			case 0x1002: /* $5102 */
-/*TODO*///				if (data == 0x02)
-/*TODO*///					MMC5_vram_protect |= 1;
-/*TODO*///				else
-/*TODO*///					MMC5_vram_protect = 0;
-/*TODO*///				logerror ("MMC5 vram protect 1: %02x\n", data);
-/*TODO*///				break;
-/*TODO*///			case 0x1003: /* 5103 */
-/*TODO*///				if (data == 0x01)
-/*TODO*///					MMC5_vram_protect |= 2;
-/*TODO*///				else
-/*TODO*///					MMC5_vram_protect = 0;
-/*TODO*///				logerror ("MMC5 vram protect 2: %02x\n", data);
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///			case 0x1004: /* $5104 - Extra VRAM (EXRAM) control */
-/*TODO*///				MMC5_vram_control = data;
-/*TODO*///				logerror ("MMC5 exram control: %02x\n", data);
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///			case 0x1005: /* $5105 */
-/*TODO*///				ppu_mirror_custom (0, data & 0x03);
-/*TODO*///				ppu_mirror_custom (1, (data & 0x0c) >> 2);
-/*TODO*///				ppu_mirror_custom (2, (data & 0x30) >> 4);
-/*TODO*///				ppu_mirror_custom (3, (data & 0xc0) >> 6);
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///			/* $5106 - ?? cv3 sets to 0 */
-/*TODO*///			/* $5107 - ?? cv3 sets to 0 */
-/*TODO*///	
-/*TODO*///			case 0x1013: /* $5113 */
-/*TODO*///				logerror ("MMC5 mid RAM bank select: %02x\n", data & 0x07);
-/*TODO*///				cpu_setbank (5, &nes.wram[data * 0x2000]);
-/*TODO*///				/* The & 4 is a hack that'll tide us over for now */
-/*TODO*///				battery_ram = &nes.wram[(data & 4) * 0x2000];
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///			case 0x1014: /* $5114 */
-/*TODO*///				logerror ("MMC5 $5114 bank select: %02x (mode: %d)\n", data, MMC5_rom_bank_mode);
-/*TODO*///				switch (MMC5_rom_bank_mode)
-/*TODO*///				{
-/*TODO*///					case 0x03:
-/*TODO*///						/* 8k switch */
-/*TODO*///						if ((data & 0x80) != 0)
-/*TODO*///						{
-/*TODO*///							/* ROM */
-/*TODO*///							logerror ("\tROM bank select (8k, $8000): %02x\n", data);
-/*TODO*///							data &= ((nes.prg_chunks << 1) - 1);
-/*TODO*///							cpu_setbank (1, &nes.rom[data * 0x2000 + 0x10000]);
-/*TODO*///						}
-/*TODO*///						else
-/*TODO*///						{
-/*TODO*///							/* RAM */
-/*TODO*///							logerror ("\tRAM bank select (8k, $8000): %02x\n", data & 0x07);
-/*TODO*///							/* The & 4 is a hack that'll tide us over for now */
-/*TODO*///							cpu_setbank (1, &nes.wram[(data & 4) * 0x2000]);
-/*TODO*///						}
-/*TODO*///						break;
-/*TODO*///				}
-/*TODO*///				break;
-/*TODO*///			case 0x1015: /* $5115 */
-/*TODO*///				logerror ("MMC5 $5115 bank select: %02x (mode: %d)\n", data, MMC5_rom_bank_mode);
-/*TODO*///				switch (MMC5_rom_bank_mode)
-/*TODO*///				{
-/*TODO*///					case 0x01:
-/*TODO*///					case 0x02:
-/*TODO*///						if ((data & 0x80) != 0)
-/*TODO*///						{
-/*TODO*///							/* 16k switch - ROM only */
-/*TODO*///							prg16_89ab ((data & 0x7f) >> 1);
-/*TODO*///						}
-/*TODO*///						else
-/*TODO*///						{
-/*TODO*///							/* RAM */
-/*TODO*///							logerror ("\tRAM bank select (16k, $8000): %02x\n", data & 0x07);
-/*TODO*///							/* The & 4 is a hack that'll tide us over for now */
-/*TODO*///							cpu_setbank (1, &nes.wram[((data & 4) >> 1) * 0x4000]);
-/*TODO*///							cpu_setbank (2, &nes.wram[((data & 4) >> 1) * 0x4000 + 0x2000]);
-/*TODO*///						}
-/*TODO*///						break;
-/*TODO*///					case 0x03:
-/*TODO*///						/* 8k switch */
-/*TODO*///						if ((data & 0x80) != 0)
-/*TODO*///						{
-/*TODO*///							/* ROM */
-/*TODO*///							data &= ((nes.prg_chunks << 1) - 1);
-/*TODO*///							cpu_setbank (2, &nes.rom[data * 0x2000 + 0x10000]);
-/*TODO*///						}
-/*TODO*///						else
-/*TODO*///						{
-/*TODO*///							/* RAM */
-/*TODO*///							logerror ("\tRAM bank select (8k, $a000): %02x\n", data & 0x07);
-/*TODO*///							/* The & 4 is a hack that'll tide us over for now */
-/*TODO*///							cpu_setbank (2, &nes.wram[(data & 4) * 0x2000]);
-/*TODO*///						}
-/*TODO*///						break;
-/*TODO*///				}
-/*TODO*///				break;
-/*TODO*///			case 0x1016: /* $5116 */
-/*TODO*///				logerror ("MMC5 $5116 bank select: %02x (mode: %d)\n", data, MMC5_rom_bank_mode);
-/*TODO*///				switch (MMC5_rom_bank_mode)
-/*TODO*///				{
-/*TODO*///					case 0x02:
-/*TODO*///					case 0x03:
-/*TODO*///						/* 8k switch */
-/*TODO*///						if ((data & 0x80) != 0)
-/*TODO*///						{
-/*TODO*///							/* ROM */
-/*TODO*///							data &= ((nes.prg_chunks << 1) - 1);
-/*TODO*///							cpu_setbank (3, &nes.rom[data * 0x2000 + 0x10000]);
-/*TODO*///						}
-/*TODO*///						else
-/*TODO*///						{
-/*TODO*///							/* RAM */
-/*TODO*///							logerror ("\tRAM bank select (8k, $c000): %02x\n", data & 0x07);
-/*TODO*///							/* The & 4 is a hack that'll tide us over for now */
-/*TODO*///							cpu_setbank (3, &nes.wram[(data & 4)* 0x2000]);
-/*TODO*///						}
-/*TODO*///						break;
-/*TODO*///				}
-/*TODO*///				break;
-/*TODO*///			case 0x1017: /* $5117 */
-/*TODO*///				logerror ("MMC5 $5117 bank select: %02x (mode: %d)\n", data, MMC5_rom_bank_mode);
-/*TODO*///				switch (MMC5_rom_bank_mode)
-/*TODO*///				{
-/*TODO*///					case 0x00:
-/*TODO*///						/* 32k switch - ROM only */
-/*TODO*///						prg32 (data >> 2);
-/*TODO*///						break;
-/*TODO*///					case 0x01:
-/*TODO*///						/* 16k switch - ROM only */
-/*TODO*///						prg16_cdef (data >> 1);
-/*TODO*///						break;
-/*TODO*///					case 0x02:
-/*TODO*///					case 0x03:
-/*TODO*///						/* 8k switch */
-/*TODO*///						data &= ((nes.prg_chunks << 1) - 1);
-/*TODO*///						cpu_setbank (4, &nes.rom[data * 0x2000 + 0x10000]);
-/*TODO*///						break;
-/*TODO*///				}
-/*TODO*///				break;
-/*TODO*///			case 0x1020: /* $5120 */
-/*TODO*///				logerror ("MMC5 $5120 vrom select: %02x (mode: %d)\n", data, MMC5_vrom_bank_mode);
-/*TODO*///				switch (MMC5_vrom_bank_mode)
-/*TODO*///				{
-/*TODO*///					case 0x03:
-/*TODO*///						/* 1k switch */
-/*TODO*///						vrom_bank[0] = data;
-/*TODO*///	//					mapper5_sync_vrom(0);
-/*TODO*///						nes_vram[0] = vrom_bank[0] * 64;
-/*TODO*///	//					nes_vram_sprite[0] = vrom_bank[0] * 64;
-/*TODO*///	//					vrom_next[0] = 4;
-/*TODO*///	//					vrom_page_a = 1;
-/*TODO*///	//					vrom_page_b = 0;
-/*TODO*///						break;
-/*TODO*///				}
-/*TODO*///				break;
-/*TODO*///			case 0x1021: /* $5121 */
-/*TODO*///				logerror ("MMC5 $5121 vrom select: %02x (mode: %d)\n", data, MMC5_vrom_bank_mode);
-/*TODO*///				switch (MMC5_vrom_bank_mode)
-/*TODO*///				{
-/*TODO*///					case 0x02:
-/*TODO*///						/* 2k switch */
-/*TODO*///						chr2_0 (data);
-/*TODO*///						break;
-/*TODO*///					case 0x03:
-/*TODO*///						/* 1k switch */
-/*TODO*///						vrom_bank[1] = data;
-/*TODO*///	//					mapper5_sync_vrom(0);
-/*TODO*///						nes_vram[1] = vrom_bank[1] * 64;
-/*TODO*///	//					nes_vram_sprite[1] = vrom_bank[0] * 64;
-/*TODO*///	//					vrom_next[1] = 5;
-/*TODO*///	//					vrom_page_a = 1;
-/*TODO*///	//					vrom_page_b = 0;
-/*TODO*///						break;
-/*TODO*///				}
-/*TODO*///				break;
-/*TODO*///			case 0x1022: /* $5122 */
-/*TODO*///				logerror ("MMC5 $5122 vrom select: %02x (mode: %d)\n", data, MMC5_vrom_bank_mode);
-/*TODO*///				switch (MMC5_vrom_bank_mode)
-/*TODO*///				{
-/*TODO*///					case 0x03:
-/*TODO*///						/* 1k switch */
-/*TODO*///						vrom_bank[2] = data;
-/*TODO*///	//					mapper5_sync_vrom(0);
-/*TODO*///						nes_vram[2] = vrom_bank[2] * 64;
-/*TODO*///	//					nes_vram_sprite[2] = vrom_bank[0] * 64;
-/*TODO*///	//					vrom_next[2] = 6;
-/*TODO*///	//					vrom_page_a = 1;
-/*TODO*///	//					vrom_page_b = 0;
-/*TODO*///						break;
-/*TODO*///				}
-/*TODO*///				break;
-/*TODO*///			case 0x1023: /* $5123 */
-/*TODO*///				logerror ("MMC5 $5123 vrom select: %02x (mode: %d)\n", data, MMC5_vrom_bank_mode);
-/*TODO*///				switch (MMC5_vrom_bank_mode)
-/*TODO*///				{
-/*TODO*///					case 0x01:
-/*TODO*///						chr4_0 (data);
-/*TODO*///						break;
-/*TODO*///					case 0x02:
-/*TODO*///						/* 2k switch */
-/*TODO*///						chr2_2 (data);
-/*TODO*///						break;
-/*TODO*///					case 0x03:
-/*TODO*///						/* 1k switch */
-/*TODO*///						vrom_bank[3] = data;
-/*TODO*///	//					mapper5_sync_vrom(0);
-/*TODO*///						nes_vram[3] = vrom_bank[3] * 64;
-/*TODO*///	//					nes_vram_sprite[3] = vrom_bank[0] * 64;
-/*TODO*///	//					vrom_next[3] = 7;
-/*TODO*///	//					vrom_page_a = 1;
-/*TODO*///	//					vrom_page_b = 0;
-/*TODO*///						break;
-/*TODO*///				}
-/*TODO*///				break;
-/*TODO*///			case 0x1024: /* $5124 */
-/*TODO*///				logerror ("MMC5 $5124 vrom select: %02x (mode: %d)\n", data, MMC5_vrom_bank_mode);
-/*TODO*///				switch (MMC5_vrom_bank_mode)
-/*TODO*///				{
-/*TODO*///					case 0x03:
-/*TODO*///						/* 1k switch */
-/*TODO*///						vrom_bank[4] = data;
-/*TODO*///	//					mapper5_sync_vrom(0);
-/*TODO*///						nes_vram[4] = vrom_bank[4] * 64;
-/*TODO*///	//					nes_vram_sprite[4] = vrom_bank[0] * 64;
-/*TODO*///	//					vrom_next[0] = 0;
-/*TODO*///	//					vrom_page_a = 0;
-/*TODO*///	//					vrom_page_b = 0;
-/*TODO*///						break;
-/*TODO*///				}
-/*TODO*///				break;
-/*TODO*///			case 0x1025: /* $5125 */
-/*TODO*///				logerror ("MMC5 $5125 vrom select: %02x (mode: %d)\n", data, MMC5_vrom_bank_mode);
-/*TODO*///				switch (MMC5_vrom_bank_mode)
-/*TODO*///				{
-/*TODO*///					case 0x02:
-/*TODO*///						/* 2k switch */
-/*TODO*///						chr2_4 (data);
-/*TODO*///						break;
-/*TODO*///					case 0x03:
-/*TODO*///						/* 1k switch */
-/*TODO*///						vrom_bank[5] = data;
-/*TODO*///	//					mapper5_sync_vrom(0);
-/*TODO*///						nes_vram[5] = vrom_bank[5] * 64;
-/*TODO*///	//					nes_vram_sprite[5] = vrom_bank[0] * 64;
-/*TODO*///	//					vrom_next[1] = 1;
-/*TODO*///	//					vrom_page_a = 0;
-/*TODO*///	//					vrom_page_b = 0;
-/*TODO*///						break;
-/*TODO*///				}
-/*TODO*///				break;
-/*TODO*///			case 0x1026: /* $5126 */
-/*TODO*///				logerror ("MMC5 $5126 vrom select: %02x (mode: %d)\n", data, MMC5_vrom_bank_mode);
-/*TODO*///				switch (MMC5_vrom_bank_mode)
-/*TODO*///				{
-/*TODO*///					case 0x03:
-/*TODO*///						/* 1k switch */
-/*TODO*///						vrom_bank[6] = data;
-/*TODO*///	//					mapper5_sync_vrom(0);
-/*TODO*///						nes_vram[6] = vrom_bank[6] * 64;
-/*TODO*///	//					nes_vram_sprite[6] = vrom_bank[0] * 64;
-/*TODO*///	//					vrom_next[2] = 2;
-/*TODO*///	//					vrom_page_a = 0;
-/*TODO*///	//					vrom_page_b = 0;
-/*TODO*///						break;
-/*TODO*///				}
-/*TODO*///				break;
-/*TODO*///			case 0x1027: /* $5127 */
-/*TODO*///				logerror ("MMC5 $5127 vrom select: %02x (mode: %d)\n", data, MMC5_vrom_bank_mode);
-/*TODO*///				switch (MMC5_vrom_bank_mode)
-/*TODO*///				{
-/*TODO*///					case 0x00:
-/*TODO*///						/* 8k switch */
-/*TODO*///						chr8 (data);
-/*TODO*///						break;
-/*TODO*///					case 0x01:
-/*TODO*///						/* 4k switch */
-/*TODO*///						chr4_4 (data);
-/*TODO*///						break;
-/*TODO*///					case 0x02:
-/*TODO*///						/* 2k switch */
-/*TODO*///						chr2_6 (data);
-/*TODO*///						break;
-/*TODO*///					case 0x03:
-/*TODO*///						/* 1k switch */
-/*TODO*///						vrom_bank[7] = data;
-/*TODO*///	//					mapper5_sync_vrom(0);
-/*TODO*///						nes_vram[7] = vrom_bank[7] * 64;
-/*TODO*///	//					nes_vram_sprite[7] = vrom_bank[0] * 64;
-/*TODO*///	//					vrom_next[3] = 3;
-/*TODO*///	//					vrom_page_a = 0;
-/*TODO*///	//					vrom_page_b = 0;
-/*TODO*///						break;
-/*TODO*///				}
-/*TODO*///				break;
-/*TODO*///			case 0x1028: /* $5128 */
-/*TODO*///				logerror ("MMC5 $5128 vrom select: %02x (mode: %d)\n", data, MMC5_vrom_bank_mode);
-/*TODO*///				switch (MMC5_vrom_bank_mode)
-/*TODO*///				{
-/*TODO*///					case 0x03:
-/*TODO*///						/* 1k switch */
-/*TODO*///						vrom_bank[8] = vrom_bank[12] = data;
-/*TODO*///	//					nes_vram[vrom_next[0]] = data * 64;
-/*TODO*///	//					nes_vram[0 + (vrom_page_a*4)] = data * 64;
-/*TODO*///	//					nes_vram[0] = data * 64;
-/*TODO*///						nes_vram[4] = data * 64;
-/*TODO*///	//					mapper5_sync_vrom(1);
-/*TODO*///						if (!vrom_page_b)
-/*TODO*///						{
-/*TODO*///							vrom_page_a ^= 0x01;
-/*TODO*///							vrom_page_b = 1;
-/*TODO*///						}
-/*TODO*///						break;
-/*TODO*///				}
-/*TODO*///				break;
-/*TODO*///			case 0x1029: /* $5129 */
-/*TODO*///				logerror ("MMC5 $5129 vrom select: %02x (mode: %d)\n", data, MMC5_vrom_bank_mode);
-/*TODO*///				switch (MMC5_vrom_bank_mode)
-/*TODO*///				{
-/*TODO*///					case 0x02:
-/*TODO*///						/* 2k switch */
-/*TODO*///						chr2_0 (data);
-/*TODO*///						chr2_4 (data);
-/*TODO*///						break;
-/*TODO*///					case 0x03:
-/*TODO*///						/* 1k switch */
-/*TODO*///						vrom_bank[9] = vrom_bank[13] = data;
-/*TODO*///	//					nes_vram[vrom_next[1]] = data * 64;
-/*TODO*///	//					nes_vram[1 + (vrom_page_a*4)] = data * 64;
-/*TODO*///	//					nes_vram[1] = data * 64;
-/*TODO*///						nes_vram[5] = data * 64;
-/*TODO*///	//					mapper5_sync_vrom(1);
-/*TODO*///						if (!vrom_page_b)
-/*TODO*///						{
-/*TODO*///							vrom_page_a ^= 0x01;
-/*TODO*///							vrom_page_b = 1;
-/*TODO*///						}
-/*TODO*///						break;
-/*TODO*///				}
-/*TODO*///				break;
-/*TODO*///			case 0x102a: /* $512a */
-/*TODO*///				logerror ("MMC5 $512a vrom select: %02x (mode: %d)\n", data, MMC5_vrom_bank_mode);
-/*TODO*///				switch (MMC5_vrom_bank_mode)
-/*TODO*///				{
-/*TODO*///					case 0x03:
-/*TODO*///						/* 1k switch */
-/*TODO*///						vrom_bank[10] = vrom_bank[14] = data;
-/*TODO*///	//					nes_vram[vrom_next[2]] = data * 64;
-/*TODO*///	//					nes_vram[2 + (vrom_page_a*4)] = data * 64;
-/*TODO*///	//					nes_vram[2] = data * 64;
-/*TODO*///						nes_vram[6] = data * 64;
-/*TODO*///	//					mapper5_sync_vrom(1);
-/*TODO*///						if (!vrom_page_b)
-/*TODO*///						{
-/*TODO*///							vrom_page_a ^= 0x01;
-/*TODO*///							vrom_page_b = 1;
-/*TODO*///						}
-/*TODO*///						break;
-/*TODO*///				}
-/*TODO*///				break;
-/*TODO*///			case 0x102b: /* $512b */
-/*TODO*///				logerror ("MMC5 $512b vrom select: %02x (mode: %d)\n", data, MMC5_vrom_bank_mode);
-/*TODO*///				switch (MMC5_vrom_bank_mode)
-/*TODO*///				{
-/*TODO*///					case 0x00:
-/*TODO*///						/* 8k switch */
-/*TODO*///						chr8 (data);
-/*TODO*///						break;
-/*TODO*///					case 0x01:
-/*TODO*///						/* 4k switch */
-/*TODO*///						chr4_0 (data);
-/*TODO*///						chr4_4 (data);
-/*TODO*///						break;
-/*TODO*///					case 0x02:
-/*TODO*///						/* 2k switch */
-/*TODO*///						chr2_2 (data);
-/*TODO*///						chr2_6 (data);
-/*TODO*///						break;
-/*TODO*///					case 0x03:
-/*TODO*///						/* 1k switch */
-/*TODO*///						vrom_bank[11] = vrom_bank[15] = data;
-/*TODO*///	//					nes_vram[vrom_next[3]] = data * 64;
-/*TODO*///	//					nes_vram[3 + (vrom_page_a*4)] = data * 64;
-/*TODO*///	//					nes_vram[3] = data * 64;
-/*TODO*///						nes_vram[7] = data * 64;
-/*TODO*///	//					mapper5_sync_vrom(1);
-/*TODO*///						if (!vrom_page_b)
-/*TODO*///						{
-/*TODO*///							vrom_page_a ^= 0x01;
-/*TODO*///							vrom_page_b = 1;
-/*TODO*///						}
-/*TODO*///						break;
-/*TODO*///				}
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///			case 0x1103: /* $5203 */
-/*TODO*///				IRQ_count = data;
-/*TODO*///				MMC5_scanline = data;
-/*TODO*///				logerror ("MMC5 irq scanline: %d\n", IRQ_count);
-/*TODO*///				break;
-/*TODO*///			case 0x1104: /* $5204 */
-/*TODO*///				IRQ_enable = data & 0x80;
-/*TODO*///				logerror ("MMC5 irq enable: %02x\n", data);
-/*TODO*///				break;
-/*TODO*///			case 0x1105: /* $5205 */
-/*TODO*///				mult1 = data;
-/*TODO*///				break;
-/*TODO*///			case 0x1106: /* $5206 */
-/*TODO*///				mult2 = data;
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///			default:
-/*TODO*///				logerror("** MMC5 uncaught write, offset: %04x, data: %02x\n", offset + 0x4100, data);
-/*TODO*///				break;
-/*TODO*///		}
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	void mapper5_w (int offset, int data)
-/*TODO*///	{
-/*TODO*///		logerror("MMC5 uncaught high mapper w, %04x: %02x\n", offset, data);
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	void mapper7_w (int offset, int data)
-/*TODO*///	{
-/*TODO*///		if ((data & 0x10) != 0)
-/*TODO*///			ppu_mirror_high ();
-/*TODO*///		else
-/*TODO*///			ppu_mirror_low ();
-/*TODO*///	
-/*TODO*///		prg32 (data);
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void mapper8_w (int offset, int data)
-/*TODO*///	{
+	
+		switch (offset)
+		{
+			case 0x1000: /* $5100 */
+				MMC5_rom_bank_mode = data & 0x03;
+				logerror ("MMC5 rom bank mode: %02x\n", data);
+				break;
+	
+			case 0x1001: /* $5101 */
+				MMC5_vrom_bank_mode = data & 0x03;
+				logerror ("MMC5 vrom bank mode: %02x\n", data);
+				break;
+	
+			case 0x1002: /* $5102 */
+				if (data == 0x02)
+					MMC5_vram_protect |= 1;
+				else
+					MMC5_vram_protect = 0;
+				logerror ("MMC5 vram protect 1: %02x\n", data);
+				break;
+			case 0x1003: /* 5103 */
+				if (data == 0x01)
+					MMC5_vram_protect |= 2;
+				else
+					MMC5_vram_protect = 0;
+				logerror ("MMC5 vram protect 2: %02x\n", data);
+				break;
+	
+			case 0x1004: /* $5104 - Extra VRAM (EXRAM) control */
+				MMC5_vram_control = data;
+				logerror ("MMC5 exram control: %02x\n", data);
+				break;
+	
+			case 0x1005: /* $5105 */
+				ppu_mirror_custom (0, data & 0x03);
+				ppu_mirror_custom (1, (data & 0x0c) >> 2);
+				ppu_mirror_custom (2, (data & 0x30) >> 4);
+				ppu_mirror_custom (3, (data & 0xc0) >> 6);
+				break;
+	
+			/* $5106 - ?? cv3 sets to 0 */
+			/* $5107 - ?? cv3 sets to 0 */
+	
+			case 0x1013: /* $5113 */
+				logerror ("MMC5 mid RAM bank select: %02x\n", data & 0x07);
+				cpu_setbank (5, new UBytePtr(_nes.wram, data * 0x2000));
+				/* The & 4 is a hack that'll tide us over for now */
+				battery_ram = new UBytePtr(_nes.wram, (data & 4) * 0x2000);
+				break;
+	
+			case 0x1014: /* $5114 */
+				logerror ("MMC5 $5114 bank select: %02x (mode: %d)\n", data, MMC5_rom_bank_mode);
+				switch (MMC5_rom_bank_mode)
+				{
+					case 0x03:
+						/* 8k switch */
+						if ((data & 0x80) != 0)
+						{
+							/* ROM */
+							logerror ("\tROM bank select (8k, $8000): %02x\n", data);
+							data &= ((_nes.prg_chunks[0] << 1) - 1);
+							cpu_setbank (1, new UBytePtr(_nes.rom, data * 0x2000 + 0x10000));
+						}
+						else
+						{
+							/* RAM */
+							logerror ("\tRAM bank select (8k, $8000): %02x\n", data & 0x07);
+							/* The & 4 is a hack that'll tide us over for now */
+							cpu_setbank (1, new UBytePtr(_nes.wram, (data & 4) * 0x2000));
+						}
+						break;
+				}
+				break;
+			case 0x1015: /* $5115 */
+				logerror ("MMC5 $5115 bank select: %02x (mode: %d)\n", data, MMC5_rom_bank_mode);
+				switch (MMC5_rom_bank_mode)
+				{
+					case 0x01:
+					case 0x02:
+						if ((data & 0x80) != 0)
+						{
+							/* 16k switch - ROM only */
+							prg16_89ab ((data & 0x7f) >> 1);
+						}
+						else
+						{
+							/* RAM */
+							logerror ("\tRAM bank select (16k, $8000): %02x\n", data & 0x07);
+							/* The & 4 is a hack that'll tide us over for now */
+							cpu_setbank (1, new UBytePtr(_nes.wram, ((data & 4) >> 1) * 0x4000));
+							cpu_setbank (2, new UBytePtr(_nes.wram, ((data & 4) >> 1) * 0x4000 + 0x2000));
+						}
+						break;
+					case 0x03:
+						/* 8k switch */
+						if ((data & 0x80) != 0)
+						{
+							/* ROM */
+							data &= ((_nes.prg_chunks[0] << 1) - 1);
+							cpu_setbank (2, new UBytePtr(_nes.rom, data * 0x2000 + 0x10000));
+						}
+						else
+						{
+							/* RAM */
+							logerror ("\tRAM bank select (8k, $a000): %02x\n", data & 0x07);
+							/* The & 4 is a hack that'll tide us over for now */
+							cpu_setbank (2, new UBytePtr(_nes.wram, (data & 4) * 0x2000));
+						}
+						break;
+				}
+				break;
+			case 0x1016: /* $5116 */
+				logerror ("MMC5 $5116 bank select: %02x (mode: %d)\n", data, MMC5_rom_bank_mode);
+				switch (MMC5_rom_bank_mode)
+				{
+					case 0x02:
+					case 0x03:
+						/* 8k switch */
+						if ((data & 0x80) != 0)
+						{
+							/* ROM */
+							data &= ((_nes.prg_chunks[0] << 1) - 1);
+							cpu_setbank (3, new UBytePtr(_nes.rom, data * 0x2000 + 0x10000));
+						}
+						else
+						{
+							/* RAM */
+							logerror ("\tRAM bank select (8k, $c000): %02x\n", data & 0x07);
+							/* The & 4 is a hack that'll tide us over for now */
+							cpu_setbank (3, new UBytePtr(_nes.wram, (data & 4)* 0x2000));
+						}
+						break;
+				}
+				break;
+			case 0x1017: /* $5117 */
+				logerror ("MMC5 $5117 bank select: %02x (mode: %d)\n", data, MMC5_rom_bank_mode);
+				switch (MMC5_rom_bank_mode)
+				{
+					case 0x00:
+						/* 32k switch - ROM only */
+						prg32 (data >> 2);
+						break;
+					case 0x01:
+						/* 16k switch - ROM only */
+						prg16_cdef (data >> 1);
+						break;
+					case 0x02:
+					case 0x03:
+						/* 8k switch */
+						data &= ((_nes.prg_chunks[0] << 1) - 1);
+						cpu_setbank (4, new UBytePtr(_nes.rom, data * 0x2000 + 0x10000));
+						break;
+				}
+				break;
+			case 0x1020: /* $5120 */
+				logerror ("MMC5 $5120 vrom select: %02x (mode: %d)\n", data, MMC5_vrom_bank_mode);
+				switch (MMC5_vrom_bank_mode)
+				{
+					case 0x03:
+						/* 1k switch */
+						vrom_bank[0] = data;
+	//					mapper5_sync_vrom(0);
+						nes_vram[0] = vrom_bank[0] * 64;
+	//					nes_vram_sprite[0] = vrom_bank[0] * 64;
+	//					vrom_next[0] = 4;
+	//					vrom_page_a = 1;
+	//					vrom_page_b = 0;
+						break;
+				}
+				break;
+			case 0x1021: /* $5121 */
+				logerror ("MMC5 $5121 vrom select: %02x (mode: %d)\n", data, MMC5_vrom_bank_mode);
+				switch (MMC5_vrom_bank_mode)
+				{
+					case 0x02:
+						/* 2k switch */
+						chr2_0 (data);
+						break;
+					case 0x03:
+						/* 1k switch */
+						vrom_bank[1] = data;
+	//					mapper5_sync_vrom(0);
+						nes_vram[1] = vrom_bank[1] * 64;
+	//					nes_vram_sprite[1] = vrom_bank[0] * 64;
+	//					vrom_next[1] = 5;
+	//					vrom_page_a = 1;
+	//					vrom_page_b = 0;
+						break;
+				}
+				break;
+			case 0x1022: /* $5122 */
+				logerror ("MMC5 $5122 vrom select: %02x (mode: %d)\n", data, MMC5_vrom_bank_mode);
+				switch (MMC5_vrom_bank_mode)
+				{
+					case 0x03:
+						/* 1k switch */
+						vrom_bank[2] = data;
+	//					mapper5_sync_vrom(0);
+						nes_vram[2] = vrom_bank[2] * 64;
+	//					nes_vram_sprite[2] = vrom_bank[0] * 64;
+	//					vrom_next[2] = 6;
+	//					vrom_page_a = 1;
+	//					vrom_page_b = 0;
+						break;
+				}
+				break;
+			case 0x1023: /* $5123 */
+				logerror ("MMC5 $5123 vrom select: %02x (mode: %d)\n", data, MMC5_vrom_bank_mode);
+				switch (MMC5_vrom_bank_mode)
+				{
+					case 0x01:
+						chr4_0 (data);
+						break;
+					case 0x02:
+						/* 2k switch */
+						chr2_2 (data);
+						break;
+					case 0x03:
+						/* 1k switch */
+						vrom_bank[3] = data;
+	//					mapper5_sync_vrom(0);
+						nes_vram[3] = vrom_bank[3] * 64;
+	//					nes_vram_sprite[3] = vrom_bank[0] * 64;
+	//					vrom_next[3] = 7;
+	//					vrom_page_a = 1;
+	//					vrom_page_b = 0;
+						break;
+				}
+				break;
+			case 0x1024: /* $5124 */
+				logerror ("MMC5 $5124 vrom select: %02x (mode: %d)\n", data, MMC5_vrom_bank_mode);
+				switch (MMC5_vrom_bank_mode)
+				{
+					case 0x03:
+						/* 1k switch */
+						vrom_bank[4] = data;
+	//					mapper5_sync_vrom(0);
+						nes_vram[4] = vrom_bank[4] * 64;
+	//					nes_vram_sprite[4] = vrom_bank[0] * 64;
+	//					vrom_next[0] = 0;
+	//					vrom_page_a = 0;
+	//					vrom_page_b = 0;
+						break;
+				}
+				break;
+			case 0x1025: /* $5125 */
+				logerror ("MMC5 $5125 vrom select: %02x (mode: %d)\n", data, MMC5_vrom_bank_mode);
+				switch (MMC5_vrom_bank_mode)
+				{
+					case 0x02:
+						/* 2k switch */
+						chr2_4 (data);
+						break;
+					case 0x03:
+						/* 1k switch */
+						vrom_bank[5] = data;
+	//					mapper5_sync_vrom(0);
+						nes_vram[5] = vrom_bank[5] * 64;
+	//					nes_vram_sprite[5] = vrom_bank[0] * 64;
+	//					vrom_next[1] = 1;
+	//					vrom_page_a = 0;
+	//					vrom_page_b = 0;
+						break;
+				}
+				break;
+			case 0x1026: /* $5126 */
+				logerror ("MMC5 $5126 vrom select: %02x (mode: %d)\n", data, MMC5_vrom_bank_mode);
+				switch (MMC5_vrom_bank_mode)
+				{
+					case 0x03:
+						/* 1k switch */
+						vrom_bank[6] = data;
+	//					mapper5_sync_vrom(0);
+						nes_vram[6] = vrom_bank[6] * 64;
+	//					nes_vram_sprite[6] = vrom_bank[0] * 64;
+	//					vrom_next[2] = 2;
+	//					vrom_page_a = 0;
+	//					vrom_page_b = 0;
+						break;
+				}
+				break;
+			case 0x1027: /* $5127 */
+				logerror ("MMC5 $5127 vrom select: %02x (mode: %d)\n", data, MMC5_vrom_bank_mode);
+				switch (MMC5_vrom_bank_mode)
+				{
+					case 0x00:
+						/* 8k switch */
+						chr8 (data);
+						break;
+					case 0x01:
+						/* 4k switch */
+						chr4_4 (data);
+						break;
+					case 0x02:
+						/* 2k switch */
+						chr2_6 (data);
+						break;
+					case 0x03:
+						/* 1k switch */
+						vrom_bank[7] = data;
+	//					mapper5_sync_vrom(0);
+						nes_vram[7] = vrom_bank[7] * 64;
+	//					nes_vram_sprite[7] = vrom_bank[0] * 64;
+	//					vrom_next[3] = 3;
+	//					vrom_page_a = 0;
+	//					vrom_page_b = 0;
+						break;
+				}
+				break;
+			case 0x1028: /* $5128 */
+				logerror ("MMC5 $5128 vrom select: %02x (mode: %d)\n", data, MMC5_vrom_bank_mode);
+				switch (MMC5_vrom_bank_mode)
+				{
+					case 0x03:
+						/* 1k switch */
+						vrom_bank[8] = vrom_bank[12] = data;
+	//					nes_vram[vrom_next[0]] = data * 64;
+	//					nes_vram[0 + (vrom_page_a*4)] = data * 64;
+	//					nes_vram[0] = data * 64;
+						nes_vram[4] = data * 64;
+	//					mapper5_sync_vrom(1);
+						if (vrom_page_b==0)
+						{
+							vrom_page_a ^= 0x01;
+							vrom_page_b = 1;
+						}
+						break;
+				}
+				break;
+			case 0x1029: /* $5129 */
+				logerror ("MMC5 $5129 vrom select: %02x (mode: %d)\n", data, MMC5_vrom_bank_mode);
+				switch (MMC5_vrom_bank_mode)
+				{
+					case 0x02:
+						/* 2k switch */
+						chr2_0 (data);
+						chr2_4 (data);
+						break;
+					case 0x03:
+						/* 1k switch */
+						vrom_bank[9] = vrom_bank[13] = data;
+	//					nes_vram[vrom_next[1]] = data * 64;
+	//					nes_vram[1 + (vrom_page_a*4)] = data * 64;
+	//					nes_vram[1] = data * 64;
+						nes_vram[5] = data * 64;
+	//					mapper5_sync_vrom(1);
+						if (vrom_page_b==0)
+						{
+							vrom_page_a ^= 0x01;
+							vrom_page_b = 1;
+						}
+						break;
+				}
+				break;
+			case 0x102a: /* $512a */
+				logerror ("MMC5 $512a vrom select: %02x (mode: %d)\n", data, MMC5_vrom_bank_mode);
+				switch (MMC5_vrom_bank_mode)
+				{
+					case 0x03:
+						/* 1k switch */
+						vrom_bank[10] = vrom_bank[14] = data;
+	//					nes_vram[vrom_next[2]] = data * 64;
+	//					nes_vram[2 + (vrom_page_a*4)] = data * 64;
+	//					nes_vram[2] = data * 64;
+						nes_vram[6] = data * 64;
+	//					mapper5_sync_vrom(1);
+						if (vrom_page_b==0)
+						{
+							vrom_page_a ^= 0x01;
+							vrom_page_b = 1;
+						}
+						break;
+				}
+				break;
+			case 0x102b: /* $512b */
+				logerror ("MMC5 $512b vrom select: %02x (mode: %d)\n", data, MMC5_vrom_bank_mode);
+				switch (MMC5_vrom_bank_mode)
+				{
+					case 0x00:
+						/* 8k switch */
+						chr8 (data);
+						break;
+					case 0x01:
+						/* 4k switch */
+						chr4_0 (data);
+						chr4_4 (data);
+						break;
+					case 0x02:
+						/* 2k switch */
+						chr2_2 (data);
+						chr2_6 (data);
+						break;
+					case 0x03:
+						/* 1k switch */
+						vrom_bank[11] = vrom_bank[15] = data;
+	//					nes_vram[vrom_next[3]] = data * 64;
+	//					nes_vram[3 + (vrom_page_a*4)] = data * 64;
+	//					nes_vram[3] = data * 64;
+						nes_vram[7] = data * 64;
+	//					mapper5_sync_vrom(1);
+						if (vrom_page_b==0)
+						{
+							vrom_page_a ^= 0x01;
+							vrom_page_b = 1;
+						}
+						break;
+				}
+				break;
+	
+			case 0x1103: /* $5203 */
+				IRQ_count = data;
+				MMC5_scanline = data;
+				logerror ("MMC5 irq scanline: %d\n", IRQ_count);
+				break;
+			case 0x1104: /* $5204 */
+				IRQ_enable = data & 0x80;
+				logerror ("MMC5 irq enable: %02x\n", data);
+				break;
+			case 0x1105: /* $5205 */
+				mult1 = data;
+				break;
+			case 0x1106: /* $5206 */
+				mult2 = data;
+				break;
+	
+			default:
+				logerror("** MMC5 uncaught write, offset: %04x, data: %02x\n", offset + 0x4100, data);
+				break;
+		}
+            }
+        };
+	
+	public static WriteHandlerPtr mapper5_w = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+		logerror("MMC5 uncaught high mapper w, %04x: %02x\n", offset, data);
+            }
+        };
+	
+	public static WriteHandlerPtr mapper7_w = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+		if ((data & 0x10) != 0)
+			ppu_mirror_high ();
+		else
+			ppu_mirror_low ();
+	
+		prg32 (data);
+            }
+        };
+	
+	public static WriteHandlerPtr mapper8_w  = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
 /*TODO*///	#ifdef LOG_MMC
 /*TODO*///		logerror("* Mapper 8 switch, vrom: %02x, rom: %02x\n", data & 0x07, (data >> 3));
 /*TODO*///	#endif
-/*TODO*///		/* Switch 8k VROM bank */
-/*TODO*///		chr8 (data & 0x07);
-/*TODO*///	
-/*TODO*///		/* Switch 16k PRG bank */
-/*TODO*///		data = (data >> 3) & (nes.prg_chunks - 1);
-/*TODO*///		cpu_setbank (1, &nes.rom[data * 0x4000 + 0x10000]);
-/*TODO*///		cpu_setbank (2, &nes.rom[data * 0x4000 + 0x12000]);
-/*TODO*///	}
-/*TODO*///	
+		/* Switch 8k VROM bank */
+		chr8 (data & 0x07);
+	
+		/* Switch 16k PRG bank */
+		data = (data >> 3) & (_nes.prg_chunks[0] - 1);
+		cpu_setbank (1, new UBytePtr(_nes.rom, data * 0x4000 + 0x10000));
+		cpu_setbank (2, new UBytePtr(_nes.rom, data * 0x4000 + 0x12000));
+            }
+        };
+	
 /*TODO*///	#if 0
 /*TODO*///	void mapper9_latch (int offset)
 /*TODO*///	{
@@ -1449,596 +1495,617 @@ public class nes_mmc {
 /*TODO*///		}
 /*TODO*///	}
 /*TODO*///	#endif
-/*TODO*///	
-/*TODO*///	void mapper10_latch (int offset)
-/*TODO*///	{
-/*TODO*///		if ((offset & 0x3ff0) == 0x0fd0)
-/*TODO*///		{
-/*TODO*///			logerror ("mapper10 vrom latch switch (bank 0 low): %02x\n", MMC2_bank0);
-/*TODO*///			MMC2_bank0_latch = 0xfd;
-/*TODO*///			chr4_0 (MMC2_bank0);
-/*TODO*///		}
-/*TODO*///		else if ((offset & 0x3ff0) == 0x0fe0)
-/*TODO*///		{
-/*TODO*///			logerror ("mapper10 vrom latch switch (bank 0 high): %02x\n", MMC2_bank0_hi);
-/*TODO*///			MMC2_bank0_latch = 0xfe;
-/*TODO*///			chr4_0 (MMC2_bank0_hi);
-/*TODO*///		}
-/*TODO*///		else if ((offset & 0x3ff0) == 0x1fd0)
-/*TODO*///		{
-/*TODO*///			logerror ("mapper10 vrom latch switch (bank 1 low): %02x\n", MMC2_bank1);
-/*TODO*///			MMC2_bank1_latch = 0xfd;
-/*TODO*///			chr4_4 (MMC2_bank1);
-/*TODO*///		}
-/*TODO*///		else if ((offset & 0x3ff0) == 0x1fe0)
-/*TODO*///		{
-/*TODO*///			logerror ("mapper10 vrom latch switch (bank 0 high): %02x\n", MMC2_bank1_hi);
-/*TODO*///			MMC2_bank1_latch = 0xfe;
-/*TODO*///			chr4_4 (MMC2_bank1_hi);
-/*TODO*///		}
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	void mapper10_w (int offset, int data)
-/*TODO*///	{
-/*TODO*///		switch (offset & 0x7000)
-/*TODO*///		{
-/*TODO*///			case 0x2000:
-/*TODO*///				/* Switch the first 8k prg bank */
-/*TODO*///				cpu_setbank (1, &nes.rom[data * 0x2000 + 0x10000]);
-/*TODO*///				break;
-/*TODO*///			case 0x3000:
-/*TODO*///				MMC2_bank0 = data;
-/*TODO*///				if (MMC2_bank0_latch == 0xfd)
-/*TODO*///					chr4_0 (MMC2_bank0);
-/*TODO*///				logerror("MMC2 VROM switch #1 (low): %02x\n", MMC2_bank0);
-/*TODO*///				break;
-/*TODO*///			case 0x4000:
-/*TODO*///				MMC2_bank0_hi = data;
-/*TODO*///				if (MMC2_bank0_latch == 0xfe)
-/*TODO*///					chr4_0 (MMC2_bank0_hi);
-/*TODO*///				logerror("MMC2 VROM switch #1 (high): %02x\n", MMC2_bank0_hi);
-/*TODO*///				break;
-/*TODO*///			case 0x5000:
-/*TODO*///				MMC2_bank1 = data;
-/*TODO*///				if (MMC2_bank1_latch == 0xfd)
-/*TODO*///					chr4_4 (MMC2_bank1);
-/*TODO*///				logerror("MMC2 VROM switch #2 (low): %02x\n", data);
-/*TODO*///				break;
-/*TODO*///			case 0x6000:
-/*TODO*///				MMC2_bank1_hi = data;
-/*TODO*///				if (MMC2_bank1_latch == 0xfe)
-/*TODO*///					chr4_4 (MMC2_bank1_hi);
-/*TODO*///				logerror("MMC2 VROM switch #2 (high): %02x\n", data);
-/*TODO*///				break;
-/*TODO*///			case 0x7000:
-/*TODO*///				if (data != 0)
-/*TODO*///					ppu_mirror_h ();
-/*TODO*///				else
-/*TODO*///					ppu_mirror_v ();
-/*TODO*///				break;
-/*TODO*///			default:
-/*TODO*///				logerror("MMC4 uncaught w: %04x:%02x\n", offset, data);
-/*TODO*///				break;
-/*TODO*///		}
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void mapper11_w (int offset, int data)
-/*TODO*///	{
+	
+	public static ReadHandlerPtr mapper10_latch = new ReadHandlerPtr() {
+            @Override
+            public int handler(int offset) {
+         
+		if ((offset & 0x3ff0) == 0x0fd0)
+		{
+			logerror ("mapper10 vrom latch switch (bank 0 low): %02x\n", MMC2_bank0);
+			MMC2_bank0_latch = 0xfd;
+			chr4_0 (MMC2_bank0);
+		}
+		else if ((offset & 0x3ff0) == 0x0fe0)
+		{
+			logerror ("mapper10 vrom latch switch (bank 0 high): %02x\n", MMC2_bank0_hi);
+			MMC2_bank0_latch = 0xfe;
+			chr4_0 (MMC2_bank0_hi);
+		}
+		else if ((offset & 0x3ff0) == 0x1fd0)
+		{
+			logerror ("mapper10 vrom latch switch (bank 1 low): %02x\n", MMC2_bank1);
+			MMC2_bank1_latch = 0xfd;
+			chr4_4 (MMC2_bank1);
+		}
+		else if ((offset & 0x3ff0) == 0x1fe0)
+		{
+			logerror ("mapper10 vrom latch switch (bank 0 high): %02x\n", MMC2_bank1_hi);
+			MMC2_bank1_latch = 0xfe;
+			chr4_4 (MMC2_bank1_hi);
+		}
+                
+                return 0;
+            }            
+        };
+	
+	public static WriteHandlerPtr mapper10_w  = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+		switch (offset & 0x7000)
+		{
+			case 0x2000:
+				/* Switch the first 8k prg bank */
+				cpu_setbank (1, new UBytePtr(_nes.rom, data * 0x2000 + 0x10000));
+				break;
+			case 0x3000:
+				MMC2_bank0 = data;
+				if (MMC2_bank0_latch == 0xfd)
+					chr4_0 (MMC2_bank0);
+				logerror("MMC2 VROM switch #1 (low): %02x\n", MMC2_bank0);
+				break;
+			case 0x4000:
+				MMC2_bank0_hi = data;
+				if (MMC2_bank0_latch == 0xfe)
+					chr4_0 (MMC2_bank0_hi);
+				logerror("MMC2 VROM switch #1 (high): %02x\n", MMC2_bank0_hi);
+				break;
+			case 0x5000:
+				MMC2_bank1 = data;
+				if (MMC2_bank1_latch == 0xfd)
+					chr4_4 (MMC2_bank1);
+				logerror("MMC2 VROM switch #2 (low): %02x\n", data);
+				break;
+			case 0x6000:
+				MMC2_bank1_hi = data;
+				if (MMC2_bank1_latch == 0xfe)
+					chr4_4 (MMC2_bank1_hi);
+				logerror("MMC2 VROM switch #2 (high): %02x\n", data);
+				break;
+			case 0x7000:
+				if (data != 0)
+					ppu_mirror_h ();
+				else
+					ppu_mirror_v ();
+				break;
+			default:
+				logerror("MMC4 uncaught w: %04x:%02x\n", offset, data);
+				break;
+		}
+            }
+        };
+	
+	public static WriteHandlerPtr mapper11_w  = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
 /*TODO*///	#ifdef LOG_MMC
 /*TODO*///		logerror("* Mapper 11 switch, data: %02x\n", data);
 /*TODO*///	#endif
-/*TODO*///		/* Switch 8k VROM bank */
-/*TODO*///		chr8 (data >> 4);
-/*TODO*///	
-/*TODO*///		/* Switch 32k prg bank */
-/*TODO*///		prg32 (data & 0x0f);
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void mapper15_w (int offset, int data)
-/*TODO*///	{
-/*TODO*///		int bank = (data & (nes.prg_chunks - 1)) * 0x4000;
-/*TODO*///		int base = data & 0x80 ? 0x12000 : 0x10000;
-/*TODO*///	
-/*TODO*///		switch (offset)
-/*TODO*///		{
-/*TODO*///			case 0x0000:
-/*TODO*///				if ((data & 0x40) != 0)
-/*TODO*///					ppu_mirror_h ();
-/*TODO*///				else
-/*TODO*///					ppu_mirror_v ();
-/*TODO*///				cpu_setbank (1, &nes.rom[bank + base]);
-/*TODO*///				cpu_setbank (2, &nes.rom[bank + (base ^ 0x2000)]);
-/*TODO*///				cpu_setbank (3, &nes.rom[bank + (base ^ 0x4000)]);
-/*TODO*///				cpu_setbank (4, &nes.rom[bank + (base ^ 0x6000)]);
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///			case 0x0001:
-/*TODO*///				cpu_setbank (3, &nes.rom[bank + base]);
-/*TODO*///				cpu_setbank (4, &nes.rom[bank + (base ^ 0x2000)]);
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///			case 0x0002:
-/*TODO*///				cpu_setbank (1, &nes.rom[bank + base]);
-/*TODO*///				cpu_setbank (2, &nes.rom[bank + base]);
-/*TODO*///				cpu_setbank (3, &nes.rom[bank + base]);
-/*TODO*///				cpu_setbank (4, &nes.rom[bank + base]);
-/*TODO*///	        	break;
-/*TODO*///	
-/*TODO*///			case 0x0003:
-/*TODO*///				if ((data & 0x40) != 0)
-/*TODO*///					ppu_mirror_h ();
-/*TODO*///				else
-/*TODO*///					ppu_mirror_v ();
-/*TODO*///				cpu_setbank (3, &nes.rom[bank + base]);
-/*TODO*///				cpu_setbank (4, &nes.rom[bank + (base ^ 0x2000)]);
-/*TODO*///	        	break;
-/*TODO*///		}
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	int bandai_irq (int scanline)
-/*TODO*///	{
-/*TODO*///		int ret = M6502_INT_NONE;
-/*TODO*///	
-/*TODO*///		/* 114 is the number of cycles per scanline */
-/*TODO*///		/* TODO: change to reflect the actual number of cycles spent */
-/*TODO*///	
-/*TODO*///		if (IRQ_enable != 0)
-/*TODO*///		{
-/*TODO*///			if (IRQ_count <= 114)
-/*TODO*///			{
-/*TODO*///				ret = M6502_INT_IRQ;
-/*TODO*///			}
-/*TODO*///			IRQ_count -= 114;
-/*TODO*///		}
-/*TODO*///	
-/*TODO*///		return ret;
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void mapper16_w (int offset, int data)
-/*TODO*///	{
-/*TODO*///		logerror ("mapper16 (mid and high) w, offset: %04x, data: %02x\n", offset, data);
-/*TODO*///	
-/*TODO*///		switch (offset & 0x000f)
-/*TODO*///		{
-/*TODO*///			case 0: case 1: case 2: case 3: case 4: case 5: case 6: case 7:
-/*TODO*///				/* Switch 1k VROM at $0000 - $1fff */
-/*TODO*///				nes_vram [offset & 0x0f] = data * 64;
-/*TODO*///				break;
-/*TODO*///			case 8:
-/*TODO*///				/* Switch 16k bank at $8000 */
-/*TODO*///				prg16_89ab (data);
-/*TODO*///				break;
-/*TODO*///			case 9:
-/*TODO*///				switch (data & 0x03)
-/*TODO*///				{
-/*TODO*///					case 0: ppu_mirror_h (); break;
-/*TODO*///					case 1: ppu_mirror_v (); break;
-/*TODO*///					case 2: ppu_mirror_low (); break;
-/*TODO*///					case 3: ppu_mirror_high (); break;
-/*TODO*///				}
-/*TODO*///				break;
-/*TODO*///			case 0x0a:
-/*TODO*///				IRQ_enable = data & 0x01;
-/*TODO*///				break;
-/*TODO*///			case 0x0b:
-/*TODO*///				IRQ_count &= 0xff00;
-/*TODO*///				IRQ_count |= data;
-/*TODO*///				break;
-/*TODO*///			case 0x0c:
-/*TODO*///				IRQ_count &= 0x00ff;
-/*TODO*///				IRQ_count |= (data << 8);
-/*TODO*///				break;
-/*TODO*///			default:
-/*TODO*///				logerror("** uncaught mapper 16 write, offset: %04x, data: %02x\n", offset, data);
-/*TODO*///				break;
-/*TODO*///		}
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void mapper17_l_w (int offset, int data)
-/*TODO*///	{
-/*TODO*///		switch (offset)
-/*TODO*///		{
-/*TODO*///			/* $42fe - mirroring */
-/*TODO*///			case 0x1fe:
-/*TODO*///				if ((data & 0x10) != 0)
-/*TODO*///					ppu_mirror_low ();
-/*TODO*///				else
-/*TODO*///					ppu_mirror_high ();
-/*TODO*///				break;
-/*TODO*///			/* $42ff - mirroring */
-/*TODO*///			case 0x1ff:
-/*TODO*///				if ((data & 0x10) != 0)
-/*TODO*///					ppu_mirror_h ();
-/*TODO*///				else
-/*TODO*///					ppu_mirror_v ();
-/*TODO*///				break;
-/*TODO*///			/* $4501 - $4503 */
-/*TODO*///	//		case 0x401:
-/*TODO*///	//		case 0x402:
-/*TODO*///	//		case 0x403:
-/*TODO*///				/* IRQ control */
-/*TODO*///	//			break;
-/*TODO*///			/* $4504 - $4507 : 8k PRG-Rom switch */
-/*TODO*///			case 0x404:
-/*TODO*///			case 0x405:
-/*TODO*///			case 0x406:
-/*TODO*///			case 0x407:
-/*TODO*///				data &= ((nes.prg_chunks << 1) - 1);
-/*TODO*///	//			logerror("Mapper 17 bank switch, bank: %02x, data: %02x\n", offset & 0x03, data);
-/*TODO*///				cpu_setbank ((offset & 0x03) + 1, &nes.rom[0x2000 * (data) + 0x10000]);
-/*TODO*///				break;
-/*TODO*///			/* $4510 - $4517 : 1k CHR-Rom switch */
-/*TODO*///			case 0x410:
-/*TODO*///			case 0x411:
-/*TODO*///			case 0x412:
-/*TODO*///			case 0x413:
-/*TODO*///			case 0x414:
-/*TODO*///			case 0x415:
-/*TODO*///			case 0x416:
-/*TODO*///			case 0x417:
-/*TODO*///				data &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[offset & 0x07] = data * 64;
-/*TODO*///				break;
-/*TODO*///			default:
-/*TODO*///				logerror("** uncaught mapper 17 write, offset: %04x, data: %02x\n", offset, data);
-/*TODO*///				break;
-/*TODO*///		}
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	int jaleco_irq (int scanline)
-/*TODO*///	{
-/*TODO*///		int ret = M6502_INT_NONE;
-/*TODO*///	
-/*TODO*///		if (scanline <= BOTTOM_VISIBLE_SCANLINE)
-/*TODO*///		{
-/*TODO*///			/* Increment & check the IRQ scanline counter */
-/*TODO*///			if (IRQ_enable != 0)
-/*TODO*///			{
-/*TODO*///				IRQ_count -= 0x100;
-/*TODO*///	
-/*TODO*///				logerror ("scanline: %d, irq count: %04x\n", scanline, IRQ_count);
-/*TODO*///				if ((IRQ_mode_jaleco & 0x08) != 0)
-/*TODO*///				{
-/*TODO*///					if ((IRQ_count & 0x0f) == 0x00)
-/*TODO*///						/* rollover every 0x10 */
-/*TODO*///						ret = M6502_INT_IRQ;
-/*TODO*///				}
-/*TODO*///				else if ((IRQ_mode_jaleco & 0x04) != 0)
-/*TODO*///				{
-/*TODO*///					if ((IRQ_count & 0x0ff) == 0x00)
-/*TODO*///						/* rollover every 0x100 */
-/*TODO*///						ret = M6502_INT_IRQ;
-/*TODO*///				}
-/*TODO*///				else if ((IRQ_mode_jaleco & 0x02) != 0)
-/*TODO*///				{
-/*TODO*///					if ((IRQ_count & 0x0fff) == 0x000)
-/*TODO*///						/* rollover every 0x1000 */
-/*TODO*///						ret = M6502_INT_IRQ;
-/*TODO*///				}
-/*TODO*///				else if (IRQ_count == 0)
-/*TODO*///					/* rollover at 0x10000 */
-/*TODO*///					ret = M6502_INT_IRQ;
-/*TODO*///			}
-/*TODO*///		}
-/*TODO*///		else
-/*TODO*///		{
-/*TODO*///			IRQ_count = IRQ_count_latch;
-/*TODO*///		}
-/*TODO*///	
-/*TODO*///	
-/*TODO*///		return ret;
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	
-/*TODO*///	static void mapper18_w (int offset, int data)
-/*TODO*///	{
-/*TODO*///	//	static int irq;
-/*TODO*///		static int bank_8000 = 0;
-/*TODO*///		static int bank_a000 = 0;
-/*TODO*///		static int bank_c000 = 0;
-/*TODO*///	
-/*TODO*///		switch (offset & 0x7003)
-/*TODO*///		{
-/*TODO*///			case 0x0000:
-/*TODO*///				/* Switch 8k bank at $8000 - low 4 bits */
-/*TODO*///				bank_8000 = (bank_8000 & 0xf0) | (data & 0x0f);
-/*TODO*///				bank_8000 &= prg_mask;
-/*TODO*///				cpu_setbank (1, &nes.rom[0x2000 * (bank_8000) + 0x10000]);
-/*TODO*///				break;
-/*TODO*///			case 0x0001:
-/*TODO*///				/* Switch 8k bank at $8000 - high 4 bits */
-/*TODO*///				bank_8000 = (bank_8000 & 0x0f) | (data << 4);
-/*TODO*///				bank_8000 &= prg_mask;
-/*TODO*///				cpu_setbank (1, &nes.rom[0x2000 * (bank_8000) + 0x10000]);
-/*TODO*///				break;
-/*TODO*///			case 0x0002:
-/*TODO*///				/* Switch 8k bank at $a000 - low 4 bits */
-/*TODO*///				bank_a000 = (bank_a000 & 0xf0) | (data & 0x0f);
-/*TODO*///				bank_a000 &= prg_mask;
-/*TODO*///				cpu_setbank (2, &nes.rom[0x2000 * (bank_a000) + 0x10000]);
-/*TODO*///				break;
-/*TODO*///			case 0x0003:
-/*TODO*///				/* Switch 8k bank at $a000 - high 4 bits */
-/*TODO*///				bank_a000 = (bank_a000 & 0x0f) | (data << 4);
-/*TODO*///				bank_a000 &= prg_mask;
-/*TODO*///				cpu_setbank (2, &nes.rom[0x2000 * (bank_a000) + 0x10000]);
-/*TODO*///				break;
-/*TODO*///			case 0x1000:
-/*TODO*///				/* Switch 8k bank at $c000 - low 4 bits */
-/*TODO*///				bank_c000 = (bank_c000 & 0xf0) | (data & 0x0f);
-/*TODO*///				bank_c000 &= prg_mask;
-/*TODO*///				cpu_setbank (3, &nes.rom[0x2000 * (bank_c000) + 0x10000]);
-/*TODO*///				break;
-/*TODO*///			case 0x1001:
-/*TODO*///				/* Switch 8k bank at $c000 - high 4 bits */
-/*TODO*///				bank_c000 = (bank_c000 & 0x0f) | (data << 4);
-/*TODO*///				bank_c000 &= prg_mask;
-/*TODO*///				cpu_setbank (3, &nes.rom[0x2000 * (bank_c000) + 0x10000]);
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///			/* $9002, 3 (1002, 3) uncaught = Jaleco Baseball writes 0 */
-/*TODO*///			/* believe it's related to battery-backed ram enable/disable */
-/*TODO*///	
-/*TODO*///			case 0x2000:
-/*TODO*///				/* Switch 1k vrom at $0000 - low 4 bits */
-/*TODO*///				vrom_bank[0] = (vrom_bank[0] & 0xf0) | (data & 0x0f);
-/*TODO*///				vrom_bank[0] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[0] = vrom_bank[0] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x2001:
-/*TODO*///				/* Switch 1k vrom at $0000 - high 4 bits */
-/*TODO*///				vrom_bank[0] = (vrom_bank[0] & 0x0f) | (data << 4);
-/*TODO*///				vrom_bank[0] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[0] = vrom_bank[0] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x2002:
-/*TODO*///				/* Switch 1k vrom at $0400 - low 4 bits */
-/*TODO*///				vrom_bank[1] = (vrom_bank[1] & 0xf0) | (data & 0x0f);
-/*TODO*///				vrom_bank[1] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[1] = vrom_bank[1] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x2003:
-/*TODO*///				/* Switch 1k vrom at $0400 - high 4 bits */
-/*TODO*///				vrom_bank[1] = (vrom_bank[1] & 0x0f) | (data << 4);
-/*TODO*///				vrom_bank[1] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[1] = vrom_bank[1] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x3000:
-/*TODO*///				/* Switch 1k vrom at $0800 - low 4 bits */
-/*TODO*///				vrom_bank[2] = (vrom_bank[2] & 0xf0) | (data & 0x0f);
-/*TODO*///				vrom_bank[2] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[2] = vrom_bank[2] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x3001:
-/*TODO*///				/* Switch 1k vrom at $0800 - high 4 bits */
-/*TODO*///				vrom_bank[2] = (vrom_bank[2] & 0x0f) | (data << 4);
-/*TODO*///				vrom_bank[2] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[2] = vrom_bank[2] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x3002:
-/*TODO*///				/* Switch 1k vrom at $0c00 - low 4 bits */
-/*TODO*///				vrom_bank[3] = (vrom_bank[3] & 0xf0) | (data & 0x0f);
-/*TODO*///				vrom_bank[3] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[3] = vrom_bank[3] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x3003:
-/*TODO*///				/* Switch 1k vrom at $0c00 - high 4 bits */
-/*TODO*///				vrom_bank[3] = (vrom_bank[3] & 0x0f) | (data << 4);
-/*TODO*///				vrom_bank[3] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[3] = vrom_bank[3] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x4000:
-/*TODO*///				/* Switch 1k vrom at $1000 - low 4 bits */
-/*TODO*///				vrom_bank[4] = (vrom_bank[4] & 0xf0) | (data & 0x0f);
-/*TODO*///				vrom_bank[4] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[4] = vrom_bank[4] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x4001:
-/*TODO*///				/* Switch 1k vrom at $1000 - high 4 bits */
-/*TODO*///				vrom_bank[4] = (vrom_bank[4] & 0x0f) | (data << 4);
-/*TODO*///				vrom_bank[4] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[4] = vrom_bank[4] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x4002:
-/*TODO*///				/* Switch 1k vrom at $1400 - low 4 bits */
-/*TODO*///				vrom_bank[5] = (vrom_bank[5] & 0xf0) | (data & 0x0f);
-/*TODO*///				vrom_bank[5] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[5] = vrom_bank[5] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x4003:
-/*TODO*///				/* Switch 1k vrom at $1400 - high 4 bits */
-/*TODO*///				vrom_bank[5] = (vrom_bank[5] & 0x0f) | (data << 4);
-/*TODO*///				vrom_bank[5] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[5] = vrom_bank[5] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x5000:
-/*TODO*///				/* Switch 1k vrom at $1800 - low 4 bits */
-/*TODO*///				vrom_bank[6] = (vrom_bank[6] & 0xf0) | (data & 0x0f);
-/*TODO*///				vrom_bank[6] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[6] = vrom_bank[6] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x5001:
-/*TODO*///				/* Switch 1k vrom at $1800 - high 4 bits */
-/*TODO*///				vrom_bank[6] = (vrom_bank[6] & 0x0f) | (data << 4);
-/*TODO*///				vrom_bank[6] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[6] = vrom_bank[6] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x5002:
-/*TODO*///				/* Switch 1k vrom at $1c00 - low 4 bits */
-/*TODO*///				vrom_bank[7] = (vrom_bank[7] & 0xf0) | (data & 0x0f);
-/*TODO*///				vrom_bank[7] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[7] = vrom_bank[7] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x5003:
-/*TODO*///				/* Switch 1k vrom at $1c00 - high 4 bits */
-/*TODO*///				vrom_bank[7] = (vrom_bank[7] & 0x0f) | (data << 4);
-/*TODO*///				vrom_bank[7] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[7] = vrom_bank[7] * 64;
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///	/* LBO - these are unverified */
-/*TODO*///	
-/*TODO*///			case 0x6000: /* IRQ scanline counter - low byte, low nibble */
-/*TODO*///				IRQ_count_latch = (IRQ_count_latch & 0xfff0) | (data & 0x0f);
-/*TODO*///				logerror("     Mapper 18 copy/set irq latch (l-l): %02x\n", data);
-/*TODO*///				break;
-/*TODO*///			case 0x6001: /* IRQ scanline counter - low byte, high nibble */
-/*TODO*///				IRQ_count_latch = (IRQ_count_latch & 0xff0f) | ((data & 0x0f) << 4);
-/*TODO*///				logerror("     Mapper 18 copy/set irq latch (l-h): %02x\n", data);
-/*TODO*///				break;
-/*TODO*///			case 0x6002:
-/*TODO*///				IRQ_count_latch = (IRQ_count_latch & 0xf0ff) | ((data & 0x0f) << 9);
-/*TODO*///				logerror("     Mapper 18 copy/set irq latch (h-l): %02x\n", data);
-/*TODO*///				break;
-/*TODO*///			case 0x6003:
-/*TODO*///				IRQ_count_latch = (IRQ_count_latch & 0x0fff) | ((data & 0x0f) << 13);
-/*TODO*///				logerror("     Mapper 18 copy/set irq latch (h-h): %02x\n", data);
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///	/* LBO - these 2 are likely wrong */
-/*TODO*///	
-/*TODO*///			case 0x7000: /* IRQ Control 0 */
-/*TODO*///				if ((data & 0x01) != 0)
-/*TODO*///				{
-/*TODO*///	//				IRQ_enable = 1;
-/*TODO*///					IRQ_count = IRQ_count_latch;
-/*TODO*///				}
-/*TODO*///				logerror("     Mapper 18 IRQ Control 0: %02x\n", data);
-/*TODO*///				break;
-/*TODO*///			case 0x7001: /* IRQ Control 1 */
-/*TODO*///				IRQ_enable = data & 0x01;
-/*TODO*///				IRQ_mode_jaleco = data & 0x0e;
-/*TODO*///				logerror("     Mapper 18 IRQ Control 1: %02x\n", data);
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///			case 0x7002: /* Misc */
-/*TODO*///				switch (data & 0x03)
-/*TODO*///				{
-/*TODO*///					case 0: ppu_mirror_low (); break;
-/*TODO*///					case 1: ppu_mirror_high (); break;
-/*TODO*///					case 2: ppu_mirror_v (); break;
-/*TODO*///					case 3: ppu_mirror_h (); break;
-/*TODO*///				}
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///	/* $f003 uncaught, writes 0(start) & various(ingame) */
-/*TODO*///	//		case 0x7003:
-/*TODO*///	//			IRQ_count = data;
-/*TODO*///	//			break;
-/*TODO*///	
-/*TODO*///			default:
-/*TODO*///				logerror("Mapper 18 uncaught addr: %04x value: %02x\n", offset + 0x8000, data);
-/*TODO*///				break;
-/*TODO*///		}
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	int namcot_irq (int scanline)
-/*TODO*///	{
-/*TODO*///		int ret = M6502_INT_NONE;
-/*TODO*///	
-/*TODO*///		IRQ_count ++;
-/*TODO*///		/* Increment & check the IRQ scanline counter */
-/*TODO*///		if (IRQ_enable && (IRQ_count == 0x7fff))
-/*TODO*///		{
-/*TODO*///			ret = M6502_INT_IRQ;
-/*TODO*///		}
-/*TODO*///	
-/*TODO*///		return ret;
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void mapper19_l_w (int offset, int data)
-/*TODO*///	{
-/*TODO*///		switch (offset & 0x1800)
-/*TODO*///		{
-/*TODO*///			case 0x1000:
-/*TODO*///				/* low byte of IRQ */
-/*TODO*///				IRQ_count = (IRQ_count & 0x7f00) | data;
-/*TODO*///				break;
-/*TODO*///			case 0x1800:
-/*TODO*///				/* high byte of IRQ, IRQ enable in high bit */
-/*TODO*///				IRQ_count = (IRQ_count & 0xff) | ((data & 0x7f) << 8);
-/*TODO*///				IRQ_enable = data & 0x80;
-/*TODO*///				break;
-/*TODO*///		}
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void mapper19_w (int offset, int data)
-/*TODO*///	{
-/*TODO*///		switch (offset & 0x7800)
-/*TODO*///		{
-/*TODO*///			case 0x0000:
-/*TODO*///				/* Switch 1k VROM at $0000 */
-/*TODO*///				nes_vram [0] = data * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x0800:
-/*TODO*///				/* Switch 1k VROM at $0400 */
-/*TODO*///				nes_vram [1] = data * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x1000:
-/*TODO*///				/* Switch 1k VROM at $0800 */
-/*TODO*///				nes_vram [2] = data * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x1800:
-/*TODO*///				/* Switch 1k VROM at $0c00 */
-/*TODO*///				nes_vram [3] = data * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x2000:
-/*TODO*///				/* Switch 1k VROM at $1000 */
-/*TODO*///				nes_vram [4] = data * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x2800:
-/*TODO*///				/* Switch 1k VROM at $1400 */
-/*TODO*///				nes_vram [5] = data * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x3000:
-/*TODO*///				/* Switch 1k VROM at $1800 */
-/*TODO*///				nes_vram [6] = data * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x3800:
-/*TODO*///				/* Switch 1k VROM at $1c00 */
-/*TODO*///				nes_vram [7] = data * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x6000:
-/*TODO*///				/* Switch 8k bank at $8000 */
-/*TODO*///				data &= prg_mask;
-/*TODO*///				cpu_setbank (1, &nes.rom[0x2000 * (data) + 0x10000]);
-/*TODO*///				break;
-/*TODO*///			case 0x6800:
-/*TODO*///				/* Switch 8k bank at $a000 */
-/*TODO*///				data &= prg_mask;
-/*TODO*///				cpu_setbank (2, &nes.rom[0x2000 * (data) + 0x10000]);
-/*TODO*///				break;
-/*TODO*///			case 0x7000:
-/*TODO*///				/* Switch 8k bank at $c000 */
-/*TODO*///				data &= prg_mask;
-/*TODO*///				cpu_setbank (3, &nes.rom[0x2000 * (data) + 0x10000]);
-/*TODO*///				break;
-/*TODO*///		}
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	int fds_irq (int scanline)
-/*TODO*///	{
-/*TODO*///		int ret = M6502_INT_NONE;
-/*TODO*///	
-/*TODO*///		if (IRQ_enable_latch != 0)
-/*TODO*///			ret = M6502_INT_IRQ;
-/*TODO*///	
-/*TODO*///		/* Increment & check the IRQ scanline counter */
-/*TODO*///		if (IRQ_enable != 0)
-/*TODO*///		{
-/*TODO*///			if (IRQ_count <= 114)
-/*TODO*///			{
-/*TODO*///				ret = M6502_INT_IRQ;
-/*TODO*///				IRQ_enable = 0;
-/*TODO*///				nes_fds.status0 |= 0x01;
-/*TODO*///			}
-/*TODO*///			else
-/*TODO*///				IRQ_count -= 114;
-/*TODO*///		}
-/*TODO*///	
-/*TODO*///		return ret;
-/*TODO*///	}
-/*TODO*///	
+		/* Switch 8k VROM bank */
+		chr8 (data >> 4);
+	
+		/* Switch 32k prg bank */
+		prg32 (data & 0x0f);
+            }
+        };
+	
+	public static WriteHandlerPtr mapper15_w  = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+		int bank = (data & (_nes.prg_chunks[0] - 1)) * 0x4000;
+		int base = (data & 0x80)!=0 ? 0x12000 : 0x10000;
+	
+		switch (offset)
+		{
+			case 0x0000:
+				if ((data & 0x40) != 0)
+					ppu_mirror_h ();
+				else
+					ppu_mirror_v ();
+				cpu_setbank (1, new UBytePtr(_nes.rom, bank + base));
+				cpu_setbank (2, new UBytePtr(_nes.rom, bank + (base ^ 0x2000)));
+				cpu_setbank (3, new UBytePtr(_nes.rom, bank + (base ^ 0x4000)));
+				cpu_setbank (4, new UBytePtr(_nes.rom, bank + (base ^ 0x6000)));
+				break;
+	
+			case 0x0001:
+				cpu_setbank (3, new UBytePtr(_nes.rom, bank + base));
+				cpu_setbank (4, new UBytePtr(_nes.rom, bank + (base ^ 0x2000)));
+				break;
+	
+			case 0x0002:
+				cpu_setbank (1, new UBytePtr(_nes.rom, bank + base));
+				cpu_setbank (2, new UBytePtr(_nes.rom, bank + base));
+				cpu_setbank (3, new UBytePtr(_nes.rom, bank + base));
+				cpu_setbank (4, new UBytePtr(_nes.rom, bank + base));
+	        	break;
+	
+			case 0x0003:
+				if ((data & 0x40) != 0)
+					ppu_mirror_h ();
+				else
+					ppu_mirror_v ();
+				cpu_setbank (3, new UBytePtr(_nes.rom, bank + base));
+				cpu_setbank (4, new UBytePtr(_nes.rom, bank + (base ^ 0x2000)));
+	        	break;
+		}
+            }
+        };
+	
+	public static ReadHandlerPtr bandai_irq = new ReadHandlerPtr() {
+            @Override
+            public int handler(int scanline) {
+		int ret = M6502_INT_NONE;
+	
+		/* 114 is the number of cycles per scanline */
+		/* TODO: change to reflect the actual number of cycles spent */
+	
+		if (IRQ_enable != 0)
+		{
+			if (IRQ_count <= 114)
+			{
+				ret = M6502_INT_IRQ;
+			}
+			IRQ_count -= 114;
+		}
+	
+		return ret;
+            }
+        };
+	
+	public static WriteHandlerPtr mapper16_w   = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+		logerror ("mapper16 (mid and high) w, offset: %04x, data: %02x\n", offset, data);
+	
+		switch (offset & 0x000f)
+		{
+			case 0: case 1: case 2: case 3: case 4: case 5: case 6: case 7:
+				/* Switch 1k VROM at $0000 - $1fff */
+				nes_vram [offset & 0x0f] = data * 64;
+				break;
+			case 8:
+				/* Switch 16k bank at $8000 */
+				prg16_89ab (data);
+				break;
+			case 9:
+				switch (data & 0x03)
+				{
+					case 0: ppu_mirror_h (); break;
+					case 1: ppu_mirror_v (); break;
+					case 2: ppu_mirror_low (); break;
+					case 3: ppu_mirror_high (); break;
+				}
+				break;
+			case 0x0a:
+				IRQ_enable = data & 0x01;
+				break;
+			case 0x0b:
+				IRQ_count &= 0xff00;
+				IRQ_count |= data;
+				break;
+			case 0x0c:
+				IRQ_count &= 0x00ff;
+				IRQ_count |= (data << 8);
+				break;
+			default:
+				logerror("** uncaught mapper 16 write, offset: %04x, data: %02x\n", offset, data);
+				break;
+		}
+            }
+        };
+	
+	public static WriteHandlerPtr mapper17_l_w  = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+		switch (offset)
+		{
+			/* $42fe - mirroring */
+			case 0x1fe:
+				if ((data & 0x10) != 0)
+					ppu_mirror_low ();
+				else
+					ppu_mirror_high ();
+				break;
+			/* $42ff - mirroring */
+			case 0x1ff:
+				if ((data & 0x10) != 0)
+					ppu_mirror_h ();
+				else
+					ppu_mirror_v ();
+				break;
+			/* $4501 - $4503 */
+	//		case 0x401:
+	//		case 0x402:
+	//		case 0x403:
+				/* IRQ control */
+	//			break;
+			/* $4504 - $4507 : 8k PRG-Rom switch */
+			case 0x404:
+			case 0x405:
+			case 0x406:
+			case 0x407:
+				data &= ((_nes.prg_chunks[0] << 1) - 1);
+	//			logerror("Mapper 17 bank switch, bank: %02x, data: %02x\n", offset & 0x03, data);
+				cpu_setbank ((offset & 0x03) + 1, new UBytePtr(_nes.rom, 0x2000 * (data) + 0x10000));
+				break;
+			/* $4510 - $4517 : 1k CHR-Rom switch */
+			case 0x410:
+			case 0x411:
+			case 0x412:
+			case 0x413:
+			case 0x414:
+			case 0x415:
+			case 0x416:
+			case 0x417:
+				data &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[offset & 0x07] = data * 64;
+				break;
+			default:
+				logerror("** uncaught mapper 17 write, offset: %04x, data: %02x\n", offset, data);
+				break;
+		}
+            }
+        };
+	
+	public static ReadHandlerPtr jaleco_irq = new ReadHandlerPtr() {
+            @Override
+            public int handler(int scanline) {
+		int ret = M6502_INT_NONE;
+	
+		if (scanline <= BOTTOM_VISIBLE_SCANLINE)
+		{
+			/* Increment & check the IRQ scanline counter */
+			if (IRQ_enable != 0)
+			{
+				IRQ_count -= 0x100;
+	
+				logerror ("scanline: %d, irq count: %04x\n", scanline, IRQ_count);
+				if ((IRQ_mode_jaleco & 0x08) != 0)
+				{
+					if ((IRQ_count & 0x0f) == 0x00)
+						/* rollover every 0x10 */
+						ret = M6502_INT_IRQ;
+				}
+				else if ((IRQ_mode_jaleco & 0x04) != 0)
+				{
+					if ((IRQ_count & 0x0ff) == 0x00)
+						/* rollover every 0x100 */
+						ret = M6502_INT_IRQ;
+				}
+				else if ((IRQ_mode_jaleco & 0x02) != 0)
+				{
+					if ((IRQ_count & 0x0fff) == 0x000)
+						/* rollover every 0x1000 */
+						ret = M6502_INT_IRQ;
+				}
+				else if (IRQ_count == 0)
+					/* rollover at 0x10000 */
+					ret = M6502_INT_IRQ;
+			}
+		}
+		else
+		{
+			IRQ_count = IRQ_count_latch;
+		}
+	
+	
+		return ret;
+            }
+        };
+	
+        //	static int irq;
+        static int bank_8000 = 0;
+        static int bank_a000 = 0;
+        static int bank_c000 = 0;
+	
+	public static WriteHandlerPtr mapper18_w  = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+	
+		switch (offset & 0x7003)
+		{
+			case 0x0000:
+				/* Switch 8k bank at $8000 - low 4 bits */
+				bank_8000 = (bank_8000 & 0xf0) | (data & 0x0f);
+				bank_8000 &= prg_mask;
+				cpu_setbank (1, new UBytePtr(_nes.rom, 0x2000 * (bank_8000) + 0x10000));
+				break;
+			case 0x0001:
+				/* Switch 8k bank at $8000 - high 4 bits */
+				bank_8000 = (bank_8000 & 0x0f) | (data << 4);
+				bank_8000 &= prg_mask;
+				cpu_setbank (1, new UBytePtr(_nes.rom, 0x2000 * (bank_8000) + 0x10000));
+				break;
+			case 0x0002:
+				/* Switch 8k bank at $a000 - low 4 bits */
+				bank_a000 = (bank_a000 & 0xf0) | (data & 0x0f);
+				bank_a000 &= prg_mask;
+				cpu_setbank (2, new UBytePtr(_nes.rom, 0x2000 * (bank_a000) + 0x10000));
+				break;
+			case 0x0003:
+				/* Switch 8k bank at $a000 - high 4 bits */
+				bank_a000 = (bank_a000 & 0x0f) | (data << 4);
+				bank_a000 &= prg_mask;
+				cpu_setbank (2, new UBytePtr(_nes.rom, 0x2000 * (bank_a000) + 0x10000));
+				break;
+			case 0x1000:
+				/* Switch 8k bank at $c000 - low 4 bits */
+				bank_c000 = (bank_c000 & 0xf0) | (data & 0x0f);
+				bank_c000 &= prg_mask;
+				cpu_setbank (3, new UBytePtr(_nes.rom, 0x2000 * (bank_c000) + 0x10000));
+				break;
+			case 0x1001:
+				/* Switch 8k bank at $c000 - high 4 bits */
+				bank_c000 = (bank_c000 & 0x0f) | (data << 4);
+				bank_c000 &= prg_mask;
+				cpu_setbank (3, new UBytePtr(_nes.rom, 0x2000 * (bank_c000) + 0x10000));
+				break;
+	
+			/* $9002, 3 (1002, 3) uncaught = Jaleco Baseball writes 0 */
+			/* believe it's related to battery-backed ram enable/disable */
+	
+			case 0x2000:
+				/* Switch 1k vrom at $0000 - low 4 bits */
+				vrom_bank[0] = (vrom_bank[0] & 0xf0) | (data & 0x0f);
+				vrom_bank[0] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[0] = vrom_bank[0] * 64;
+				break;
+			case 0x2001:
+				/* Switch 1k vrom at $0000 - high 4 bits */
+				vrom_bank[0] = (vrom_bank[0] & 0x0f) | (data << 4);
+				vrom_bank[0] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[0] = vrom_bank[0] * 64;
+				break;
+			case 0x2002:
+				/* Switch 1k vrom at $0400 - low 4 bits */
+				vrom_bank[1] = (vrom_bank[1] & 0xf0) | (data & 0x0f);
+				vrom_bank[1] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[1] = vrom_bank[1] * 64;
+				break;
+			case 0x2003:
+				/* Switch 1k vrom at $0400 - high 4 bits */
+				vrom_bank[1] = (vrom_bank[1] & 0x0f) | (data << 4);
+				vrom_bank[1] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[1] = vrom_bank[1] * 64;
+				break;
+			case 0x3000:
+				/* Switch 1k vrom at $0800 - low 4 bits */
+				vrom_bank[2] = (vrom_bank[2] & 0xf0) | (data & 0x0f);
+				vrom_bank[2] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[2] = vrom_bank[2] * 64;
+				break;
+			case 0x3001:
+				/* Switch 1k vrom at $0800 - high 4 bits */
+				vrom_bank[2] = (vrom_bank[2] & 0x0f) | (data << 4);
+				vrom_bank[2] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[2] = vrom_bank[2] * 64;
+				break;
+			case 0x3002:
+				/* Switch 1k vrom at $0c00 - low 4 bits */
+				vrom_bank[3] = (vrom_bank[3] & 0xf0) | (data & 0x0f);
+				vrom_bank[3] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[3] = vrom_bank[3] * 64;
+				break;
+			case 0x3003:
+				/* Switch 1k vrom at $0c00 - high 4 bits */
+				vrom_bank[3] = (vrom_bank[3] & 0x0f) | (data << 4);
+				vrom_bank[3] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[3] = vrom_bank[3] * 64;
+				break;
+			case 0x4000:
+				/* Switch 1k vrom at $1000 - low 4 bits */
+				vrom_bank[4] = (vrom_bank[4] & 0xf0) | (data & 0x0f);
+				vrom_bank[4] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[4] = vrom_bank[4] * 64;
+				break;
+			case 0x4001:
+				/* Switch 1k vrom at $1000 - high 4 bits */
+				vrom_bank[4] = (vrom_bank[4] & 0x0f) | (data << 4);
+				vrom_bank[4] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[4] = vrom_bank[4] * 64;
+				break;
+			case 0x4002:
+				/* Switch 1k vrom at $1400 - low 4 bits */
+				vrom_bank[5] = (vrom_bank[5] & 0xf0) | (data & 0x0f);
+				vrom_bank[5] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[5] = vrom_bank[5] * 64;
+				break;
+			case 0x4003:
+				/* Switch 1k vrom at $1400 - high 4 bits */
+				vrom_bank[5] = (vrom_bank[5] & 0x0f) | (data << 4);
+				vrom_bank[5] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[5] = vrom_bank[5] * 64;
+				break;
+			case 0x5000:
+				/* Switch 1k vrom at $1800 - low 4 bits */
+				vrom_bank[6] = (vrom_bank[6] & 0xf0) | (data & 0x0f);
+				vrom_bank[6] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[6] = vrom_bank[6] * 64;
+				break;
+			case 0x5001:
+				/* Switch 1k vrom at $1800 - high 4 bits */
+				vrom_bank[6] = (vrom_bank[6] & 0x0f) | (data << 4);
+				vrom_bank[6] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[6] = vrom_bank[6] * 64;
+				break;
+			case 0x5002:
+				/* Switch 1k vrom at $1c00 - low 4 bits */
+				vrom_bank[7] = (vrom_bank[7] & 0xf0) | (data & 0x0f);
+				vrom_bank[7] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[7] = vrom_bank[7] * 64;
+				break;
+			case 0x5003:
+				/* Switch 1k vrom at $1c00 - high 4 bits */
+				vrom_bank[7] = (vrom_bank[7] & 0x0f) | (data << 4);
+				vrom_bank[7] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[7] = vrom_bank[7] * 64;
+				break;
+	
+	/* LBO - these are unverified */
+	
+			case 0x6000: /* IRQ scanline counter - low byte, low nibble */
+				IRQ_count_latch = (IRQ_count_latch & 0xfff0) | (data & 0x0f);
+				logerror("     Mapper 18 copy/set irq latch (l-l): %02x\n", data);
+				break;
+			case 0x6001: /* IRQ scanline counter - low byte, high nibble */
+				IRQ_count_latch = (IRQ_count_latch & 0xff0f) | ((data & 0x0f) << 4);
+				logerror("     Mapper 18 copy/set irq latch (l-h): %02x\n", data);
+				break;
+			case 0x6002:
+				IRQ_count_latch = (IRQ_count_latch & 0xf0ff) | ((data & 0x0f) << 9);
+				logerror("     Mapper 18 copy/set irq latch (h-l): %02x\n", data);
+				break;
+			case 0x6003:
+				IRQ_count_latch = (IRQ_count_latch & 0x0fff) | ((data & 0x0f) << 13);
+				logerror("     Mapper 18 copy/set irq latch (h-h): %02x\n", data);
+				break;
+	
+	/* LBO - these 2 are likely wrong */
+	
+			case 0x7000: /* IRQ Control 0 */
+				if ((data & 0x01) != 0)
+				{
+	//				IRQ_enable = 1;
+					IRQ_count = IRQ_count_latch;
+				}
+				logerror("     Mapper 18 IRQ Control 0: %02x\n", data);
+				break;
+			case 0x7001: /* IRQ Control 1 */
+				IRQ_enable = data & 0x01;
+				IRQ_mode_jaleco = data & 0x0e;
+				logerror("     Mapper 18 IRQ Control 1: %02x\n", data);
+				break;
+	
+			case 0x7002: /* Misc */
+				switch (data & 0x03)
+				{
+					case 0: ppu_mirror_low (); break;
+					case 1: ppu_mirror_high (); break;
+					case 2: ppu_mirror_v (); break;
+					case 3: ppu_mirror_h (); break;
+				}
+				break;
+	
+	/* $f003 uncaught, writes 0(start) & various(ingame) */
+	//		case 0x7003:
+	//			IRQ_count = data;
+	//			break;
+	
+			default:
+				logerror("Mapper 18 uncaught addr: %04x value: %02x\n", offset + 0x8000, data);
+				break;
+		}
+            }
+        };
+	
+	public static ReadHandlerPtr namcot_irq = new ReadHandlerPtr() {
+            @Override
+            public int handler(int scanline) {
+		int ret = M6502_INT_NONE;
+	
+		IRQ_count ++;
+		/* Increment & check the IRQ scanline counter */
+		if (IRQ_enable!=0 && (IRQ_count == 0x7fff))
+		{
+			ret = M6502_INT_IRQ;
+		}
+	
+		return ret;
+            }
+        };
+	
+	public static WriteHandlerPtr mapper19_l_w  = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+		switch (offset & 0x1800)
+		{
+			case 0x1000:
+				/* low byte of IRQ */
+				IRQ_count = (IRQ_count & 0x7f00) | data;
+				break;
+			case 0x1800:
+				/* high byte of IRQ, IRQ enable in high bit */
+				IRQ_count = (IRQ_count & 0xff) | ((data & 0x7f) << 8);
+				IRQ_enable = data & 0x80;
+				break;
+		}
+            }
+        };
+	
+	public static WriteHandlerPtr mapper19_w  = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+		switch (offset & 0x7800)
+		{
+			case 0x0000:
+				/* Switch 1k VROM at $0000 */
+				nes_vram [0] = data * 64;
+				break;
+			case 0x0800:
+				/* Switch 1k VROM at $0400 */
+				nes_vram [1] = data * 64;
+				break;
+			case 0x1000:
+				/* Switch 1k VROM at $0800 */
+				nes_vram [2] = data * 64;
+				break;
+			case 0x1800:
+				/* Switch 1k VROM at $0c00 */
+				nes_vram [3] = data * 64;
+				break;
+			case 0x2000:
+				/* Switch 1k VROM at $1000 */
+				nes_vram [4] = data * 64;
+				break;
+			case 0x2800:
+				/* Switch 1k VROM at $1400 */
+				nes_vram [5] = data * 64;
+				break;
+			case 0x3000:
+				/* Switch 1k VROM at $1800 */
+				nes_vram [6] = data * 64;
+				break;
+			case 0x3800:
+				/* Switch 1k VROM at $1c00 */
+				nes_vram [7] = data * 64;
+				break;
+			case 0x6000:
+				/* Switch 8k bank at $8000 */
+				data &= prg_mask;
+				cpu_setbank (1, new UBytePtr(_nes.rom, 0x2000 * (data) + 0x10000));
+				break;
+			case 0x6800:
+				/* Switch 8k bank at $a000 */
+				data &= prg_mask;
+				cpu_setbank (2, new UBytePtr(_nes.rom, 0x2000 * (data) + 0x10000));
+				break;
+			case 0x7000:
+				/* Switch 8k bank at $c000 */
+				data &= prg_mask;
+				cpu_setbank (3, new UBytePtr(_nes.rom, 0x2000 * (data) + 0x10000));
+				break;
+		}
+            }
+        };
+	
+	public static ReadHandlerPtr fds_irq = new ReadHandlerPtr() {
+            @Override
+            public int handler(int scanline) {
+		int ret = M6502_INT_NONE;
+	
+		if (IRQ_enable_latch != 0)
+			ret = M6502_INT_IRQ;
+	
+		/* Increment & check the IRQ scanline counter */
+		if (IRQ_enable != 0)
+		{
+			if (IRQ_count <= 114)
+			{
+				ret = M6502_INT_IRQ;
+				IRQ_enable = 0;
+				nes_fds.status0 |= 0x01;
+			}
+			else
+				IRQ_count -= 114;
+		}
+	
+		return ret;
+            }
+        };
+	
 /*TODO*///	READ_HANDLER ( fds_r )
 /*TODO*///	{
 /*TODO*///		data_t ret = 0x00;
@@ -2087,1276 +2154,1304 @@ public class nes_mmc {
 /*TODO*///	
 /*TODO*///		return ret;
 /*TODO*///	}
-/*TODO*///	
-/*TODO*///	WRITE_HANDLER ( fds_w )
-/*TODO*///	{
-/*TODO*///		switch (offset)
-/*TODO*///		{
-/*TODO*///			case 0x00: /* $4020 */
-/*TODO*///				IRQ_count_latch &= ~0xff;
-/*TODO*///				IRQ_count_latch |= data;
-/*TODO*///				break;
-/*TODO*///			case 0x01: /* $4021 */
-/*TODO*///				IRQ_count_latch &= ~0xff00;
-/*TODO*///				IRQ_count_latch |= (data << 8);
-/*TODO*///				break;
-/*TODO*///			case 0x02: /* $4022 */
-/*TODO*///				IRQ_count = IRQ_count_latch;
-/*TODO*///				IRQ_enable = data;
-/*TODO*///				break;
-/*TODO*///			case 0x03: /* $4023 */
-/*TODO*///				// d0 = sound io (1 = enable)
-/*TODO*///				// d1 = disk io (1 = enable)
-/*TODO*///				break;
-/*TODO*///			case 0x04: /* $4024 */
-/*TODO*///				/* write data out to disk */
-/*TODO*///				break;
-/*TODO*///			case 0x05: /* $4025 */
-/*TODO*///				nes_fds.motor_on = data & 0x01;
-/*TODO*///				if ((data & 0x02) != 0) nes_fds.head_position = 0;
-/*TODO*///				nes_fds.read_mode = data & 0x04;
-/*TODO*///				if ((data & 0x08) != 0)
-/*TODO*///					ppu_mirror_h ();
-/*TODO*///				else
-/*TODO*///					ppu_mirror_v ();
-/*TODO*///				if ((!(data & 0x40)) && (nes_fds.write_reg & 0x40))
-/*TODO*///					nes_fds.head_position -= 2; // ???
-/*TODO*///				IRQ_enable_latch = data & 0x80;
-/*TODO*///	
-/*TODO*///				nes_fds.write_reg = data;
-/*TODO*///				break;
-/*TODO*///		}
-/*TODO*///	
+	
+	public static WriteHandlerPtr fds_w  = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+		switch (offset)
+		{
+			case 0x00: /* $4020 */
+				IRQ_count_latch &= ~0xff;
+				IRQ_count_latch |= data;
+				break;
+			case 0x01: /* $4021 */
+				IRQ_count_latch &= ~0xff00;
+				IRQ_count_latch |= (data << 8);
+				break;
+			case 0x02: /* $4022 */
+				IRQ_count = IRQ_count_latch;
+				IRQ_enable = data;
+				break;
+			case 0x03: /* $4023 */
+				// d0 = sound io (1 = enable)
+				// d1 = disk io (1 = enable)
+				break;
+			case 0x04: /* $4024 */
+				/* write data out to disk */
+				break;
+			case 0x05: /* $4025 */
+				nes_fds.motor_on = data & 0x01;
+				if ((data & 0x02) != 0) nes_fds.head_position = 0;
+				nes_fds.read_mode = data & 0x04;
+				if ((data & 0x08) != 0)
+					ppu_mirror_h ();
+				else
+					ppu_mirror_v ();
+				if (((data & 0x40)==0) && (nes_fds.write_reg & 0x40)!=0)
+					nes_fds.head_position -= 2; // ???
+				IRQ_enable_latch = data & 0x80;
+	
+				nes_fds.write_reg = data;
+				break;
+		}
+	
 /*TODO*///	#ifdef LOG_FDS
 /*TODO*///		logerror ("fds_w, address: %04x, data: %02x\n", offset + 0x4020, data);
 /*TODO*///	#endif
-/*TODO*///	
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	int konami_irq (int scanline)
-/*TODO*///	{
-/*TODO*///		int ret = M6502_INT_NONE;
-/*TODO*///	
-/*TODO*///		/* Increment & check the IRQ scanline counter */
-/*TODO*///		if (IRQ_enable && (++IRQ_count == 0x100))
-/*TODO*///		{
-/*TODO*///			IRQ_count = IRQ_count_latch;
-/*TODO*///			IRQ_enable = IRQ_enable_latch;
-/*TODO*///			ret = M6502_INT_IRQ;
-/*TODO*///		}
-/*TODO*///	
-/*TODO*///		return ret;
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void konami_vrc2a_w (int offset, int data)
-/*TODO*///	{
-/*TODO*///		if (offset < 0x3000)
-/*TODO*///		{
-/*TODO*///			switch (offset & 0x3000)
-/*TODO*///			{
-/*TODO*///				case 0:
-/*TODO*///					/* Switch 8k bank at $8000 */
-/*TODO*///					data &= ((nes.prg_chunks << 1) - 1);
-/*TODO*///					cpu_setbank (1, &nes.rom[0x2000 * (data) + 0x10000]);
-/*TODO*///					break;
-/*TODO*///				case 0x1000:
-/*TODO*///					switch (data & 0x03)
-/*TODO*///					{
-/*TODO*///						case 0x00: ppu_mirror_v (); break;
-/*TODO*///						case 0x01: ppu_mirror_h (); break;
-/*TODO*///						case 0x02: ppu_mirror_low (); break;
-/*TODO*///						case 0x03: ppu_mirror_high (); break;
-/*TODO*///					}
-/*TODO*///					break;
-/*TODO*///	
-/*TODO*///				case 0x2000:
-/*TODO*///					/* Switch 8k bank at $a000 */
-/*TODO*///					data &= ((nes.prg_chunks << 1) - 1);
-/*TODO*///					cpu_setbank (2, &nes.rom[0x2000 * (data) + 0x10000]);
-/*TODO*///					break;
-/*TODO*///				default:
-/*TODO*///					logerror("konami_vrc2a_w uncaught offset: %04x value: %02x\n", offset, data);
-/*TODO*///					break;
-/*TODO*///			}
-/*TODO*///			return;
-/*TODO*///		}
-/*TODO*///	
-/*TODO*///		switch (offset & 0x7000)
-/*TODO*///		{
-/*TODO*///			case 0x3000:
-/*TODO*///				/* Switch 1k vrom at $0000 */
-/*TODO*///				vrom_bank[0] = data >> 1;
-/*TODO*///				vrom_bank[0] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[0] = vrom_bank[0] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x3001:
-/*TODO*///				/* Switch 1k vrom at $0400 */
-/*TODO*///				vrom_bank[1] = data >> 1;
-/*TODO*///				vrom_bank[1] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[1] = vrom_bank[1] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x4000:
-/*TODO*///				/* Switch 1k vrom at $0800 */
-/*TODO*///				vrom_bank[2] = data >> 1;
-/*TODO*///				vrom_bank[2] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[2] = vrom_bank[2] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x4001:
-/*TODO*///				/* Switch 1k vrom at $0c00 */
-/*TODO*///				vrom_bank[3] = data >> 1;
-/*TODO*///				vrom_bank[3] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[3] = vrom_bank[3] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x5000:
-/*TODO*///				/* Switch 1k vrom at $1000 */
-/*TODO*///				vrom_bank[4] = data >> 1;
-/*TODO*///				vrom_bank[4] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[4] = vrom_bank[4] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x5001:
-/*TODO*///				/* Switch 1k vrom at $1400 */
-/*TODO*///				vrom_bank[5] = data >> 1;
-/*TODO*///				vrom_bank[5] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[5] = vrom_bank[5] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x6000:
-/*TODO*///				/* Switch 1k vrom at $1800 */
-/*TODO*///				vrom_bank[6] = data >> 1;
-/*TODO*///				vrom_bank[6] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[6] = vrom_bank[6] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x6001:
-/*TODO*///				/* Switch 1k vrom at $1c00 */
-/*TODO*///				vrom_bank[7] = data >> 1;
-/*TODO*///				vrom_bank[7] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[7] = vrom_bank[7] * 64;
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///			case 0x7000:
-/*TODO*///				IRQ_count_latch = data;
-/*TODO*///				break;
-/*TODO*///			case 0x7001:
-/*TODO*///				IRQ_enable = IRQ_enable_latch;
-/*TODO*///				break;
-/*TODO*///			case 0x7002:
-/*TODO*///				IRQ_count = IRQ_count_latch;
-/*TODO*///				IRQ_enable = data & 0x02;
-/*TODO*///				IRQ_enable_latch = data & 0x01;
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///			default:
-/*TODO*///				logerror("konami_vrc2a_w uncaught offset: %04x value: %02x\n", offset, data);
-/*TODO*///				break;
-/*TODO*///		}
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void konami_vrc2b_w (int offset, int data)
-/*TODO*///	{
-/*TODO*///		UINT16 select;
-/*TODO*///	
-/*TODO*///	//	logerror("konami_vrc2b_w offset: %04x value: %02x\n", offset, data);
-/*TODO*///	
-/*TODO*///		if (offset < 0x3000)
-/*TODO*///		{
-/*TODO*///			switch (offset & 0x3000)
-/*TODO*///			{
-/*TODO*///				case 0:
-/*TODO*///					/* Switch 8k bank at $8000 */
-/*TODO*///					data &= ((nes.prg_chunks << 1) - 1);
-/*TODO*///					cpu_setbank (1, &nes.rom[0x2000 * (data) + 0x10000]);
-/*TODO*///					break;
-/*TODO*///				case 0x1000:
-/*TODO*///					switch (data & 0x03)
-/*TODO*///					{
-/*TODO*///						case 0x00: ppu_mirror_v (); break;
-/*TODO*///						case 0x01: ppu_mirror_h (); break;
-/*TODO*///						case 0x02: ppu_mirror_low (); break;
-/*TODO*///						case 0x03: ppu_mirror_high (); break;
-/*TODO*///					}
-/*TODO*///					break;
-/*TODO*///	
-/*TODO*///				case 0x2000:
-/*TODO*///					/* Switch 8k bank at $a000 */
-/*TODO*///					data &= ((nes.prg_chunks << 1) - 1);
-/*TODO*///					cpu_setbank (2, &nes.rom[0x2000 * (data) + 0x10000]);
-/*TODO*///					break;
-/*TODO*///				default:
-/*TODO*///					logerror("konami_vrc2b_w offset: %04x value: %02x\n", offset, data);
-/*TODO*///					break;
-/*TODO*///			}
-/*TODO*///			return;
-/*TODO*///		}
-/*TODO*///	
-/*TODO*///		/* The low 2 select bits vary from cart to cart */
-/*TODO*///		select = (offset & 0x7000) |
-/*TODO*///			(offset & 0x03) |
-/*TODO*///			((offset & 0x0c) >> 2);
-/*TODO*///	
-/*TODO*///		switch (select)
-/*TODO*///		{
-/*TODO*///			case 0x3000:
-/*TODO*///				/* Switch 1k vrom at $0000 - low 4 bits */
-/*TODO*///				vrom_bank[0] = (vrom_bank[0] & 0xf0) | (data & 0x0f);
-/*TODO*///				vrom_bank[0] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[0] = vrom_bank[0] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x3001:
-/*TODO*///				/* Switch 1k vrom at $0000 - high 4 bits */
-/*TODO*///				vrom_bank[0] = (vrom_bank[0] & 0x0f) | (data << 4);
-/*TODO*///				vrom_bank[0] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[0] = vrom_bank[0] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x3002:
-/*TODO*///				/* Switch 1k vrom at $0400 - low 4 bits */
-/*TODO*///				vrom_bank[1] = (vrom_bank[1] & 0xf0) | (data & 0x0f);
-/*TODO*///				vrom_bank[1] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[1] = vrom_bank[1] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x3003:
-/*TODO*///				/* Switch 1k vrom at $0400 - high 4 bits */
-/*TODO*///				vrom_bank[1] = (vrom_bank[1] & 0x0f) | (data << 4);
-/*TODO*///				vrom_bank[1] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[1] = vrom_bank[1] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x4000:
-/*TODO*///				/* Switch 1k vrom at $0800 - low 4 bits */
-/*TODO*///				vrom_bank[2] = (vrom_bank[2] & 0xf0) | (data & 0x0f);
-/*TODO*///				vrom_bank[2] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[2] = vrom_bank[2] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x4001:
-/*TODO*///				/* Switch 1k vrom at $0800 - high 4 bits */
-/*TODO*///				vrom_bank[2] = (vrom_bank[2] & 0x0f) | (data << 4);
-/*TODO*///				vrom_bank[2] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[2] = vrom_bank[2] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x4002:
-/*TODO*///				/* Switch 1k vrom at $0c00 - low 4 bits */
-/*TODO*///				vrom_bank[3] = (vrom_bank[3] & 0xf0) | (data & 0x0f);
-/*TODO*///				vrom_bank[3] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[3] = vrom_bank[3] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x4003:
-/*TODO*///				/* Switch 1k vrom at $0c00 - high 4 bits */
-/*TODO*///				vrom_bank[3] = (vrom_bank[3] & 0x0f) | (data << 4);
-/*TODO*///				vrom_bank[3] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[3] = vrom_bank[3] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x5000:
-/*TODO*///				/* Switch 1k vrom at $1000 - low 4 bits */
-/*TODO*///				vrom_bank[4] = (vrom_bank[4] & 0xf0) | (data & 0x0f);
-/*TODO*///				vrom_bank[4] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[4] = vrom_bank[4] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x5001:
-/*TODO*///				/* Switch 1k vrom at $1000 - high 4 bits */
-/*TODO*///				vrom_bank[4] = (vrom_bank[4] & 0x0f) | (data << 4);
-/*TODO*///				vrom_bank[4] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[4] = vrom_bank[4] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x5002:
-/*TODO*///				/* Switch 1k vrom at $1400 - low 4 bits */
-/*TODO*///				vrom_bank[5] = (vrom_bank[5] & 0xf0) | (data & 0x0f);
-/*TODO*///				vrom_bank[5] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[5] = vrom_bank[5] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x5003:
-/*TODO*///				/* Switch 1k vrom at $1400 - high 4 bits */
-/*TODO*///				vrom_bank[5] = (vrom_bank[5] & 0x0f) | (data << 4);
-/*TODO*///				vrom_bank[5] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[5] = vrom_bank[5] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x6000:
-/*TODO*///				/* Switch 1k vrom at $1800 - low 4 bits */
-/*TODO*///				vrom_bank[6] = (vrom_bank[6] & 0xf0) | (data & 0x0f);
-/*TODO*///				vrom_bank[6] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[6] = vrom_bank[6] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x6001:
-/*TODO*///				/* Switch 1k vrom at $1800 - high 4 bits */
-/*TODO*///				vrom_bank[6] = (vrom_bank[6] & 0x0f) | (data << 4);
-/*TODO*///				vrom_bank[6] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[6] = vrom_bank[6] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x6002:
-/*TODO*///				/* Switch 1k vrom at $1c00 - low 4 bits */
-/*TODO*///				vrom_bank[7] = (vrom_bank[7] & 0xf0) | (data & 0x0f);
-/*TODO*///				vrom_bank[7] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[7] = vrom_bank[7] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x6003:
-/*TODO*///				/* Switch 1k vrom at $1c00 - high 4 bits */
-/*TODO*///				vrom_bank[7] = (vrom_bank[7] & 0x0f) | (data << 4);
-/*TODO*///				vrom_bank[7] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[7] = vrom_bank[7] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x7000:
-/*TODO*///				IRQ_count_latch = data;
-/*TODO*///				break;
-/*TODO*///			case 0x7001:
-/*TODO*///				IRQ_enable = IRQ_enable_latch;
-/*TODO*///				break;
-/*TODO*///			case 0x7002:
-/*TODO*///				IRQ_count = IRQ_count_latch;
-/*TODO*///				IRQ_enable = data & 0x02;
-/*TODO*///				IRQ_enable_latch = data & 0x01;
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///			default:
-/*TODO*///				logerror("konami_vrc2b_w uncaught offset: %04x value: %02x\n", offset, data);
-/*TODO*///				break;
-/*TODO*///		}
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void konami_vrc4_w (int offset, int data)
-/*TODO*///	{
-/*TODO*///		switch (offset & 0x7007)
-/*TODO*///		{
-/*TODO*///			case 0x0000:
-/*TODO*///				/* Switch 8k bank at $8000 */
-/*TODO*///				data &= ((nes.prg_chunks << 1) - 1);
-/*TODO*///				cpu_setbank (1, &nes.rom[0x2000 * (data) + 0x10000]);
-/*TODO*///				break;
-/*TODO*///			case 0x1000:
-/*TODO*///				switch (data & 0x03)
-/*TODO*///				{
-/*TODO*///					case 0x00: ppu_mirror_v (); break;
-/*TODO*///					case 0x01: ppu_mirror_h (); break;
-/*TODO*///					case 0x02: ppu_mirror_low (); break;
-/*TODO*///					case 0x03: ppu_mirror_high (); break;
-/*TODO*///				}
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///			/* $1001 is uncaught */
-/*TODO*///	
-/*TODO*///			case 0x2000:
-/*TODO*///				/* Switch 8k bank at $a000 */
-/*TODO*///				data &= ((nes.prg_chunks << 1) - 1);
-/*TODO*///				cpu_setbank (2, &nes.rom[0x2000 * (data) + 0x10000]);
-/*TODO*///				break;
-/*TODO*///			case 0x3000:
-/*TODO*///				/* Switch 1k vrom at $0000 - low 4 bits */
-/*TODO*///				vrom_bank[0] = (vrom_bank[0] & 0xf0) | (data & 0x0f);
-/*TODO*///				vrom_bank[0] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[0] = vrom_bank[0] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x3002:
-/*TODO*///				/* Switch 1k vrom at $0000 - high 4 bits */
-/*TODO*///				vrom_bank[0] = (vrom_bank[0] & 0x0f) | (data << 4);
-/*TODO*///				vrom_bank[0] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[0] = vrom_bank[0] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x3001:
-/*TODO*///			case 0x3004:
-/*TODO*///				/* Switch 1k vrom at $0400 - low 4 bits */
-/*TODO*///				vrom_bank[1] = (vrom_bank[1] & 0xf0) | (data & 0x0f);
-/*TODO*///				vrom_bank[1] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[1] = vrom_bank[1] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x3003:
-/*TODO*///			case 0x3006:
-/*TODO*///				/* Switch 1k vrom at $0400 - high 4 bits */
-/*TODO*///				vrom_bank[1] = (vrom_bank[1] & 0x0f) | (data << 4);
-/*TODO*///				vrom_bank[1] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[1] = vrom_bank[1] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x4000:
-/*TODO*///				/* Switch 1k vrom at $0800 - low 4 bits */
-/*TODO*///				vrom_bank[2] = (vrom_bank[2] & 0xf0) | (data & 0x0f);
-/*TODO*///				vrom_bank[2] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[2] = vrom_bank[2] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x4002:
-/*TODO*///				/* Switch 1k vrom at $0800 - high 4 bits */
-/*TODO*///				vrom_bank[2] = (vrom_bank[2] & 0x0f) | (data << 4);
-/*TODO*///				vrom_bank[2] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[2] = vrom_bank[2] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x4001:
-/*TODO*///			case 0x4004:
-/*TODO*///				/* Switch 1k vrom at $0c00 - low 4 bits */
-/*TODO*///				vrom_bank[3] = (vrom_bank[3] & 0xf0) | (data & 0x0f);
-/*TODO*///				vrom_bank[3] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[3] = vrom_bank[3] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x4003:
-/*TODO*///			case 0x4006:
-/*TODO*///				/* Switch 1k vrom at $0c00 - high 4 bits */
-/*TODO*///				vrom_bank[3] = (vrom_bank[3] & 0x0f) | (data << 4);
-/*TODO*///				vrom_bank[3] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[3] = vrom_bank[3] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x5000:
-/*TODO*///				/* Switch 1k vrom at $1000 - low 4 bits */
-/*TODO*///				vrom_bank[4] = (vrom_bank[4] & 0xf0) | (data & 0x0f);
-/*TODO*///				vrom_bank[4] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[4] = vrom_bank[4] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x5002:
-/*TODO*///				/* Switch 1k vrom at $1000 - high 4 bits */
-/*TODO*///				vrom_bank[4] = (vrom_bank[4] & 0x0f) | (data << 4);
-/*TODO*///				vrom_bank[4] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[4] = vrom_bank[4] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x5001:
-/*TODO*///			case 0x5004:
-/*TODO*///				/* Switch 1k vrom at $1400 - low 4 bits */
-/*TODO*///				vrom_bank[5] = (vrom_bank[5] & 0xf0) | (data & 0x0f);
-/*TODO*///				vrom_bank[5] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[5] = vrom_bank[5] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x5003:
-/*TODO*///			case 0x5006:
-/*TODO*///				/* Switch 1k vrom at $1400 - high 4 bits */
-/*TODO*///				vrom_bank[5] = (vrom_bank[5] & 0x0f) | (data << 4);
-/*TODO*///				vrom_bank[5] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[5] = vrom_bank[5] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x6000:
-/*TODO*///				/* Switch 1k vrom at $1800 - low 4 bits */
-/*TODO*///				vrom_bank[6] = (vrom_bank[6] & 0xf0) | (data & 0x0f);
-/*TODO*///				vrom_bank[6] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[6] = vrom_bank[6] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x6002:
-/*TODO*///				/* Switch 1k vrom at $1800 - high 4 bits */
-/*TODO*///				vrom_bank[6] = (vrom_bank[6] & 0x0f) | (data << 4);
-/*TODO*///				vrom_bank[6] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[6] = vrom_bank[6] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x6001:
-/*TODO*///			case 0x6004:
-/*TODO*///				/* Switch 1k vrom at $1c00 - low 4 bits */
-/*TODO*///				vrom_bank[7] = (vrom_bank[7] & 0xf0) | (data & 0x0f);
-/*TODO*///				vrom_bank[7] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[7] = vrom_bank[7] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x6003:
-/*TODO*///			case 0x6006:
-/*TODO*///				/* Switch 1k vrom at $1c00 - high 4 bits */
-/*TODO*///				vrom_bank[7] = (vrom_bank[7] & 0x0f) | (data << 4);
-/*TODO*///				vrom_bank[7] &= ((nes.chr_chunks << 3) - 1);
-/*TODO*///				nes_vram[7] = vrom_bank[7] * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x7000:
-/*TODO*///				/* Set low 4 bits of latch */
-/*TODO*///				IRQ_count_latch &= ~0x0f;
-/*TODO*///				IRQ_count_latch |= data & 0x0f;
-/*TODO*///	//			logerror("konami_vrc4 irq_latch low: %02x\n", IRQ_count_latch);
-/*TODO*///				break;
-/*TODO*///			case 0x7002:
-/*TODO*///			case 0x7040:
-/*TODO*///				/* Set high 4 bits of latch */
-/*TODO*///				IRQ_count_latch &= ~0xf0;
-/*TODO*///				IRQ_count_latch |= (data << 4) & 0xf0;
-/*TODO*///	//			logerror("konami_vrc4 irq_latch high: %02x\n", IRQ_count_latch);
-/*TODO*///				break;
-/*TODO*///			case 0x7004:
-/*TODO*///			case 0x7001:
-/*TODO*///			case 0x7080:
-/*TODO*///				IRQ_count = IRQ_count_latch;
-/*TODO*///				IRQ_enable = data & 0x02;
-/*TODO*///				IRQ_enable_latch = data & 0x01;
-/*TODO*///	//			logerror("konami_vrc4 irq_count set: %02x\n", IRQ_count);
-/*TODO*///	//			logerror("konami_vrc4 enable: %02x\n", IRQ_enable);
-/*TODO*///	//			logerror("konami_vrc4 enable latch: %02x\n", IRQ_enable_latch);
-/*TODO*///				break;
-/*TODO*///			case 0x7006:
-/*TODO*///			case 0x7003:
-/*TODO*///			case 0x70c0:
-/*TODO*///				IRQ_enable = IRQ_enable_latch;
-/*TODO*///	//			logerror("konami_vrc4 enable copy: %02x\n", IRQ_enable);
-/*TODO*///				break;
-/*TODO*///			default:
-/*TODO*///				logerror("konami_vrc4_w uncaught offset: %04x value: %02x\n", offset, data);
-/*TODO*///				break;
-/*TODO*///		}
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void konami_vrc6a_w (int offset, int data)
-/*TODO*///	{
-/*TODO*///	//	logerror("konami_vrc6_w offset: %04x, data: %02x, scanline: %d\n", offset, data, current_scanline);
-/*TODO*///	
-/*TODO*///		switch (offset & 0x7003)
-/*TODO*///		{
-/*TODO*///			case 0: case 1: case 2: case 3:
-/*TODO*///				/* Switch 16k bank at $8000 */
-/*TODO*///				prg16_89ab (data);
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///	/* $1000-$1002 = sound regs */
-/*TODO*///	/* $2000-$2002 = sound regs */
-/*TODO*///	/* $3000-$3002 = sound regs */
-/*TODO*///	
-/*TODO*///			case 0x3003:
-/*TODO*///				switch (data & 0x0c)
-/*TODO*///				{
-/*TODO*///					case 0x00: ppu_mirror_v (); break;
-/*TODO*///					case 0x04: ppu_mirror_h (); break;
-/*TODO*///					case 0x08: ppu_mirror_low (); break;
-/*TODO*///					case 0x0c: ppu_mirror_high (); break;
-/*TODO*///				}
-/*TODO*///				break;
-/*TODO*///			case 0x4000: case 0x4001: case 0x4002: case 0x4003:
-/*TODO*///				/* Switch 8k bank at $c000 */
-/*TODO*///				prg8_cd (data);
-/*TODO*///				break;
-/*TODO*///			case 0x5000:
-/*TODO*///				/* Switch 1k VROM at $0000 */
-/*TODO*///				nes_vram [0] = data * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x5001:
-/*TODO*///				/* Switch 1k VROM at $0400 */
-/*TODO*///				nes_vram [1] = data * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x5002:
-/*TODO*///				/* Switch 1k VROM at $0800 */
-/*TODO*///				nes_vram [2] = data * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x5003:
-/*TODO*///				/* Switch 1k VROM at $0c00 */
-/*TODO*///				nes_vram [3] = data * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x6000:
-/*TODO*///				/* Switch 1k VROM at $1000 */
-/*TODO*///				nes_vram [4] = data * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x6001:
-/*TODO*///				/* Switch 1k VROM at $1400 */
-/*TODO*///				nes_vram [5] = data * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x6002:
-/*TODO*///				/* Switch 1k VROM at $1800 */
-/*TODO*///				nes_vram [6] = data * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x6003:
-/*TODO*///				/* Switch 1k VROM at $1c00 */
-/*TODO*///				nes_vram [7] = data * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x7000:
-/*TODO*///				IRQ_count_latch = data;
-/*TODO*///				break;
-/*TODO*///			case 0x7001:
-/*TODO*///				IRQ_count = IRQ_count_latch;
-/*TODO*///				IRQ_enable = data & 0x02;
-/*TODO*///				IRQ_enable_latch = data & 0x01;
-/*TODO*///				break;
-/*TODO*///			case 0x7002:
-/*TODO*///				IRQ_enable = IRQ_enable_latch;
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///			default:
-/*TODO*///				logerror("konami_vrc6_w uncaught addr: %04x value: %02x\n", offset + 0x8000, data);
-/*TODO*///				break;
-/*TODO*///		}
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	
-/*TODO*///	static void konami_vrc6b_w (int offset, int data)
-/*TODO*///	{
-/*TODO*///	//	logerror("konami_vrc6_w offset: %04x, data: %02x, scanline: %d\n", offset, data, current_scanline);
-/*TODO*///	
-/*TODO*///		switch (offset & 0x7003)
-/*TODO*///		{
-/*TODO*///			case 0: case 1: case 2: case 3:
-/*TODO*///				/* Switch 16k bank at $8000 */
-/*TODO*///				prg16_89ab (data);
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///	/* $1000-$1002 = sound regs */
-/*TODO*///	/* $2000-$2002 = sound regs */
-/*TODO*///	/* $3000-$3002 = sound regs */
-/*TODO*///	
-/*TODO*///			case 0x3003:
-/*TODO*///				switch (data & 0x0c)
-/*TODO*///				{
-/*TODO*///					case 0x00: ppu_mirror_v (); break;
-/*TODO*///					case 0x04: ppu_mirror_h (); break;
-/*TODO*///					case 0x08: ppu_mirror_low (); break;
-/*TODO*///					case 0x0c: ppu_mirror_high (); break;
-/*TODO*///				}
-/*TODO*///				break;
-/*TODO*///			case 0x4000: case 0x4001: case 0x4002: case 0x4003:
-/*TODO*///				/* Switch 8k bank at $c000 */
-/*TODO*///				prg8_cd (data);
-/*TODO*///				break;
-/*TODO*///			case 0x5000:
-/*TODO*///				/* Switch 1k VROM at $0000 */
-/*TODO*///				nes_vram [0] = data * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x5002:
-/*TODO*///				/* Switch 1k VROM at $0400 */
-/*TODO*///				nes_vram [1] = data * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x5001:
-/*TODO*///				/* Switch 1k VROM at $0800 */
-/*TODO*///				nes_vram [2] = data * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x5003:
-/*TODO*///				/* Switch 1k VROM at $0c00 */
-/*TODO*///				nes_vram [3] = data * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x6000:
-/*TODO*///				/* Switch 1k VROM at $1000 */
-/*TODO*///				nes_vram [4] = data * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x6002:
-/*TODO*///				/* Switch 1k VROM at $1400 */
-/*TODO*///				nes_vram [5] = data * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x6001:
-/*TODO*///				/* Switch 1k VROM at $1800 */
-/*TODO*///				nes_vram [6] = data * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x6003:
-/*TODO*///				/* Switch 1k VROM at $1c00 */
-/*TODO*///				nes_vram [7] = data * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x7000:
-/*TODO*///				IRQ_count_latch = data;
-/*TODO*///				break;
-/*TODO*///			case 0x7001:
-/*TODO*///				IRQ_enable = IRQ_enable_latch;
-/*TODO*///				break;
-/*TODO*///			case 0x7002:
-/*TODO*///				IRQ_count = IRQ_count_latch;
-/*TODO*///				IRQ_enable = data & 0x02;
-/*TODO*///				IRQ_enable_latch = data & 0x01;
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///			default:
-/*TODO*///				logerror("konami_vrc6_w uncaught addr: %04x value: %02x\n", offset + 0x8000, data);
-/*TODO*///				break;
-/*TODO*///		}
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void mapper32_w (int offset, int data)
-/*TODO*///	{
-/*TODO*///		static int bankSel;
-/*TODO*///	
-/*TODO*///	//	logerror("mapper32_w offset: %04x, data: %02x, scanline: %d\n", offset, data, current_scanline);
-/*TODO*///	
-/*TODO*///		switch (offset & 0x7000)
-/*TODO*///		{
-/*TODO*///			case 0x0000:
-/*TODO*///				/* Switch 8k bank at $8000 or $c000 */
-/*TODO*///				if (bankSel != 0)
-/*TODO*///					prg8_cd (data);
-/*TODO*///				else
-/*TODO*///					prg8_89 (data);
-/*TODO*///				break;
-/*TODO*///			case 0x1000:
-/*TODO*///				bankSel = data & 0x02;
-/*TODO*///				if ((data & 0x01) != 0)
-/*TODO*///					ppu_mirror_h ();
-/*TODO*///				else
-/*TODO*///					ppu_mirror_v ();
-/*TODO*///				break;
-/*TODO*///			case 0x2000:
-/*TODO*///				/* Switch 8k bank at $A000 */
-/*TODO*///				prg8_ab (data);
-/*TODO*///				break;
-/*TODO*///			case 0x3000:
-/*TODO*///				/* Switch 1k VROM at $1000 */
-/*TODO*///				nes_vram[offset & 0x07] = data * 64;
-/*TODO*///				break;
-/*TODO*///			default:
-/*TODO*///				logerror("Uncaught mapper 32 write, addr: %04x value: %02x\n", offset + 0x8000, data);
-/*TODO*///				break;
-/*TODO*///		}
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void mapper33_w (int offset, int data)
-/*TODO*///	{
-/*TODO*///	
-/*TODO*///	//	logerror("mapper33_w offset: %04x, data: %02x, scanline: %d\n", offset, data, current_scanline);
-/*TODO*///	
-/*TODO*///		switch (offset & 0x7003)
-/*TODO*///		{
-/*TODO*///			case 0x0000:
-/*TODO*///				/* Switch 8k bank at $8000 */
-/*TODO*///				data &= ((nes.prg_chunks << 1) - 1);
-/*TODO*///				cpu_setbank (1, &nes.rom[0x2000 * (data) + 0x10000]);
-/*TODO*///				break;
-/*TODO*///			case 0x0001:
-/*TODO*///				/* Switch 8k bank at $A000 */
-/*TODO*///				data &= ((nes.prg_chunks << 1) - 1);
-/*TODO*///				cpu_setbank (2, &nes.rom[0x2000 * (data) + 0x10000]);
-/*TODO*///				break;
-/*TODO*///			case 0x0002:
-/*TODO*///				/* Switch 2k VROM at $0000 */
-/*TODO*///				nes_vram [0] = data * 128;
-/*TODO*///				nes_vram [1] = nes_vram [0] + 64;
-/*TODO*///				break;
-/*TODO*///			case 0x0003:
-/*TODO*///				/* Switch 2k VROM at $0800 */
-/*TODO*///				nes_vram [2] = data * 128;
-/*TODO*///				nes_vram [3] = nes_vram [2] + 64;
-/*TODO*///				break;
-/*TODO*///			case 0x2000:
-/*TODO*///				/* Switch 1k VROM at $1000 */
-/*TODO*///				nes_vram [4] = data * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x2001:
-/*TODO*///				/* Switch 1k VROM at $1400 */
-/*TODO*///				nes_vram [5] = data * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x2002:
-/*TODO*///				/* Switch 1k VROM at $1800 */
-/*TODO*///				nes_vram [6] = data * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x2003:
-/*TODO*///				/* Switch 1k VROM at $1c00 */
-/*TODO*///				nes_vram [7] = data * 64;
-/*TODO*///				break;
-/*TODO*///			default:
-/*TODO*///				logerror("Uncaught mapper 33 write, addr: %04x value: %02x\n", offset + 0x8000, data);
-/*TODO*///				break;
-/*TODO*///		}
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void mapper34_m_w (int offset, int data)
-/*TODO*///	{
-/*TODO*///		logerror("mapper34_m_w, offset: %04x, data: %02x\n", offset, data);
-/*TODO*///	
-/*TODO*///		switch (offset)
-/*TODO*///		{
-/*TODO*///			case 0x1ffd:
-/*TODO*///				/* Switch 32k prg banks */
-/*TODO*///				prg32 (data);
-/*TODO*///				break;
-/*TODO*///			case 0x1ffe:
-/*TODO*///				/* Switch 4k VNES_ROM at 0x0000 */
-/*TODO*///				chr4_0 (data);
-/*TODO*///				break;
-/*TODO*///			case 0x1fff:
-/*TODO*///				/* Switch 4k VNES_ROM at 0x1000 */
-/*TODO*///				chr4_4 (data);
-/*TODO*///				break;
-/*TODO*///		}
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	
-/*TODO*///	static void mapper34_w (int offset, int data)
-/*TODO*///	{
-/*TODO*///		/* This portion of the mapper is nearly identical to Mapper 7, except no one-screen mirroring */
-/*TODO*///		/* Deadly Towers is really a Mapper 34 game - the demo screens look wrong using mapper 7. */
-/*TODO*///		logerror("Mapper 34 w, offset: %04x, data: %02x\n", offset, data);
-/*TODO*///	
-/*TODO*///		prg32 (data);
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	int mapper40_irq (int scanline)
-/*TODO*///	{
-/*TODO*///		int ret = M6502_INT_NONE;
-/*TODO*///	
-/*TODO*///		/* Decrement & check the IRQ scanline counter */
-/*TODO*///		if (IRQ_enable != 0)
-/*TODO*///		{
-/*TODO*///			if (--IRQ_count == 0)
-/*TODO*///			{
-/*TODO*///				ret = M6502_INT_IRQ;
-/*TODO*///			}
-/*TODO*///		}
-/*TODO*///	
-/*TODO*///		return ret;
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void mapper40_w (int offset, int data)
-/*TODO*///	{
-/*TODO*///		logerror("mapper40_w, offset: %04x, data: %02x\n", offset, data);
-/*TODO*///	
-/*TODO*///		switch (offset & 0x6000)
-/*TODO*///		{
-/*TODO*///			case 0x0000:
-/*TODO*///				IRQ_enable = 0;
-/*TODO*///				IRQ_count = 37; /* Hardcoded scanline scroll */
-/*TODO*///				break;
-/*TODO*///			case 0x2000:
-/*TODO*///				IRQ_enable = 1;
-/*TODO*///				break;
-/*TODO*///			case 0x6000:
-/*TODO*///				/* Game runs code between banks, use slow but sure method */
-/*TODO*///				prg8_cd (data);
-/*TODO*///				break;
-/*TODO*///		}
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void mapper41_m_w (int offset, int data)
-/*TODO*///	{
+	
+            }
+        };
+	
+	public static ReadHandlerPtr konami_irq = new ReadHandlerPtr() {
+            @Override
+            public int handler(int scanline) {
+		int ret = M6502_INT_NONE;
+	
+		/* Increment & check the IRQ scanline counter */
+		if (IRQ_enable!=0 && (++IRQ_count == 0x100))
+		{
+			IRQ_count = IRQ_count_latch;
+			IRQ_enable = IRQ_enable_latch;
+			ret = M6502_INT_IRQ;
+		}
+	
+		return ret;
+            }
+        };
+	
+	public static WriteHandlerPtr konami_vrc2a_w  = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+		if (offset < 0x3000)
+		{
+			switch (offset & 0x3000)
+			{
+				case 0:
+					/* Switch 8k bank at $8000 */
+					data &= ((_nes.prg_chunks[0] << 1) - 1);
+					cpu_setbank (1, new UBytePtr(_nes.rom, 0x2000 * (data) + 0x10000));
+					break;
+				case 0x1000:
+					switch (data & 0x03)
+					{
+						case 0x00: ppu_mirror_v (); break;
+						case 0x01: ppu_mirror_h (); break;
+						case 0x02: ppu_mirror_low (); break;
+						case 0x03: ppu_mirror_high (); break;
+					}
+					break;
+	
+				case 0x2000:
+					/* Switch 8k bank at $a000 */
+					data &= ((_nes.prg_chunks[0] << 1) - 1);
+					cpu_setbank (2, new UBytePtr(_nes.rom, 0x2000 * (data) + 0x10000));
+					break;
+				default:
+					logerror("konami_vrc2a_w uncaught offset: %04x value: %02x\n", offset, data);
+					break;
+			}
+			return;
+		}
+	
+		switch (offset & 0x7000)
+		{
+			case 0x3000:
+				/* Switch 1k vrom at $0000 */
+				vrom_bank[0] = data >> 1;
+				vrom_bank[0] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[0] = vrom_bank[0] * 64;
+				break;
+			case 0x3001:
+				/* Switch 1k vrom at $0400 */
+				vrom_bank[1] = data >> 1;
+				vrom_bank[1] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[1] = vrom_bank[1] * 64;
+				break;
+			case 0x4000:
+				/* Switch 1k vrom at $0800 */
+				vrom_bank[2] = data >> 1;
+				vrom_bank[2] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[2] = vrom_bank[2] * 64;
+				break;
+			case 0x4001:
+				/* Switch 1k vrom at $0c00 */
+				vrom_bank[3] = data >> 1;
+				vrom_bank[3] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[3] = vrom_bank[3] * 64;
+				break;
+			case 0x5000:
+				/* Switch 1k vrom at $1000 */
+				vrom_bank[4] = data >> 1;
+				vrom_bank[4] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[4] = vrom_bank[4] * 64;
+				break;
+			case 0x5001:
+				/* Switch 1k vrom at $1400 */
+				vrom_bank[5] = data >> 1;
+				vrom_bank[5] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[5] = vrom_bank[5] * 64;
+				break;
+			case 0x6000:
+				/* Switch 1k vrom at $1800 */
+				vrom_bank[6] = data >> 1;
+				vrom_bank[6] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[6] = vrom_bank[6] * 64;
+				break;
+			case 0x6001:
+				/* Switch 1k vrom at $1c00 */
+				vrom_bank[7] = data >> 1;
+				vrom_bank[7] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[7] = vrom_bank[7] * 64;
+				break;
+	
+			case 0x7000:
+				IRQ_count_latch = data;
+				break;
+			case 0x7001:
+				IRQ_enable = IRQ_enable_latch;
+				break;
+			case 0x7002:
+				IRQ_count = IRQ_count_latch;
+				IRQ_enable = data & 0x02;
+				IRQ_enable_latch = data & 0x01;
+				break;
+	
+			default:
+				logerror("konami_vrc2a_w uncaught offset: %04x value: %02x\n", offset, data);
+				break;
+		}
+            }
+        };
+	
+	public static WriteHandlerPtr konami_vrc2b_w  = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+		int select;
+	
+	//	logerror("konami_vrc2b_w offset: %04x value: %02x\n", offset, data);
+	
+		if (offset < 0x3000)
+		{
+			switch (offset & 0x3000)
+			{
+				case 0:
+					/* Switch 8k bank at $8000 */
+					data &= ((_nes.prg_chunks[0] << 1) - 1);
+					cpu_setbank (1, new UBytePtr(_nes.rom, 0x2000 * (data) + 0x10000));
+					break;
+				case 0x1000:
+					switch (data & 0x03)
+					{
+						case 0x00: ppu_mirror_v (); break;
+						case 0x01: ppu_mirror_h (); break;
+						case 0x02: ppu_mirror_low (); break;
+						case 0x03: ppu_mirror_high (); break;
+					}
+					break;
+	
+				case 0x2000:
+					/* Switch 8k bank at $a000 */
+					data &= ((_nes.prg_chunks[0] << 1) - 1);
+					cpu_setbank (2, new UBytePtr(_nes.rom, 0x2000 * (data) + 0x10000));
+					break;
+				default:
+					logerror("konami_vrc2b_w offset: %04x value: %02x\n", offset, data);
+					break;
+			}
+			return;
+		}
+	
+		/* The low 2 select bits vary from cart to cart */
+		select = (offset & 0x7000) |
+			(offset & 0x03) |
+			((offset & 0x0c) >> 2);
+	
+		switch (select)
+		{
+			case 0x3000:
+				/* Switch 1k vrom at $0000 - low 4 bits */
+				vrom_bank[0] = (vrom_bank[0] & 0xf0) | (data & 0x0f);
+				vrom_bank[0] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[0] = vrom_bank[0] * 64;
+				break;
+			case 0x3001:
+				/* Switch 1k vrom at $0000 - high 4 bits */
+				vrom_bank[0] = (vrom_bank[0] & 0x0f) | (data << 4);
+				vrom_bank[0] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[0] = vrom_bank[0] * 64;
+				break;
+			case 0x3002:
+				/* Switch 1k vrom at $0400 - low 4 bits */
+				vrom_bank[1] = (vrom_bank[1] & 0xf0) | (data & 0x0f);
+				vrom_bank[1] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[1] = vrom_bank[1] * 64;
+				break;
+			case 0x3003:
+				/* Switch 1k vrom at $0400 - high 4 bits */
+				vrom_bank[1] = (vrom_bank[1] & 0x0f) | (data << 4);
+				vrom_bank[1] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[1] = vrom_bank[1] * 64;
+				break;
+			case 0x4000:
+				/* Switch 1k vrom at $0800 - low 4 bits */
+				vrom_bank[2] = (vrom_bank[2] & 0xf0) | (data & 0x0f);
+				vrom_bank[2] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[2] = vrom_bank[2] * 64;
+				break;
+			case 0x4001:
+				/* Switch 1k vrom at $0800 - high 4 bits */
+				vrom_bank[2] = (vrom_bank[2] & 0x0f) | (data << 4);
+				vrom_bank[2] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[2] = vrom_bank[2] * 64;
+				break;
+			case 0x4002:
+				/* Switch 1k vrom at $0c00 - low 4 bits */
+				vrom_bank[3] = (vrom_bank[3] & 0xf0) | (data & 0x0f);
+				vrom_bank[3] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[3] = vrom_bank[3] * 64;
+				break;
+			case 0x4003:
+				/* Switch 1k vrom at $0c00 - high 4 bits */
+				vrom_bank[3] = (vrom_bank[3] & 0x0f) | (data << 4);
+				vrom_bank[3] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[3] = vrom_bank[3] * 64;
+				break;
+			case 0x5000:
+				/* Switch 1k vrom at $1000 - low 4 bits */
+				vrom_bank[4] = (vrom_bank[4] & 0xf0) | (data & 0x0f);
+				vrom_bank[4] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[4] = vrom_bank[4] * 64;
+				break;
+			case 0x5001:
+				/* Switch 1k vrom at $1000 - high 4 bits */
+				vrom_bank[4] = (vrom_bank[4] & 0x0f) | (data << 4);
+				vrom_bank[4] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[4] = vrom_bank[4] * 64;
+				break;
+			case 0x5002:
+				/* Switch 1k vrom at $1400 - low 4 bits */
+				vrom_bank[5] = (vrom_bank[5] & 0xf0) | (data & 0x0f);
+				vrom_bank[5] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[5] = vrom_bank[5] * 64;
+				break;
+			case 0x5003:
+				/* Switch 1k vrom at $1400 - high 4 bits */
+				vrom_bank[5] = (vrom_bank[5] & 0x0f) | (data << 4);
+				vrom_bank[5] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[5] = vrom_bank[5] * 64;
+				break;
+			case 0x6000:
+				/* Switch 1k vrom at $1800 - low 4 bits */
+				vrom_bank[6] = (vrom_bank[6] & 0xf0) | (data & 0x0f);
+				vrom_bank[6] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[6] = vrom_bank[6] * 64;
+				break;
+			case 0x6001:
+				/* Switch 1k vrom at $1800 - high 4 bits */
+				vrom_bank[6] = (vrom_bank[6] & 0x0f) | (data << 4);
+				vrom_bank[6] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[6] = vrom_bank[6] * 64;
+				break;
+			case 0x6002:
+				/* Switch 1k vrom at $1c00 - low 4 bits */
+				vrom_bank[7] = (vrom_bank[7] & 0xf0) | (data & 0x0f);
+				vrom_bank[7] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[7] = vrom_bank[7] * 64;
+				break;
+			case 0x6003:
+				/* Switch 1k vrom at $1c00 - high 4 bits */
+				vrom_bank[7] = (vrom_bank[7] & 0x0f) | (data << 4);
+				vrom_bank[7] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[7] = vrom_bank[7] * 64;
+				break;
+			case 0x7000:
+				IRQ_count_latch = data;
+				break;
+			case 0x7001:
+				IRQ_enable = IRQ_enable_latch;
+				break;
+			case 0x7002:
+				IRQ_count = IRQ_count_latch;
+				IRQ_enable = data & 0x02;
+				IRQ_enable_latch = data & 0x01;
+				break;
+	
+			default:
+				logerror("konami_vrc2b_w uncaught offset: %04x value: %02x\n", offset, data);
+				break;
+		}
+            }
+        };
+	
+	public static WriteHandlerPtr konami_vrc4_w  = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+		switch (offset & 0x7007)
+		{
+			case 0x0000:
+				/* Switch 8k bank at $8000 */
+				data &= ((_nes.prg_chunks[0] << 1) - 1);
+				cpu_setbank (1, new UBytePtr(_nes.rom, 0x2000 * (data) + 0x10000));
+				break;
+			case 0x1000:
+				switch (data & 0x03)
+				{
+					case 0x00: ppu_mirror_v (); break;
+					case 0x01: ppu_mirror_h (); break;
+					case 0x02: ppu_mirror_low (); break;
+					case 0x03: ppu_mirror_high (); break;
+				}
+				break;
+	
+			/* $1001 is uncaught */
+	
+			case 0x2000:
+				/* Switch 8k bank at $a000 */
+				data &= ((_nes.prg_chunks[0] << 1) - 1);
+				cpu_setbank (2, new UBytePtr(_nes.rom, 0x2000 * (data) + 0x10000));
+				break;
+			case 0x3000:
+				/* Switch 1k vrom at $0000 - low 4 bits */
+				vrom_bank[0] = (vrom_bank[0] & 0xf0) | (data & 0x0f);
+				vrom_bank[0] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[0] = vrom_bank[0] * 64;
+				break;
+			case 0x3002:
+				/* Switch 1k vrom at $0000 - high 4 bits */
+				vrom_bank[0] = (vrom_bank[0] & 0x0f) | (data << 4);
+				vrom_bank[0] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[0] = vrom_bank[0] * 64;
+				break;
+			case 0x3001:
+			case 0x3004:
+				/* Switch 1k vrom at $0400 - low 4 bits */
+				vrom_bank[1] = (vrom_bank[1] & 0xf0) | (data & 0x0f);
+				vrom_bank[1] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[1] = vrom_bank[1] * 64;
+				break;
+			case 0x3003:
+			case 0x3006:
+				/* Switch 1k vrom at $0400 - high 4 bits */
+				vrom_bank[1] = (vrom_bank[1] & 0x0f) | (data << 4);
+				vrom_bank[1] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[1] = vrom_bank[1] * 64;
+				break;
+			case 0x4000:
+				/* Switch 1k vrom at $0800 - low 4 bits */
+				vrom_bank[2] = (vrom_bank[2] & 0xf0) | (data & 0x0f);
+				vrom_bank[2] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[2] = vrom_bank[2] * 64;
+				break;
+			case 0x4002:
+				/* Switch 1k vrom at $0800 - high 4 bits */
+				vrom_bank[2] = (vrom_bank[2] & 0x0f) | (data << 4);
+				vrom_bank[2] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[2] = vrom_bank[2] * 64;
+				break;
+			case 0x4001:
+			case 0x4004:
+				/* Switch 1k vrom at $0c00 - low 4 bits */
+				vrom_bank[3] = (vrom_bank[3] & 0xf0) | (data & 0x0f);
+				vrom_bank[3] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[3] = vrom_bank[3] * 64;
+				break;
+			case 0x4003:
+			case 0x4006:
+				/* Switch 1k vrom at $0c00 - high 4 bits */
+				vrom_bank[3] = (vrom_bank[3] & 0x0f) | (data << 4);
+				vrom_bank[3] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[3] = vrom_bank[3] * 64;
+				break;
+			case 0x5000:
+				/* Switch 1k vrom at $1000 - low 4 bits */
+				vrom_bank[4] = (vrom_bank[4] & 0xf0) | (data & 0x0f);
+				vrom_bank[4] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[4] = vrom_bank[4] * 64;
+				break;
+			case 0x5002:
+				/* Switch 1k vrom at $1000 - high 4 bits */
+				vrom_bank[4] = (vrom_bank[4] & 0x0f) | (data << 4);
+				vrom_bank[4] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[4] = vrom_bank[4] * 64;
+				break;
+			case 0x5001:
+			case 0x5004:
+				/* Switch 1k vrom at $1400 - low 4 bits */
+				vrom_bank[5] = (vrom_bank[5] & 0xf0) | (data & 0x0f);
+				vrom_bank[5] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[5] = vrom_bank[5] * 64;
+				break;
+			case 0x5003:
+			case 0x5006:
+				/* Switch 1k vrom at $1400 - high 4 bits */
+				vrom_bank[5] = (vrom_bank[5] & 0x0f) | (data << 4);
+				vrom_bank[5] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[5] = vrom_bank[5] * 64;
+				break;
+			case 0x6000:
+				/* Switch 1k vrom at $1800 - low 4 bits */
+				vrom_bank[6] = (vrom_bank[6] & 0xf0) | (data & 0x0f);
+				vrom_bank[6] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[6] = vrom_bank[6] * 64;
+				break;
+			case 0x6002:
+				/* Switch 1k vrom at $1800 - high 4 bits */
+				vrom_bank[6] = (vrom_bank[6] & 0x0f) | (data << 4);
+				vrom_bank[6] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[6] = vrom_bank[6] * 64;
+				break;
+			case 0x6001:
+			case 0x6004:
+				/* Switch 1k vrom at $1c00 - low 4 bits */
+				vrom_bank[7] = (vrom_bank[7] & 0xf0) | (data & 0x0f);
+				vrom_bank[7] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[7] = vrom_bank[7] * 64;
+				break;
+			case 0x6003:
+			case 0x6006:
+				/* Switch 1k vrom at $1c00 - high 4 bits */
+				vrom_bank[7] = (vrom_bank[7] & 0x0f) | (data << 4);
+				vrom_bank[7] &= ((_nes.chr_chunks[0] << 3) - 1);
+				nes_vram[7] = vrom_bank[7] * 64;
+				break;
+			case 0x7000:
+				/* Set low 4 bits of latch */
+				IRQ_count_latch &= ~0x0f;
+				IRQ_count_latch |= data & 0x0f;
+	//			logerror("konami_vrc4 irq_latch low: %02x\n", IRQ_count_latch);
+				break;
+			case 0x7002:
+			case 0x7040:
+				/* Set high 4 bits of latch */
+				IRQ_count_latch &= ~0xf0;
+				IRQ_count_latch |= (data << 4) & 0xf0;
+	//			logerror("konami_vrc4 irq_latch high: %02x\n", IRQ_count_latch);
+				break;
+			case 0x7004:
+			case 0x7001:
+			case 0x7080:
+				IRQ_count = IRQ_count_latch;
+				IRQ_enable = data & 0x02;
+				IRQ_enable_latch = data & 0x01;
+	//			logerror("konami_vrc4 irq_count set: %02x\n", IRQ_count);
+	//			logerror("konami_vrc4 enable: %02x\n", IRQ_enable);
+	//			logerror("konami_vrc4 enable latch: %02x\n", IRQ_enable_latch);
+				break;
+			case 0x7006:
+			case 0x7003:
+			case 0x70c0:
+				IRQ_enable = IRQ_enable_latch;
+	//			logerror("konami_vrc4 enable copy: %02x\n", IRQ_enable);
+				break;
+			default:
+				logerror("konami_vrc4_w uncaught offset: %04x value: %02x\n", offset, data);
+				break;
+		}
+            }
+        };
+	
+	public static WriteHandlerPtr konami_vrc6a_w  = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+	//	logerror("konami_vrc6_w offset: %04x, data: %02x, scanline: %d\n", offset, data, current_scanline);
+	
+		switch (offset & 0x7003)
+		{
+			case 0: case 1: case 2: case 3:
+				/* Switch 16k bank at $8000 */
+				prg16_89ab (data);
+				break;
+	
+	/* $1000-$1002 = sound regs */
+	/* $2000-$2002 = sound regs */
+	/* $3000-$3002 = sound regs */
+	
+			case 0x3003:
+				switch (data & 0x0c)
+				{
+					case 0x00: ppu_mirror_v (); break;
+					case 0x04: ppu_mirror_h (); break;
+					case 0x08: ppu_mirror_low (); break;
+					case 0x0c: ppu_mirror_high (); break;
+				}
+				break;
+			case 0x4000: case 0x4001: case 0x4002: case 0x4003:
+				/* Switch 8k bank at $c000 */
+				prg8_cd (data);
+				break;
+			case 0x5000:
+				/* Switch 1k VROM at $0000 */
+				nes_vram [0] = data * 64;
+				break;
+			case 0x5001:
+				/* Switch 1k VROM at $0400 */
+				nes_vram [1] = data * 64;
+				break;
+			case 0x5002:
+				/* Switch 1k VROM at $0800 */
+				nes_vram [2] = data * 64;
+				break;
+			case 0x5003:
+				/* Switch 1k VROM at $0c00 */
+				nes_vram [3] = data * 64;
+				break;
+			case 0x6000:
+				/* Switch 1k VROM at $1000 */
+				nes_vram [4] = data * 64;
+				break;
+			case 0x6001:
+				/* Switch 1k VROM at $1400 */
+				nes_vram [5] = data * 64;
+				break;
+			case 0x6002:
+				/* Switch 1k VROM at $1800 */
+				nes_vram [6] = data * 64;
+				break;
+			case 0x6003:
+				/* Switch 1k VROM at $1c00 */
+				nes_vram [7] = data * 64;
+				break;
+			case 0x7000:
+				IRQ_count_latch = data;
+				break;
+			case 0x7001:
+				IRQ_count = IRQ_count_latch;
+				IRQ_enable = data & 0x02;
+				IRQ_enable_latch = data & 0x01;
+				break;
+			case 0x7002:
+				IRQ_enable = IRQ_enable_latch;
+				break;
+	
+			default:
+				logerror("konami_vrc6_w uncaught addr: %04x value: %02x\n", offset + 0x8000, data);
+				break;
+		}
+            }
+        };
+	
+	public static WriteHandlerPtr konami_vrc6b_w  = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+	//	logerror("konami_vrc6_w offset: %04x, data: %02x, scanline: %d\n", offset, data, current_scanline);
+	
+		switch (offset & 0x7003)
+		{
+			case 0: case 1: case 2: case 3:
+				/* Switch 16k bank at $8000 */
+				prg16_89ab (data);
+				break;
+	
+	/* $1000-$1002 = sound regs */
+	/* $2000-$2002 = sound regs */
+	/* $3000-$3002 = sound regs */
+	
+			case 0x3003:
+				switch (data & 0x0c)
+				{
+					case 0x00: ppu_mirror_v (); break;
+					case 0x04: ppu_mirror_h (); break;
+					case 0x08: ppu_mirror_low (); break;
+					case 0x0c: ppu_mirror_high (); break;
+				}
+				break;
+			case 0x4000: case 0x4001: case 0x4002: case 0x4003:
+				/* Switch 8k bank at $c000 */
+				prg8_cd (data);
+				break;
+			case 0x5000:
+				/* Switch 1k VROM at $0000 */
+				nes_vram [0] = data * 64;
+				break;
+			case 0x5002:
+				/* Switch 1k VROM at $0400 */
+				nes_vram [1] = data * 64;
+				break;
+			case 0x5001:
+				/* Switch 1k VROM at $0800 */
+				nes_vram [2] = data * 64;
+				break;
+			case 0x5003:
+				/* Switch 1k VROM at $0c00 */
+				nes_vram [3] = data * 64;
+				break;
+			case 0x6000:
+				/* Switch 1k VROM at $1000 */
+				nes_vram [4] = data * 64;
+				break;
+			case 0x6002:
+				/* Switch 1k VROM at $1400 */
+				nes_vram [5] = data * 64;
+				break;
+			case 0x6001:
+				/* Switch 1k VROM at $1800 */
+				nes_vram [6] = data * 64;
+				break;
+			case 0x6003:
+				/* Switch 1k VROM at $1c00 */
+				nes_vram [7] = data * 64;
+				break;
+			case 0x7000:
+				IRQ_count_latch = data;
+				break;
+			case 0x7001:
+				IRQ_enable = IRQ_enable_latch;
+				break;
+			case 0x7002:
+				IRQ_count = IRQ_count_latch;
+				IRQ_enable = data & 0x02;
+				IRQ_enable_latch = data & 0x01;
+				break;
+	
+			default:
+				logerror("konami_vrc6_w uncaught addr: %04x value: %02x\n", offset + 0x8000, data);
+				break;
+		}
+            }
+        };
+        
+        static int bankSel;
+	
+	public static WriteHandlerPtr mapper32_w  = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+		
+	//	logerror("mapper32_w offset: %04x, data: %02x, scanline: %d\n", offset, data, current_scanline);
+	
+		switch (offset & 0x7000)
+		{
+			case 0x0000:
+				/* Switch 8k bank at $8000 or $c000 */
+				if (bankSel != 0)
+					prg8_cd (data);
+				else
+					prg8_89 (data);
+				break;
+			case 0x1000:
+				bankSel = data & 0x02;
+				if ((data & 0x01) != 0)
+					ppu_mirror_h ();
+				else
+					ppu_mirror_v ();
+				break;
+			case 0x2000:
+				/* Switch 8k bank at $A000 */
+				prg8_ab (data);
+				break;
+			case 0x3000:
+				/* Switch 1k VROM at $1000 */
+				nes_vram[offset & 0x07] = data * 64;
+				break;
+			default:
+				logerror("Uncaught mapper 32 write, addr: %04x value: %02x\n", offset + 0x8000, data);
+				break;
+		}
+            }
+        };
+	
+	public static WriteHandlerPtr mapper33_w  = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+	
+	//	logerror("mapper33_w offset: %04x, data: %02x, scanline: %d\n", offset, data, current_scanline);
+	
+		switch (offset & 0x7003)
+		{
+			case 0x0000:
+				/* Switch 8k bank at $8000 */
+				data &= ((_nes.prg_chunks[0] << 1) - 1);
+				cpu_setbank (1, new UBytePtr(_nes.rom, 0x2000 * (data) + 0x10000));
+				break;
+			case 0x0001:
+				/* Switch 8k bank at $A000 */
+				data &= ((_nes.prg_chunks[0] << 1) - 1);
+				cpu_setbank (2, new UBytePtr(_nes.rom, 0x2000 * (data) + 0x10000));
+				break;
+			case 0x0002:
+				/* Switch 2k VROM at $0000 */
+				nes_vram [0] = data * 128;
+				nes_vram [1] = nes_vram [0] + 64;
+				break;
+			case 0x0003:
+				/* Switch 2k VROM at $0800 */
+				nes_vram [2] = data * 128;
+				nes_vram [3] = nes_vram [2] + 64;
+				break;
+			case 0x2000:
+				/* Switch 1k VROM at $1000 */
+				nes_vram [4] = data * 64;
+				break;
+			case 0x2001:
+				/* Switch 1k VROM at $1400 */
+				nes_vram [5] = data * 64;
+				break;
+			case 0x2002:
+				/* Switch 1k VROM at $1800 */
+				nes_vram [6] = data * 64;
+				break;
+			case 0x2003:
+				/* Switch 1k VROM at $1c00 */
+				nes_vram [7] = data * 64;
+				break;
+			default:
+				logerror("Uncaught mapper 33 write, addr: %04x value: %02x\n", offset + 0x8000, data);
+				break;
+		}
+            }
+        };
+	
+	public static WriteHandlerPtr mapper34_m_w  = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+		logerror("mapper34_m_w, offset: %04x, data: %02x\n", offset, data);
+	
+		switch (offset)
+		{
+			case 0x1ffd:
+				/* Switch 32k prg banks */
+				prg32 (data);
+				break;
+			case 0x1ffe:
+				/* Switch 4k VNES_ROM at 0x0000 */
+				chr4_0 (data);
+				break;
+			case 0x1fff:
+				/* Switch 4k VNES_ROM at 0x1000 */
+				chr4_4 (data);
+				break;
+		}
+            }
+        };
+	
+	public static WriteHandlerPtr mapper34_w  = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+		/* This portion of the mapper is nearly identical to Mapper 7, except no one-screen mirroring */
+		/* Deadly Towers is really a Mapper 34 game - the demo screens look wrong using mapper 7. */
+		logerror("Mapper 34 w, offset: %04x, data: %02x\n", offset, data);
+	
+		prg32 (data);
+            }
+        };
+	
+	public static ReadHandlerPtr mapper40_irq = new ReadHandlerPtr() {
+            @Override
+            public int handler(int scanline) {
+		int ret = M6502_INT_NONE;
+	
+		/* Decrement & check the IRQ scanline counter */
+		if (IRQ_enable != 0)
+		{
+			if (--IRQ_count == 0)
+			{
+				ret = M6502_INT_IRQ;
+			}
+		}
+	
+		return ret;
+            }
+        };
+	
+	public static WriteHandlerPtr mapper40_w = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+		logerror("mapper40_w, offset: %04x, data: %02x\n", offset, data);
+	
+		switch (offset & 0x6000)
+		{
+			case 0x0000:
+				IRQ_enable = 0;
+				IRQ_count = 37; /* Hardcoded scanline scroll */
+				break;
+			case 0x2000:
+				IRQ_enable = 1;
+				break;
+			case 0x6000:
+				/* Game runs code between banks, use slow but sure method */
+				prg8_cd (data);
+				break;
+		}
+            }
+        };
+	
+	public static WriteHandlerPtr mapper41_m_w = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
 /*TODO*///	#ifdef LOG_MMC
 /*TODO*///		logerror("mapper41_m_w, offset: %04x, data: %02x\n", offset, data);
 /*TODO*///	#endif
-/*TODO*///		if ((offset & 0x20) != 0)
-/*TODO*///			ppu_mirror_h();
-/*TODO*///		else
-/*TODO*///			ppu_mirror_v();
-/*TODO*///	
-/*TODO*///		mapper41_reg2 = offset & 0x04;
-/*TODO*///		mapper41_chr &= ~0x0c;
-/*TODO*///		mapper41_chr |= (offset & 0x18) >> 1;
-/*TODO*///		prg32 (offset & 0x07);
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void mapper41_w (int offset, int data)
-/*TODO*///	{
+		if ((offset & 0x20) != 0)
+			ppu_mirror_h();
+		else
+			ppu_mirror_v();
+	
+		mapper41_reg2 = offset & 0x04;
+		mapper41_chr &= ~0x0c;
+		mapper41_chr |= (offset & 0x18) >> 1;
+		prg32 (offset & 0x07);
+            }
+        };
+	
+	public static WriteHandlerPtr mapper41_w = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
 /*TODO*///	#ifdef LOG_MMC
 /*TODO*///		logerror("mapper41_w, offset: %04x, data: %02x\n", offset, data);
 /*TODO*///	#endif
-/*TODO*///	
-/*TODO*///		if (mapper41_reg2 != 0)
-/*TODO*///		{
-/*TODO*///			mapper41_chr &= ~0x03;
-/*TODO*///			mapper41_chr |= data & 0x03;
-/*TODO*///			chr8(mapper41_chr);
-/*TODO*///		}
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void mapper64_m_w (int offset, int data)
-/*TODO*///	{
-/*TODO*///		logerror("mapper64_m_w, offset: %04x, data: %02x\n", offset, data);
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void mapper64_w (int offset, int data)
-/*TODO*///	{
-/*TODO*///		static int cmd = 0;
-/*TODO*///		static int chr = 0;
-/*TODO*///		static int select_high;
-/*TODO*///		static int page;
-/*TODO*///	
-/*TODO*///	/* TODO: something in the IRQ handling hoses Skull & Crossbones */
-/*TODO*///	
-/*TODO*///	//	logerror("mapper64_w offset: %04x, data: %02x, scanline: %d\n", offset, data, current_scanline);
-/*TODO*///	
-/*TODO*///		switch (offset & 0x7001)
-/*TODO*///		{
-/*TODO*///			case 0x0000:
-/*TODO*///	//			logerror("Mapper 64 0x8000 write value: %02x\n",data);
-/*TODO*///				cmd = data & 0x0f;
-/*TODO*///				if ((data & 0x80) != 0)
-/*TODO*///					chr = 0x1000;
-/*TODO*///				else
-/*TODO*///					chr = 0x0000;
-/*TODO*///	
-/*TODO*///				if ((data & 0x10) != 0)
-/*TODO*///				{
-/*TODO*///					nes_vram[1] = nes_vram[3] = 0;
-/*TODO*///				}
-/*TODO*///	
-/*TODO*///				page = chr >> 10;
-/*TODO*///				/* Toggle switching between $8000/$A000/$C000 and $A000/$C000/$8000 */
-/*TODO*///				if (select_high != (data & 0x40))
-/*TODO*///				{
-/*TODO*///					if ((data & 0x40) != 0)
-/*TODO*///					{
-/*TODO*///						cpu_setbank (1, &nes.rom[(nes.prg_chunks-1) * 0x4000 + 0x10000]);
-/*TODO*///					}
-/*TODO*///					else
-/*TODO*///					{
-/*TODO*///						cpu_setbank (3, &nes.rom[(nes.prg_chunks-1) * 0x4000 + 0x10000]);
-/*TODO*///					}
-/*TODO*///				}
-/*TODO*///	
-/*TODO*///				select_high = data & 0x40;
-/*TODO*///	//			logerror("   Mapper 64 select_high: %02x\n", select_high);
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///			case 0x0001:
-/*TODO*///				switch (cmd)
-/*TODO*///				{
-/*TODO*///					case 0:
-/*TODO*///						nes_vram [page] = data * 64;
-/*TODO*///						nes_vram [page+1] = nes_vram [page] + 64;
-/*TODO*///						break;
-/*TODO*///	
-/*TODO*///					case 1:
-/*TODO*///						nes_vram [page ^ 2] = data * 64;
-/*TODO*///						nes_vram [(page ^ 2)+1] = nes_vram [page ^ 2] + 64;
-/*TODO*///						break;
-/*TODO*///	
-/*TODO*///					case 2:
-/*TODO*///						nes_vram [page ^ 4] = data * 64;
-/*TODO*///						break;
-/*TODO*///	
-/*TODO*///					case 3:
-/*TODO*///						nes_vram [page ^ 5] = data * 64;
-/*TODO*///						break;
-/*TODO*///	
-/*TODO*///					case 4:
-/*TODO*///						nes_vram [page ^ 6] = data * 64;
-/*TODO*///						break;
-/*TODO*///	
-/*TODO*///					case 5:
-/*TODO*///						nes_vram [page ^ 7] = data * 64;
-/*TODO*///						break;
-/*TODO*///	
-/*TODO*///					case 6:
-/*TODO*///						/* These damn games will go to great lengths to switch to banks which are outside the valid range */
-/*TODO*///						data &= prg_mask;
-/*TODO*///						if (select_high != 0)
-/*TODO*///						{
-/*TODO*///							cpu_setbank (2, &nes.rom[0x2000 * (data) + 0x10000]);
-/*TODO*///	//						logerror("     Mapper 64 switch ($A000) cmd 6 value: %02x\n", data);
-/*TODO*///						}
-/*TODO*///						else
-/*TODO*///						{
-/*TODO*///							cpu_setbank (1, &nes.rom[0x2000 * (data) + 0x10000]);
-/*TODO*///	//						logerror("     Mapper 64 switch ($8000) cmd 6 value: %02x\n", data);
-/*TODO*///						}
-/*TODO*///						break;
-/*TODO*///					case 7:
-/*TODO*///						data &= prg_mask;
-/*TODO*///						if (select_high != 0)
-/*TODO*///						{
-/*TODO*///							cpu_setbank (3, &nes.rom[0x2000 * (data) + 0x10000]);
-/*TODO*///	//						logerror("     Mapper 64 switch ($C000) cmd 7 value: %02x\n", data);
-/*TODO*///						}
-/*TODO*///						else
-/*TODO*///						{
-/*TODO*///							cpu_setbank (2, &nes.rom[0x2000 * (data) + 0x10000]);
-/*TODO*///	//						logerror("     Mapper 64 switch ($A000) cmd 7 value: %02x\n", data);
-/*TODO*///						}
-/*TODO*///						break;
-/*TODO*///					case 8:
-/*TODO*///						/* Switch 1k VROM at $0400 */
-/*TODO*///						nes_vram [1] = data * 64;
-/*TODO*///						break;
-/*TODO*///					case 9:
-/*TODO*///						/* Switch 1k VROM at $0C00 */
-/*TODO*///						nes_vram [3] = data * 64;
-/*TODO*///						break;
-/*TODO*///					case 15:
-/*TODO*///						data &= prg_mask;
-/*TODO*///						if (select_high != 0)
-/*TODO*///						{
-/*TODO*///							cpu_setbank (1, &nes.rom[0x2000 * (data) + 0x10000]);
-/*TODO*///	//						logerror("     Mapper 64 switch ($C000) cmd 15 value: %02x\n", data);
-/*TODO*///						}
-/*TODO*///						else
-/*TODO*///						{
-/*TODO*///							cpu_setbank (3, &nes.rom[0x2000 * (data) + 0x10000]);
-/*TODO*///	//						logerror("     Mapper 64 switch ($A000) cmd 15 value: %02x\n", data);
-/*TODO*///						}
-/*TODO*///						break;
-/*TODO*///				}
-/*TODO*///				cmd = 16;
-/*TODO*///				break;
-/*TODO*///			case 0x2000:
-/*TODO*///				/* Not sure if the one-screen mirroring applies to this mapper */
-/*TODO*///				if ((data & 0x40) != 0)
-/*TODO*///					ppu_mirror_high();
-/*TODO*///				else
-/*TODO*///				{
-/*TODO*///					if ((data & 0x01) != 0)
-/*TODO*///						ppu_mirror_h();
-/*TODO*///					else
-/*TODO*///						ppu_mirror_v();
-/*TODO*///				}
-/*TODO*///				break;
-/*TODO*///			case 0x4000: /* $c000 - IRQ scanline counter */
-/*TODO*///				IRQ_count = data;
-/*TODO*///				logerror("     MMC3 copy/set irq latch: %02x\n", data);
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///			case 0x4001: /* $c001 - IRQ scanline latch */
-/*TODO*///				IRQ_count_latch = data;
-/*TODO*///				logerror("     MMC3 set latch: %02x\n", data);
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///			case 0x6000: /* $e000 - Disable IRQs */
-/*TODO*///				IRQ_enable = 0;
-/*TODO*///				logerror("     MMC3 disable irqs: %02x\n", data);
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///			case 0x6001: /* $e001 - Enable IRQs */
-/*TODO*///				IRQ_enable = 1;
-/*TODO*///				logerror("     MMC3 enable irqs: %02x\n", data);
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///			default:
-/*TODO*///				logerror("Mapper 64 addr: %04x value: %02x\n", offset + 0x8000, data);
-/*TODO*///				break;
-/*TODO*///		}
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	int irem_irq (int scanline)
-/*TODO*///	{
-/*TODO*///		int ret = M6502_INT_NONE;
-/*TODO*///	
-/*TODO*///		/* Increment & check the IRQ scanline counter */
-/*TODO*///		if (IRQ_enable != 0)
-/*TODO*///		{
-/*TODO*///			if (--IRQ_count == 0)
-/*TODO*///				ret = M6502_INT_IRQ;
-/*TODO*///		}
-/*TODO*///	
-/*TODO*///		return ret;
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	
-/*TODO*///	
-/*TODO*///	static void mapper65_w (int offset, int data)
-/*TODO*///	{
-/*TODO*///		switch (offset & 0x7007)
-/*TODO*///		{
-/*TODO*///			case 0x0000:
-/*TODO*///				/* Switch 8k bank at $8000 */
-/*TODO*///				data &= prg_mask;
-/*TODO*///				cpu_setbank (1, &nes.rom[0x2000 * (data) + 0x10000]);
+	
+		if (mapper41_reg2 != 0)
+		{
+			mapper41_chr &= ~0x03;
+			mapper41_chr |= data & 0x03;
+			chr8(mapper41_chr);
+		}
+            }
+        };
+	
+	public static WriteHandlerPtr mapper64_m_w = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+		logerror("mapper64_m_w, offset: %04x, data: %02x\n", offset, data);
+            }
+        };
+        
+        static int cmd = 0;
+        static int chr = 0;
+        static int select_high;
+        static int page;
+	
+	public static WriteHandlerPtr mapper64_w = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+		
+	
+	/* TODO: something in the IRQ handling hoses Skull & Crossbones */
+	
+	//	logerror("mapper64_w offset: %04x, data: %02x, scanline: %d\n", offset, data, current_scanline);
+	
+		switch (offset & 0x7001)
+		{
+			case 0x0000:
+	//			logerror("Mapper 64 0x8000 write value: %02x\n",data);
+				cmd = data & 0x0f;
+				if ((data & 0x80) != 0)
+					chr = 0x1000;
+				else
+					chr = 0x0000;
+	
+				if ((data & 0x10) != 0)
+				{
+					nes_vram[1] = nes_vram[3] = 0;
+				}
+	
+				page = chr >> 10;
+				/* Toggle switching between $8000/$A000/$C000 and $A000/$C000/$8000 */
+				if (select_high != (data & 0x40))
+				{
+					if ((data & 0x40) != 0)
+					{
+						cpu_setbank (1, new UBytePtr(_nes.rom, (_nes.prg_chunks[0]-1) * 0x4000 + 0x10000));
+					}
+					else
+					{
+						cpu_setbank (3, new UBytePtr(_nes.rom, (_nes.prg_chunks[0]-1) * 0x4000 + 0x10000));
+					}
+				}
+	
+				select_high = data & 0x40;
+	//			logerror("   Mapper 64 select_high: %02x\n", select_high);
+				break;
+	
+			case 0x0001:
+				switch (cmd)
+				{
+					case 0:
+						nes_vram [page] = data * 64;
+						nes_vram [page+1] = nes_vram [page] + 64;
+						break;
+	
+					case 1:
+						nes_vram [page ^ 2] = data * 64;
+						nes_vram [(page ^ 2)+1] = nes_vram [page ^ 2] + 64;
+						break;
+	
+					case 2:
+						nes_vram [page ^ 4] = data * 64;
+						break;
+	
+					case 3:
+						nes_vram [page ^ 5] = data * 64;
+						break;
+	
+					case 4:
+						nes_vram [page ^ 6] = data * 64;
+						break;
+	
+					case 5:
+						nes_vram [page ^ 7] = data * 64;
+						break;
+	
+					case 6:
+						/* These damn games will go to great lengths to switch to banks which are outside the valid range */
+						data &= prg_mask;
+						if (select_high != 0)
+						{
+							cpu_setbank (2, new UBytePtr(_nes.rom, 0x2000 * (data) + 0x10000));
+	//						logerror("     Mapper 64 switch ($A000) cmd 6 value: %02x\n", data);
+						}
+						else
+						{
+							cpu_setbank (1, new UBytePtr(_nes.rom, 0x2000 * (data) + 0x10000));
+	//						logerror("     Mapper 64 switch ($8000) cmd 6 value: %02x\n", data);
+						}
+						break;
+					case 7:
+						data &= prg_mask;
+						if (select_high != 0)
+						{
+							cpu_setbank (3, new UBytePtr(_nes.rom, 0x2000 * (data) + 0x10000));
+	//						logerror("     Mapper 64 switch ($C000) cmd 7 value: %02x\n", data);
+						}
+						else
+						{
+							cpu_setbank (2, new UBytePtr(_nes.rom, 0x2000 * (data) + 0x10000));
+	//						logerror("     Mapper 64 switch ($A000) cmd 7 value: %02x\n", data);
+						}
+						break;
+					case 8:
+						/* Switch 1k VROM at $0400 */
+						nes_vram [1] = data * 64;
+						break;
+					case 9:
+						/* Switch 1k VROM at $0C00 */
+						nes_vram [3] = data * 64;
+						break;
+					case 15:
+						data &= prg_mask;
+						if (select_high != 0)
+						{
+							cpu_setbank (1, new UBytePtr(_nes.rom, 0x2000 * (data) + 0x10000));
+	//						logerror("     Mapper 64 switch ($C000) cmd 15 value: %02x\n", data);
+						}
+						else
+						{
+							cpu_setbank (3, new UBytePtr(_nes.rom, 0x2000 * (data) + 0x10000));
+	//						logerror("     Mapper 64 switch ($A000) cmd 15 value: %02x\n", data);
+						}
+						break;
+				}
+				cmd = 16;
+				break;
+			case 0x2000:
+				/* Not sure if the one-screen mirroring applies to this mapper */
+				if ((data & 0x40) != 0)
+					ppu_mirror_high();
+				else
+				{
+					if ((data & 0x01) != 0)
+						ppu_mirror_h();
+					else
+						ppu_mirror_v();
+				}
+				break;
+			case 0x4000: /* $c000 - IRQ scanline counter */
+				IRQ_count = data;
+				logerror("     MMC3 copy/set irq latch: %02x\n", data);
+				break;
+	
+			case 0x4001: /* $c001 - IRQ scanline latch */
+				IRQ_count_latch = data;
+				logerror("     MMC3 set latch: %02x\n", data);
+				break;
+	
+			case 0x6000: /* $e000 - Disable IRQs */
+				IRQ_enable = 0;
+				logerror("     MMC3 disable irqs: %02x\n", data);
+				break;
+	
+			case 0x6001: /* $e001 - Enable IRQs */
+				IRQ_enable = 1;
+				logerror("     MMC3 enable irqs: %02x\n", data);
+				break;
+	
+			default:
+				logerror("Mapper 64 addr: %04x value: %02x\n", offset + 0x8000, data);
+				break;
+		}
+            }
+        };
+	
+	public static ReadHandlerPtr irem_irq = new ReadHandlerPtr() {
+            @Override
+            public int handler(int scanline) {
+		int ret = M6502_INT_NONE;
+	
+		/* Increment & check the IRQ scanline counter */
+		if (IRQ_enable != 0)
+		{
+			if (--IRQ_count == 0)
+				ret = M6502_INT_IRQ;
+		}
+	
+		return ret;
+            }
+        };
+		
+	public static WriteHandlerPtr mapper65_w = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+		switch (offset & 0x7007)
+		{
+			case 0x0000:
+				/* Switch 8k bank at $8000 */
+				data &= prg_mask;
+				cpu_setbank (1, new UBytePtr(_nes.rom, 0x2000 * (data) + 0x10000));
 /*TODO*///	#ifdef LOG_MMC
 /*TODO*///				logerror("     Mapper 65 switch ($8000) value: %02x\n", data);
 /*TODO*///	#endif
-/*TODO*///				break;
-/*TODO*///			case 0x1001:
-/*TODO*///				if ((data & 0x80) != 0)
-/*TODO*///					ppu_mirror_h();
-/*TODO*///				else
-/*TODO*///					ppu_mirror_v();
-/*TODO*///				break;
-/*TODO*///			case 0x1005:
-/*TODO*///				IRQ_count = data << 1;
-/*TODO*///				break;
-/*TODO*///			case 0x1006:
-/*TODO*///				IRQ_enable = IRQ_count;
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///			case 0x2000:
-/*TODO*///				/* Switch 8k bank at $a000 */
-/*TODO*///				data &= prg_mask;
-/*TODO*///				cpu_setbank (2, &nes.rom[0x2000 * (data) + 0x10000]);
+				break;
+			case 0x1001:
+				if ((data & 0x80) != 0)
+					ppu_mirror_h();
+				else
+					ppu_mirror_v();
+				break;
+			case 0x1005:
+				IRQ_count = data << 1;
+				break;
+			case 0x1006:
+				IRQ_enable = IRQ_count;
+				break;
+	
+			case 0x2000:
+				/* Switch 8k bank at $a000 */
+				data &= prg_mask;
+				cpu_setbank (2, new UBytePtr(_nes.rom, 0x2000 * (data) + 0x10000));
 /*TODO*///	#ifdef LOG_MMC
 /*TODO*///				logerror("     Mapper 65 switch ($a000) value: %02x\n", data);
 /*TODO*///	#endif
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///			case 0x3000:
-/*TODO*///				/* Switch 1k VROM at $0000 */
-/*TODO*///				nes_vram [0] = data * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x3001:
-/*TODO*///				/* Switch 1k VROM at $0400 */
-/*TODO*///				nes_vram [1] = data * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x3002:
-/*TODO*///				/* Switch 1k VROM at $0800 */
-/*TODO*///				nes_vram [2] = data * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x3003:
-/*TODO*///				/* Switch 1k VROM at $0c00 */
-/*TODO*///				nes_vram [3] = data * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x3004:
-/*TODO*///				/* Switch 1k VROM at $1000 */
-/*TODO*///				nes_vram [4] = data * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x3005:
-/*TODO*///				/* Switch 1k VROM at $1400 */
-/*TODO*///				nes_vram [5] = data * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x3006:
-/*TODO*///				/* Switch 1k VROM at $1800 */
-/*TODO*///				nes_vram [6] = data * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x3007:
-/*TODO*///				/* Switch 1k VROM at $1c00 */
-/*TODO*///				nes_vram [7] = data * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x4000:
-/*TODO*///				/* Switch 8k bank at $c000 */
-/*TODO*///				data &= prg_mask;
-/*TODO*///				cpu_setbank (3, &nes.rom[0x2000 * (data) + 0x10000]);
+				break;
+	
+			case 0x3000:
+				/* Switch 1k VROM at $0000 */
+				nes_vram [0] = data * 64;
+				break;
+			case 0x3001:
+				/* Switch 1k VROM at $0400 */
+				nes_vram [1] = data * 64;
+				break;
+			case 0x3002:
+				/* Switch 1k VROM at $0800 */
+				nes_vram [2] = data * 64;
+				break;
+			case 0x3003:
+				/* Switch 1k VROM at $0c00 */
+				nes_vram [3] = data * 64;
+				break;
+			case 0x3004:
+				/* Switch 1k VROM at $1000 */
+				nes_vram [4] = data * 64;
+				break;
+			case 0x3005:
+				/* Switch 1k VROM at $1400 */
+				nes_vram [5] = data * 64;
+				break;
+			case 0x3006:
+				/* Switch 1k VROM at $1800 */
+				nes_vram [6] = data * 64;
+				break;
+			case 0x3007:
+				/* Switch 1k VROM at $1c00 */
+				nes_vram [7] = data * 64;
+				break;
+			case 0x4000:
+				/* Switch 8k bank at $c000 */
+				data &= prg_mask;
+				cpu_setbank (3, new UBytePtr(_nes.rom, 0x2000 * (data) + 0x10000));
 /*TODO*///	#ifdef LOG_MMC
 /*TODO*///				logerror("     Mapper 65 switch ($c000) value: %02x\n", data);
 /*TODO*///	#endif
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///			default:
-/*TODO*///				logerror("Mapper 65 addr: %04x value: %02x\n", offset + 0x8000, data);
-/*TODO*///				break;
-/*TODO*///		}
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void mapper66_w (int offset, int data)
-/*TODO*///	{
+				break;
+	
+			default:
+				logerror("Mapper 65 addr: %04x value: %02x\n", offset + 0x8000, data);
+				break;
+		}
+            }
+        };
+	
+	public static WriteHandlerPtr mapper66_w = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
 /*TODO*///	#ifdef LOG_MMC
 /*TODO*///		logerror("* Mapper 66 switch, offset %04x, data: %02x\n", offset, data);
 /*TODO*///	#endif
-/*TODO*///	
-/*TODO*///		prg32 ((data & 0x30) >> 4);
-/*TODO*///		chr8 (data & 0x03);
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	int sunsoft_irq (int scanline)
-/*TODO*///	{
-/*TODO*///		int ret = M6502_INT_NONE;
-/*TODO*///	
-/*TODO*///		/* 114 is the number of cycles per scanline */
-/*TODO*///		/* TODO: change to reflect the actual number of cycles spent */
-/*TODO*///	
-/*TODO*///		if (IRQ_enable != 0)
-/*TODO*///		{
-/*TODO*///			if (IRQ_count <= 114)
-/*TODO*///			{
-/*TODO*///				ret = M6502_INT_IRQ;
-/*TODO*///			}
-/*TODO*///			IRQ_count -= 114;
-/*TODO*///		}
-/*TODO*///	
-/*TODO*///		return ret;
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	
-/*TODO*///	static void mapper67_w (int offset, int data)
-/*TODO*///	{
-/*TODO*///	//	logerror("mapper67_w, offset %04x, data: %02x\n", offset, data);
-/*TODO*///		switch (offset & 0x7801)
-/*TODO*///		{
-/*TODO*///	//		case 0x0000: /* IRQ disable? */
-/*TODO*///	//			IRQ_enable = 0;
-/*TODO*///	//			break;
-/*TODO*///			case 0x0800:
-/*TODO*///				chr2_0 (data);
-/*TODO*///				break;
-/*TODO*///			case 0x1800:
-/*TODO*///				chr2_2 (data);
-/*TODO*///				break;
-/*TODO*///			case 0x2800:
-/*TODO*///				chr2_4 (data);
-/*TODO*///				break;
-/*TODO*///			case 0x3800:
-/*TODO*///				chr2_6 (data);
-/*TODO*///				break;
-/*TODO*///	//		case 0x4800:
-/*TODO*///	//			nes_vram[5] = data * 64;
-/*TODO*///	//			break;
-/*TODO*///			case 0x4801:
-/*TODO*///				/* IRQ count? */
-/*TODO*///				IRQ_count = IRQ_count_latch;
-/*TODO*///				IRQ_count_latch = data;
-/*TODO*///				break;
-/*TODO*///	//		case 0x5800:
-/*TODO*///	//			chr4_0 (data);
-/*TODO*///	//			break;
-/*TODO*///			case 0x5801:
-/*TODO*///				IRQ_enable = data;
-/*TODO*///				break;
-/*TODO*///	//		case 0x6800:
-/*TODO*///	//			chr4_4 (data);
-/*TODO*///	//			break;
-/*TODO*///			case 0x7800:
-/*TODO*///				prg16_89ab (data);
-/*TODO*///				break;
-/*TODO*///			default:
-/*TODO*///				logerror("mapper67_w uncaught offset: %04x, data: %02x\n", offset, data);
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///		}
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void mapper68_mirror (int m68_mirror, int m0, int m1)
-/*TODO*///	{
-/*TODO*///		/* The 0x20000 (128k) offset is a magic number */
-/*TODO*///		#define M68_OFFSET 0x20000
-/*TODO*///	
-/*TODO*///		switch (m68_mirror)
-/*TODO*///		{
-/*TODO*///			case 0x00: ppu_mirror_h (); break;
-/*TODO*///			case 0x01: ppu_mirror_v (); break;
-/*TODO*///			case 0x02: ppu_mirror_low (); break;
-/*TODO*///			case 0x03: ppu_mirror_high (); break;
-/*TODO*///			case 0x10:
-/*TODO*///				ppu_mirror_custom_vrom (0, (m0 << 10) + M68_OFFSET);
-/*TODO*///				ppu_mirror_custom_vrom (1, (m1 << 10) + M68_OFFSET);
-/*TODO*///				ppu_mirror_custom_vrom (2, (m0 << 10) + M68_OFFSET);
-/*TODO*///				ppu_mirror_custom_vrom (3, (m1 << 10) + M68_OFFSET);
-/*TODO*///				break;
-/*TODO*///			case 0x11:
-/*TODO*///				ppu_mirror_custom_vrom (0, (m0 << 10) + M68_OFFSET);
-/*TODO*///				ppu_mirror_custom_vrom (1, (m0 << 10) + M68_OFFSET);
-/*TODO*///				ppu_mirror_custom_vrom (2, (m1 << 10) + M68_OFFSET);
-/*TODO*///				ppu_mirror_custom_vrom (3, (m1 << 10) + M68_OFFSET);
-/*TODO*///				break;
-/*TODO*///			case 0x12:
-/*TODO*///				ppu_mirror_custom_vrom (0, (m0 << 10) + M68_OFFSET);
-/*TODO*///				ppu_mirror_custom_vrom (1, (m0 << 10) + M68_OFFSET);
-/*TODO*///				ppu_mirror_custom_vrom (2, (m0 << 10) + M68_OFFSET);
-/*TODO*///				ppu_mirror_custom_vrom (3, (m0 << 10) + M68_OFFSET);
-/*TODO*///				break;
-/*TODO*///			case 0x13:
-/*TODO*///				ppu_mirror_custom_vrom (0, (m1 << 10) + M68_OFFSET);
-/*TODO*///				ppu_mirror_custom_vrom (1, (m1 << 10) + M68_OFFSET);
-/*TODO*///				ppu_mirror_custom_vrom (2, (m1 << 10) + M68_OFFSET);
-/*TODO*///				ppu_mirror_custom_vrom (3, (m1 << 10) + M68_OFFSET);
-/*TODO*///				break;
-/*TODO*///		}
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void mapper68_w (int offset, int data)
-/*TODO*///	{
-/*TODO*///		static int m68_mirror;
-/*TODO*///		static int m0, m1;
-/*TODO*///	
-/*TODO*///		switch (offset & 0x7000)
-/*TODO*///		{
-/*TODO*///			case 0x0000:
-/*TODO*///				/* Switch 2k VROM at $0000 */
-/*TODO*///				chr2_0 (data);
-/*TODO*///				break;
-/*TODO*///			case 0x1000:
-/*TODO*///				/* Switch 2k VROM at $0800 */
-/*TODO*///				chr2_2 (data);
-/*TODO*///				break;
-/*TODO*///			case 0x2000:
-/*TODO*///				/* Switch 2k VROM at $1000 */
-/*TODO*///				chr2_4 (data);
-/*TODO*///				break;
-/*TODO*///			case 0x3000:
-/*TODO*///				/* Switch 2k VROM at $1800 */
-/*TODO*///				chr2_6 (data);
-/*TODO*///				break;
-/*TODO*///			case 0x4000:
-/*TODO*///				m0 = data;
-/*TODO*///				mapper68_mirror (m68_mirror, m0, m1);
-/*TODO*///				break;
-/*TODO*///			case 0x5000:
-/*TODO*///				m1 = data;
-/*TODO*///				mapper68_mirror (m68_mirror, m0, m1);
-/*TODO*///				break;
-/*TODO*///			case 0x6000:
-/*TODO*///				m68_mirror = data & 0x13;
-/*TODO*///				mapper68_mirror (m68_mirror, m0, m1);
-/*TODO*///				break;
-/*TODO*///			case 0x7000:
-/*TODO*///				prg16_89ab (data);
-/*TODO*///				break;
-/*TODO*///			default:
-/*TODO*///				logerror("mapper68_w uncaught offset: %04x, data: %02x\n", offset, data);
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///		}
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void mapper69_w (int offset, int data)
-/*TODO*///	{
-/*TODO*///		static int cmd = 0;
-/*TODO*///	
-/*TODO*///	//	logerror("mapper69_w offset: %04x, data: %02x, scanline: %d\n", offset, data, current_scanline);
-/*TODO*///	
-/*TODO*///		switch (offset & 0x7000)
-/*TODO*///		{
-/*TODO*///			case 0x0000:
-/*TODO*///				cmd = data & 0x0f;
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///			case 0x2000:
-/*TODO*///				switch (cmd)
-/*TODO*///				{
-/*TODO*///					case 0: case 1: case 2: case 3: case 4: case 5: case 6: case 7:
-/*TODO*///						nes_vram [cmd] = data * 64;
-/*TODO*///						break;
-/*TODO*///	
-/*TODO*///					/* TODO: deal with bankswitching/write-protecting the mid-mapper area */
-/*TODO*///					case 8:
+	
+		prg32 ((data & 0x30) >> 4);
+		chr8 (data & 0x03);
+            }
+        };
+	
+	public static ReadHandlerPtr sunsoft_irq = new ReadHandlerPtr() {
+            @Override
+            public int handler(int scanline) {
+		int ret = M6502_INT_NONE;
+	
+		/* 114 is the number of cycles per scanline */
+		/* TODO: change to reflect the actual number of cycles spent */
+	
+		if (IRQ_enable != 0)
+		{
+			if (IRQ_count <= 114)
+			{
+				ret = M6502_INT_IRQ;
+			}
+			IRQ_count -= 114;
+		}
+	
+		return ret;
+            }
+        };
+	
+	public static WriteHandlerPtr mapper67_w = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+	//	logerror("mapper67_w, offset %04x, data: %02x\n", offset, data);
+		switch (offset & 0x7801)
+		{
+	//		case 0x0000: /* IRQ disable? */
+	//			IRQ_enable = 0;
+	//			break;
+			case 0x0800:
+				chr2_0 (data);
+				break;
+			case 0x1800:
+				chr2_2 (data);
+				break;
+			case 0x2800:
+				chr2_4 (data);
+				break;
+			case 0x3800:
+				chr2_6 (data);
+				break;
+	//		case 0x4800:
+	//			nes_vram[5] = data * 64;
+	//			break;
+			case 0x4801:
+				/* IRQ count? */
+				IRQ_count = IRQ_count_latch;
+				IRQ_count_latch = data;
+				break;
+	//		case 0x5800:
+	//			chr4_0 (data);
+	//			break;
+			case 0x5801:
+				IRQ_enable = data;
+				break;
+	//		case 0x6800:
+	//			chr4_4 (data);
+	//			break;
+			case 0x7800:
+				prg16_89ab (data);
+				break;
+			default:
+				logerror("mapper67_w uncaught offset: %04x, data: %02x\n", offset, data);
+				break;
+	
+		}
+            }
+        };
+	
+	static void mapper68_mirror (int m68_mirror, int m0, int m1)
+	{
+		/* The 0x20000 (128k) offset is a magic number */
+		int M68_OFFSET = 0x20000;
+	
+		switch (m68_mirror)
+		{
+			case 0x00: ppu_mirror_h (); break;
+			case 0x01: ppu_mirror_v (); break;
+			case 0x02: ppu_mirror_low (); break;
+			case 0x03: ppu_mirror_high (); break;
+			case 0x10:
+				ppu_mirror_custom_vrom (0, (m0 << 10) + M68_OFFSET);
+				ppu_mirror_custom_vrom (1, (m1 << 10) + M68_OFFSET);
+				ppu_mirror_custom_vrom (2, (m0 << 10) + M68_OFFSET);
+				ppu_mirror_custom_vrom (3, (m1 << 10) + M68_OFFSET);
+				break;
+			case 0x11:
+				ppu_mirror_custom_vrom (0, (m0 << 10) + M68_OFFSET);
+				ppu_mirror_custom_vrom (1, (m0 << 10) + M68_OFFSET);
+				ppu_mirror_custom_vrom (2, (m1 << 10) + M68_OFFSET);
+				ppu_mirror_custom_vrom (3, (m1 << 10) + M68_OFFSET);
+				break;
+			case 0x12:
+				ppu_mirror_custom_vrom (0, (m0 << 10) + M68_OFFSET);
+				ppu_mirror_custom_vrom (1, (m0 << 10) + M68_OFFSET);
+				ppu_mirror_custom_vrom (2, (m0 << 10) + M68_OFFSET);
+				ppu_mirror_custom_vrom (3, (m0 << 10) + M68_OFFSET);
+				break;
+			case 0x13:
+				ppu_mirror_custom_vrom (0, (m1 << 10) + M68_OFFSET);
+				ppu_mirror_custom_vrom (1, (m1 << 10) + M68_OFFSET);
+				ppu_mirror_custom_vrom (2, (m1 << 10) + M68_OFFSET);
+				ppu_mirror_custom_vrom (3, (m1 << 10) + M68_OFFSET);
+				break;
+		}
+	}
+        
+        static int m68_mirror;
+        static int m0, m1;
+	
+	public static WriteHandlerPtr mapper68_w = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+		
+		switch (offset & 0x7000)
+		{
+			case 0x0000:
+				/* Switch 2k VROM at $0000 */
+				chr2_0 (data);
+				break;
+			case 0x1000:
+				/* Switch 2k VROM at $0800 */
+				chr2_2 (data);
+				break;
+			case 0x2000:
+				/* Switch 2k VROM at $1000 */
+				chr2_4 (data);
+				break;
+			case 0x3000:
+				/* Switch 2k VROM at $1800 */
+				chr2_6 (data);
+				break;
+			case 0x4000:
+				m0 = data;
+				mapper68_mirror (m68_mirror, m0, m1);
+				break;
+			case 0x5000:
+				m1 = data;
+				mapper68_mirror (m68_mirror, m0, m1);
+				break;
+			case 0x6000:
+				m68_mirror = data & 0x13;
+				mapper68_mirror (m68_mirror, m0, m1);
+				break;
+			case 0x7000:
+				prg16_89ab (data);
+				break;
+			default:
+				logerror("mapper68_w uncaught offset: %04x, data: %02x\n", offset, data);
+				break;
+	
+		}
+            }
+        };
+        
+        static int cmd69 = 0;
+	
+	public static WriteHandlerPtr mapper69_w = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+		
+	
+	//	logerror("mapper69_w offset: %04x, data: %02x, scanline: %d\n", offset, data, current_scanline);
+	
+		switch (offset & 0x7000)
+		{
+			case 0x0000:
+				cmd69 = data & 0x0f;
+				break;
+	
+			case 0x2000:
+				switch (cmd69)
+				{
+					case 0: case 1: case 2: case 3: case 4: case 5: case 6: case 7:
+						nes_vram [cmd69] = data * 64;
+						break;
+	
+					/* TODO: deal with bankswitching/write-protecting the mid-mapper area */
+					case 8:
 /*TODO*///	#if 0
 /*TODO*///						if (!(data & 0x40))
 /*TODO*///						{
@@ -3364,740 +3459,772 @@ public class nes_mmc {
 /*TODO*///						}
 /*TODO*///						else
 /*TODO*///	#endif
-/*TODO*///							logerror ("mapper69_w, cmd 8, data: %02x\n", data);
-/*TODO*///						break;
-/*TODO*///	
-/*TODO*///					case 9:
-/*TODO*///						prg8_89 (data);
-/*TODO*///						break;
-/*TODO*///					case 10:
-/*TODO*///						prg8_ab (data);
-/*TODO*///						break;
-/*TODO*///					case 11:
-/*TODO*///						prg8_cd (data);
-/*TODO*///						break;
-/*TODO*///					case 12:
-/*TODO*///						switch (data & 0x03)
-/*TODO*///						{
-/*TODO*///							case 0x00: ppu_mirror_v (); break;
-/*TODO*///							case 0x01: ppu_mirror_h (); break;
-/*TODO*///							case 0x02: ppu_mirror_low (); break;
-/*TODO*///							case 0x03: ppu_mirror_high (); break;
-/*TODO*///						}
-/*TODO*///						break;
-/*TODO*///					case 13:
-/*TODO*///						IRQ_enable = data;
-/*TODO*///						break;
-/*TODO*///					case 14:
-/*TODO*///						IRQ_count = (IRQ_count & 0xff00) | data;
-/*TODO*///						break;
-/*TODO*///					case 15:
-/*TODO*///						IRQ_count = (IRQ_count & 0x00ff) | (data << 8);
-/*TODO*///						break;
-/*TODO*///				}
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///			default:
-/*TODO*///				logerror("mapper69_w uncaught %04x value: %02x\n", offset + 0x8000, data);
-/*TODO*///				break;
-/*TODO*///		}
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void mapper70_w (int offset, int data)
-/*TODO*///	{
-/*TODO*///		logerror("mapper70_w offset %04x, data: %02x\n", offset, data);
-/*TODO*///	
-/*TODO*///		/* TODO: is the data being written irrelevant? */
-/*TODO*///	
-/*TODO*///		prg16_89ab ((data & 0xf0) >> 4);
-/*TODO*///	
-/*TODO*///		chr8 (data & 0x0f);
-/*TODO*///	
+							logerror ("mapper69_w, cmd69 8, data: %02x\n", data);
+						break;
+	
+					case 9:
+						prg8_89 (data);
+						break;
+					case 10:
+						prg8_ab (data);
+						break;
+					case 11:
+						prg8_cd (data);
+						break;
+					case 12:
+						switch (data & 0x03)
+						{
+							case 0x00: ppu_mirror_v (); break;
+							case 0x01: ppu_mirror_h (); break;
+							case 0x02: ppu_mirror_low (); break;
+							case 0x03: ppu_mirror_high (); break;
+						}
+						break;
+					case 13:
+						IRQ_enable = data;
+						break;
+					case 14:
+						IRQ_count = (IRQ_count & 0xff00) | data;
+						break;
+					case 15:
+						IRQ_count = (IRQ_count & 0x00ff) | (data << 8);
+						break;
+				}
+				break;
+	
+			default:
+				logerror("mapper69_w uncaught %04x value: %02x\n", offset + 0x8000, data);
+				break;
+		}
+            }
+        };
+	
+	public static WriteHandlerPtr mapper70_w = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+		logerror("mapper70_w offset %04x, data: %02x\n", offset, data);
+	
+		/* TODO: is the data being written irrelevant? */
+	
+		prg16_89ab ((data & 0xf0) >> 4);
+	
+		chr8 (data & 0x0f);
+	
 /*TODO*///	#if 1
-/*TODO*///		if ((data & 0x80) != 0)
-/*TODO*///	//		ppu_mirror_h();
-/*TODO*///			ppu_mirror_high();
-/*TODO*///		else
-/*TODO*///	//		ppu_mirror_v();
-/*TODO*///			ppu_mirror_low();
+		if ((data & 0x80) != 0)
+	//		ppu_mirror_h();
+			ppu_mirror_high();
+		else
+	//		ppu_mirror_v();
+			ppu_mirror_low();
 /*TODO*///	#endif
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void mapper71_m_w (int offset, int data)
-/*TODO*///	{
-/*TODO*///		logerror("mapper71_m_w offset: %04x, data: %02x\n", offset, data);
-/*TODO*///	
-/*TODO*///		prg16_89ab (data);
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void mapper71_w (int offset, int data)
-/*TODO*///	{
-/*TODO*///		logerror("mapper71_w offset: %04x, data: %02x\n", offset, data);
-/*TODO*///	
-/*TODO*///		if (offset >= 0x4000)
-/*TODO*///			prg16_89ab (data);
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void mapper72_w (int offset, int data)
-/*TODO*///	{
-/*TODO*///		logerror("mapper72_w, offset %04x, data: %02x\n", offset, data);
-/*TODO*///		/* This routine is busted */
-/*TODO*///	
-/*TODO*///	//	prg32 ((data & 0xf0) >> 4);
-/*TODO*///	//	prg16_89ab (data & 0x0f);
-/*TODO*///	//	prg16_89ab ((data & 0xf0) >> 4);
-/*TODO*///	//	chr8 (data & 0x0f);
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void mapper73_w (int offset, int data)
-/*TODO*///	{
-/*TODO*///		switch (offset & 0x7000)
-/*TODO*///		{
-/*TODO*///			case 0x0000:
-/*TODO*///			case 0x1000:
-/*TODO*///				/* dunno which address controls these */
-/*TODO*///				IRQ_count_latch = data;
-/*TODO*///				IRQ_enable_latch = data;
-/*TODO*///				break;
-/*TODO*///			case 0x2000:
-/*TODO*///				IRQ_enable = data;
-/*TODO*///				break;
-/*TODO*///			case 0x3000:
-/*TODO*///				IRQ_count &= ~0x0f;
-/*TODO*///				IRQ_count |= data & 0x0f;
-/*TODO*///				break;
-/*TODO*///			case 0x4000:
-/*TODO*///				IRQ_count &= ~0xf0;
-/*TODO*///				IRQ_count |= (data & 0x0f) << 4;
-/*TODO*///				break;
-/*TODO*///			case 0x7000:
-/*TODO*///				prg16_89ab (data);
-/*TODO*///				break;
-/*TODO*///			default:
-/*TODO*///				logerror("mapper73_w uncaught, offset %04x, data: %02x\n", offset, data);
-/*TODO*///				break;
-/*TODO*///		}
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	
-/*TODO*///	static void mapper75_w (int offset, int data)
-/*TODO*///	{
-/*TODO*///		logerror("mapper75_w, offset: %04x, data: %02x\n", offset, data);
-/*TODO*///		switch (offset & 0x7000)
-/*TODO*///		{
-/*TODO*///			case 0x0000:
-/*TODO*///				prg8_89 (data);
-/*TODO*///				break;
-/*TODO*///			case 0x1000: /* TODO: verify */
-/*TODO*///				if ((data & 0x01) != 0)
-/*TODO*///					ppu_mirror_h();
-/*TODO*///				else
-/*TODO*///					ppu_mirror_v();
-/*TODO*///				/* vrom banking as well? */
-/*TODO*///				break;
-/*TODO*///			case 0x2000:
-/*TODO*///				prg8_ab (data);
-/*TODO*///				break;
-/*TODO*///			case 0x4000:
-/*TODO*///				prg8_cd (data);
-/*TODO*///				break;
-/*TODO*///			case 0x6000:
-/*TODO*///				chr4_0 (data);
-/*TODO*///				break;
-/*TODO*///			case 0x7000:
-/*TODO*///				chr4_4 (data);
-/*TODO*///				break;
-/*TODO*///		}
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void mapper77_w (int offset, int data)
-/*TODO*///	{
-/*TODO*///	
-/*TODO*///	/* Mapper is busted */
-/*TODO*///	
-/*TODO*///		logerror("mapper77_w, offset: %04x, data: %02x\n", offset, data);
-/*TODO*///		switch (offset)
-/*TODO*///		{
-/*TODO*///			case 0x7c84:
-/*TODO*///	//			prg8_89 (data);
-/*TODO*///				break;
-/*TODO*///			case 0x7c86:
-/*TODO*///	//			prg8_89 (data);
-/*TODO*///	//			prg8_ab (data);
-/*TODO*///	//			prg8_cd (data);
-/*TODO*///	//			prg16_89ab (data); /* red screen */
-/*TODO*///	//			prg16_cdef (data);
-/*TODO*///				break;
-/*TODO*///		}
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void mapper78_w (int offset, int data)
-/*TODO*///	{
-/*TODO*///		logerror("mapper78_w, offset: %04x, data: %02x\n", offset, data);
-/*TODO*///		/* Switch 8k VROM bank */
-/*TODO*///		chr8 ((data & 0xf0) >> 4);
-/*TODO*///	
-/*TODO*///		/* Switch 16k ROM bank */
-/*TODO*///		prg16_89ab (data & 0x0f);
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void mapper79_l_w (int offset, int data)
-/*TODO*///	{
-/*TODO*///		logerror("mapper79_l_w: %04x:%02x\n", offset, data);
-/*TODO*///	
-/*TODO*///		if ((offset-0x100) & 0x0100)
-/*TODO*///		{
-/*TODO*///			/* Select 8k VROM bank */
-/*TODO*///			chr8 (data & 0x07);
-/*TODO*///	
-/*TODO*///			/* Select 32k ROM bank? */
-/*TODO*///			prg32 ((data & 0x08) >> 3);
-/*TODO*///		}
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void mapper79_w (int offset, int data)
-/*TODO*///	{
-/*TODO*///		logerror("mapper79_w, offset: %04x, data: %02x\n", offset, data);
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void mapper80_m_w (int offset, int data)
-/*TODO*///	{
-/*TODO*///		logerror("mapper80_m_w, offset: %04x, data: %02x\n", offset, data);
-/*TODO*///	
-/*TODO*///		switch (offset)
-/*TODO*///		{
-/*TODO*///			case 0x1ef0:
-/*TODO*///				/* Switch 2k VROM at $0000 */
-/*TODO*///				chr2_0 ((data & 0x7f) >> 1);
-/*TODO*///				if ((data & 0x80) != 0)
-/*TODO*///				{
-/*TODO*///					/* Horizontal, $2000-$27ff */
-/*TODO*///					ppu_mirror_custom (0, 0);
-/*TODO*///					ppu_mirror_custom (1, 0);
-/*TODO*///				}
-/*TODO*///				else
-/*TODO*///				{
-/*TODO*///					/* Vertical, $2000-$27ff */
-/*TODO*///					ppu_mirror_custom (0, 0);
-/*TODO*///					ppu_mirror_custom (1, 1);
-/*TODO*///				}
-/*TODO*///				break;
-/*TODO*///			case 0x1ef1:
-/*TODO*///				/* Switch 2k VROM at $0000 */
-/*TODO*///				chr2_2 ((data & 0x7f) >> 1);
-/*TODO*///				if ((data & 0x80) != 0)
-/*TODO*///				{
-/*TODO*///					/* Horizontal, $2800-$2fff */
-/*TODO*///					ppu_mirror_custom (2, 0);
-/*TODO*///					ppu_mirror_custom (3, 0);
-/*TODO*///				}
-/*TODO*///				else
-/*TODO*///				{
-/*TODO*///					/* Vertical, $2800-$2fff */
-/*TODO*///					ppu_mirror_custom (2, 0);
-/*TODO*///					ppu_mirror_custom (3, 1);
-/*TODO*///				}
-/*TODO*///				break;
-/*TODO*///			case 0x1ef2:
-/*TODO*///				/* Switch 1k VROM at $1000 */
-/*TODO*///				nes_vram [4] = data * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x1ef3:
-/*TODO*///				/* Switch 1k VROM at $1400 */
-/*TODO*///				nes_vram [5] = data * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x1ef4:
-/*TODO*///				/* Switch 1k VROM at $1800 */
-/*TODO*///				nes_vram [6] = data * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x1ef5:
-/*TODO*///				/* Switch 1k VROM at $1c00 */
-/*TODO*///				nes_vram [7] = data * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x1efa: case 0x1efb:
-/*TODO*///				/* Switch 8k ROM at $8000 */
-/*TODO*///				prg8_89 (data);
-/*TODO*///				break;
-/*TODO*///			case 0x1efc: case 0x1efd:
-/*TODO*///				/* Switch 8k ROM at $a000 */
-/*TODO*///				prg8_ab (data);
-/*TODO*///				break;
-/*TODO*///			case 0x1efe: case 0x1eff:
-/*TODO*///				/* Switch 8k ROM at $c000 */
-/*TODO*///				prg8_cd (data);
-/*TODO*///				break;
-/*TODO*///			default:
-/*TODO*///				logerror("mapper80_m_w uncaught addr: %04x, value: %02x\n", offset + 0x6000, data);
-/*TODO*///				break;
-/*TODO*///		}
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void mapper82_m_w (int offset, int data)
-/*TODO*///	{
-/*TODO*///		static int vrom_switch;
-/*TODO*///	
-/*TODO*///		/* This mapper has problems */
-/*TODO*///	
-/*TODO*///		logerror("mapper82_m_w, offset: %04x, data: %02x\n", offset, data);
-/*TODO*///	
-/*TODO*///		switch (offset)
-/*TODO*///		{
-/*TODO*///			case 0x1ef0:
-/*TODO*///				/* Switch 2k VROM at $0000 or $1000 */
-/*TODO*///				if (vrom_switch != 0)
-/*TODO*///					chr2_4 (data);
-/*TODO*///				else
-/*TODO*///					chr2_0 (data);
-/*TODO*///				break;
-/*TODO*///			case 0x1ef1:
-/*TODO*///				/* Switch 2k VROM at $0800 or $1800 */
-/*TODO*///				if (vrom_switch != 0)
-/*TODO*///					chr2_6 (data);
-/*TODO*///				else
-/*TODO*///					chr2_2 (data);
-/*TODO*///				break;
-/*TODO*///			case 0x1ef2:
-/*TODO*///				/* Switch 1k VROM at $1000 */
-/*TODO*///				nes_vram [4 ^ vrom_switch] = data * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x1ef3:
-/*TODO*///				/* Switch 1k VROM at $1400 */
-/*TODO*///				nes_vram [5 ^ vrom_switch] = data * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x1ef4:
-/*TODO*///				/* Switch 1k VROM at $1800 */
-/*TODO*///				nes_vram [6 ^ vrom_switch] = data * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x1ef5:
-/*TODO*///				/* Switch 1k VROM at $1c00 */
-/*TODO*///				nes_vram [7 ^ vrom_switch] = data * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x1ef6:
-/*TODO*///				vrom_switch = !((data & 0x02) << 1);
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///			case 0x1efa:
-/*TODO*///				/* Switch 8k ROM at $8000 */
-/*TODO*///				prg8_89 (data >> 2);
-/*TODO*///				break;
-/*TODO*///			case 0x1efb:
-/*TODO*///				/* Switch 8k ROM at $a000 */
-/*TODO*///				prg8_ab (data >> 2);
-/*TODO*///				break;
-/*TODO*///			case 0x1efc:
-/*TODO*///				/* Switch 8k ROM at $c000 */
-/*TODO*///				prg8_cd (data >> 2);
-/*TODO*///				break;
-/*TODO*///			default:
-/*TODO*///				logerror("mapper82_m_w uncaught addr: %04x, value: %02x\n", offset + 0x6000, data);
-/*TODO*///				break;
-/*TODO*///		}
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void konami_vrc7_w (int offset, int data)
-/*TODO*///	{
-/*TODO*///	//	logerror("konami_vrc7_w offset: %04x, data: %02x, scanline: %d\n", offset, data, current_scanline);
-/*TODO*///	
-/*TODO*///		switch (offset & 0x7018)
-/*TODO*///		{
-/*TODO*///			case 0x0000:
-/*TODO*///				/* Switch 8k bank at $8000 */
-/*TODO*///				prg8_89 (data);
-/*TODO*///				break;
-/*TODO*///			case 0x0008: case 0x0010: case 0x0018:
-/*TODO*///				/* Switch 8k bank at $a000 */
-/*TODO*///				prg8_ab (data);
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///			case 0x1000:
-/*TODO*///				/* Switch 8k bank at $c000 */
-/*TODO*///				prg8_cd (data);
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///	/* TODO: there are sound regs in here */
-/*TODO*///	
-/*TODO*///			case 0x2000:
-/*TODO*///				/* Switch 1k VROM at $0000 */
-/*TODO*///				nes_vram [0] = data * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x2008: case 0x2010: case 0x2018:
-/*TODO*///				/* Switch 1k VROM at $0400 */
-/*TODO*///				nes_vram [1] = data * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x3000:
-/*TODO*///				/* Switch 1k VROM at $0800 */
-/*TODO*///				nes_vram [2] = data * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x3008: case 0x3010: case 0x3018:
-/*TODO*///				/* Switch 1k VROM at $0c00 */
-/*TODO*///				nes_vram [3] = data * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x4000:
-/*TODO*///				/* Switch 1k VROM at $1000 */
-/*TODO*///				nes_vram [4] = data * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x4008: case 0x4010: case 0x4018:
-/*TODO*///				/* Switch 1k VROM at $1400 */
-/*TODO*///				nes_vram [5] = data * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x5000:
-/*TODO*///				/* Switch 1k VROM at $1800 */
-/*TODO*///				nes_vram [6] = data * 64;
-/*TODO*///				break;
-/*TODO*///			case 0x5008: case 0x5010: case 0x5018:
-/*TODO*///				/* Switch 1k VROM at $1c00 */
-/*TODO*///				nes_vram [7] = data * 64;
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///			case 0x6000:
-/*TODO*///				switch (data & 0x03)
-/*TODO*///				{
-/*TODO*///					case 0x00: ppu_mirror_v (); break;
-/*TODO*///					case 0x01: ppu_mirror_h (); break;
-/*TODO*///					case 0x02: ppu_mirror_low (); break;
-/*TODO*///					case 0x03: ppu_mirror_high (); break;
-/*TODO*///				}
-/*TODO*///				break;
-/*TODO*///			case 0x6008: case 0x6010: case 0x6018:
-/*TODO*///				IRQ_count_latch = data;
-/*TODO*///				break;
-/*TODO*///			case 0x7000:
-/*TODO*///				IRQ_count = IRQ_count_latch;
-/*TODO*///				IRQ_enable = data & 0x02;
-/*TODO*///				IRQ_enable_latch = data & 0x01;
-/*TODO*///				break;
-/*TODO*///			case 0x7008: case 0x7010: case 0x7018:
-/*TODO*///				IRQ_enable = IRQ_enable_latch;
-/*TODO*///				break;
-/*TODO*///	
-/*TODO*///			default:
-/*TODO*///				logerror("konami_vrc7_w uncaught addr: %04x value: %02x\n", offset + 0x8000, data);
-/*TODO*///				break;
-/*TODO*///		}
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void mapper86_w (int offset, int data)
-/*TODO*///	{
-/*TODO*///		logerror("mapper86_w, offset: %04x, data: %02x\n", offset, data);
-/*TODO*///		switch (offset)
-/*TODO*///		{
-/*TODO*///			case 0x7541:
-/*TODO*///				prg16_89ab (data >> 4);
-/*TODO*///	//			prg16_cdef (data >> 4);
-/*TODO*///				break;
-/*TODO*///			case 0x7d41:
-/*TODO*///	//			prg16_89ab (data >> 4);
-/*TODO*///	//			prg16_cdef (data >> 4);
-/*TODO*///				break;
-/*TODO*///		}
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void mapper87_m_w (int offset, int data)
-/*TODO*///	{
-/*TODO*///		logerror("mapper87_m_w %04x:%02x\n", offset, data);
-/*TODO*///	
-/*TODO*///		/* TODO: verify */
-/*TODO*///		chr8 (data >> 1);
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void mapper91_m_w (int offset, int data)
-/*TODO*///	{
-/*TODO*///		logerror ("mapper91_m_w, offset: %04x, data: %02x\n", offset, data);
-/*TODO*///	
-/*TODO*///		switch (offset & 0x7000)
-/*TODO*///		{
-/*TODO*///			case 0x0000:
-/*TODO*///				switch (offset & 0x03)
-/*TODO*///				{
-/*TODO*///					case 0x00: chr2_0 (data); break;
-/*TODO*///					case 0x01: chr2_2 (data); break;
-/*TODO*///					case 0x02: chr2_4 (data); break;
-/*TODO*///					case 0x03: chr2_6 (data); break;
-/*TODO*///				}
-/*TODO*///				break;
-/*TODO*///			case 0x1000:
-/*TODO*///				switch (offset & 0x01)
-/*TODO*///				{
-/*TODO*///					case 0x00: prg8_89 (data); break;
-/*TODO*///					case 0x01: prg8_ab (data); break;
-/*TODO*///				}
-/*TODO*///				break;
-/*TODO*///			default:
-/*TODO*///				logerror("mapper91_m_w uncaught addr: %04x value: %02x\n", offset + 0x6000, data);
-/*TODO*///				break;
-/*TODO*///		}
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void mapper93_m_w (int offset, int data)
-/*TODO*///	{
+            }
+        };
+	
+	public static WriteHandlerPtr mapper71_m_w = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+		logerror("mapper71_m_w offset: %04x, data: %02x\n", offset, data);
+	
+		prg16_89ab (data);
+            }
+        };
+	
+	public static WriteHandlerPtr mapper71_w = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+		logerror("mapper71_w offset: %04x, data: %02x\n", offset, data);
+	
+		if (offset >= 0x4000)
+			prg16_89ab (data);
+            }
+        };
+	
+	public static WriteHandlerPtr mapper72_w = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+		logerror("mapper72_w, offset %04x, data: %02x\n", offset, data);
+		/* This routine is busted */
+	
+	//	prg32 ((data & 0xf0) >> 4);
+	//	prg16_89ab (data & 0x0f);
+	//	prg16_89ab ((data & 0xf0) >> 4);
+	//	chr8 (data & 0x0f);
+            }
+        };
+	
+	public static WriteHandlerPtr mapper73_w = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+		switch (offset & 0x7000)
+		{
+			case 0x0000:
+			case 0x1000:
+				/* dunno which address controls these */
+				IRQ_count_latch = data;
+				IRQ_enable_latch = data;
+				break;
+			case 0x2000:
+				IRQ_enable = data;
+				break;
+			case 0x3000:
+				IRQ_count &= ~0x0f;
+				IRQ_count |= data & 0x0f;
+				break;
+			case 0x4000:
+				IRQ_count &= ~0xf0;
+				IRQ_count |= (data & 0x0f) << 4;
+				break;
+			case 0x7000:
+				prg16_89ab (data);
+				break;
+			default:
+				logerror("mapper73_w uncaught, offset %04x, data: %02x\n", offset, data);
+				break;
+		}
+            }
+        };
+	
+	public static WriteHandlerPtr mapper75_w = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+		logerror("mapper75_w, offset: %04x, data: %02x\n", offset, data);
+		switch (offset & 0x7000)
+		{
+			case 0x0000:
+				prg8_89 (data);
+				break;
+			case 0x1000: /* TODO: verify */
+				if ((data & 0x01) != 0)
+					ppu_mirror_h();
+				else
+					ppu_mirror_v();
+				/* vrom banking as well? */
+				break;
+			case 0x2000:
+				prg8_ab (data);
+				break;
+			case 0x4000:
+				prg8_cd (data);
+				break;
+			case 0x6000:
+				chr4_0 (data);
+				break;
+			case 0x7000:
+				chr4_4 (data);
+				break;
+		}
+            }
+        };
+	
+	public static WriteHandlerPtr mapper77_w = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+	
+	/* Mapper is busted */
+	
+		logerror("mapper77_w, offset: %04x, data: %02x\n", offset, data);
+		switch (offset)
+		{
+			case 0x7c84:
+	//			prg8_89 (data);
+				break;
+			case 0x7c86:
+	//			prg8_89 (data);
+	//			prg8_ab (data);
+	//			prg8_cd (data);
+	//			prg16_89ab (data); /* red screen */
+	//			prg16_cdef (data);
+				break;
+		}
+            }
+        };
+	
+	public static WriteHandlerPtr mapper78_w = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+		logerror("mapper78_w, offset: %04x, data: %02x\n", offset, data);
+		/* Switch 8k VROM bank */
+		chr8 ((data & 0xf0) >> 4);
+	
+		/* Switch 16k ROM bank */
+		prg16_89ab (data & 0x0f);
+            }
+        };
+	
+	public static WriteHandlerPtr mapper79_l_w = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+		logerror("mapper79_l_w: %04x:%02x\n", offset, data);
+	
+		if (((offset-0x100) & 0x0100) != 0)
+		{
+			/* Select 8k VROM bank */
+			chr8 (data & 0x07);
+	
+			/* Select 32k ROM bank? */
+			prg32 ((data & 0x08) >> 3);
+		}
+            }
+        };
+	
+	public static WriteHandlerPtr mapper79_w = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+		logerror("mapper79_w, offset: %04x, data: %02x\n", offset, data);
+            }
+        };
+	
+	public static WriteHandlerPtr mapper80_m_w = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+		logerror("mapper80_m_w, offset: %04x, data: %02x\n", offset, data);
+	
+		switch (offset)
+		{
+			case 0x1ef0:
+				/* Switch 2k VROM at $0000 */
+				chr2_0 ((data & 0x7f) >> 1);
+				if ((data & 0x80) != 0)
+				{
+					/* Horizontal, $2000-$27ff */
+					ppu_mirror_custom (0, 0);
+					ppu_mirror_custom (1, 0);
+				}
+				else
+				{
+					/* Vertical, $2000-$27ff */
+					ppu_mirror_custom (0, 0);
+					ppu_mirror_custom (1, 1);
+				}
+				break;
+			case 0x1ef1:
+				/* Switch 2k VROM at $0000 */
+				chr2_2 ((data & 0x7f) >> 1);
+				if ((data & 0x80) != 0)
+				{
+					/* Horizontal, $2800-$2fff */
+					ppu_mirror_custom (2, 0);
+					ppu_mirror_custom (3, 0);
+				}
+				else
+				{
+					/* Vertical, $2800-$2fff */
+					ppu_mirror_custom (2, 0);
+					ppu_mirror_custom (3, 1);
+				}
+				break;
+			case 0x1ef2:
+				/* Switch 1k VROM at $1000 */
+				nes_vram [4] = data * 64;
+				break;
+			case 0x1ef3:
+				/* Switch 1k VROM at $1400 */
+				nes_vram [5] = data * 64;
+				break;
+			case 0x1ef4:
+				/* Switch 1k VROM at $1800 */
+				nes_vram [6] = data * 64;
+				break;
+			case 0x1ef5:
+				/* Switch 1k VROM at $1c00 */
+				nes_vram [7] = data * 64;
+				break;
+			case 0x1efa: case 0x1efb:
+				/* Switch 8k ROM at $8000 */
+				prg8_89 (data);
+				break;
+			case 0x1efc: case 0x1efd:
+				/* Switch 8k ROM at $a000 */
+				prg8_ab (data);
+				break;
+			case 0x1efe: case 0x1eff:
+				/* Switch 8k ROM at $c000 */
+				prg8_cd (data);
+				break;
+			default:
+				logerror("mapper80_m_w uncaught addr: %04x, value: %02x\n", offset + 0x6000, data);
+				break;
+		}
+            }
+        };
+        
+        static int vrom_switch;
+	
+	public static WriteHandlerPtr mapper82_m_w = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+		
+	
+		/* This mapper has problems */
+	
+		logerror("mapper82_m_w, offset: %04x, data: %02x\n", offset, data);
+	
+		switch (offset)
+		{
+			case 0x1ef0:
+				/* Switch 2k VROM at $0000 or $1000 */
+				if (vrom_switch != 0)
+					chr2_4 (data);
+				else
+					chr2_0 (data);
+				break;
+			case 0x1ef1:
+				/* Switch 2k VROM at $0800 or $1800 */
+				if (vrom_switch != 0)
+					chr2_6 (data);
+				else
+					chr2_2 (data);
+				break;
+			case 0x1ef2:
+				/* Switch 1k VROM at $1000 */
+				nes_vram [4 ^ vrom_switch] = data * 64;
+				break;
+			case 0x1ef3:
+				/* Switch 1k VROM at $1400 */
+				nes_vram [5 ^ vrom_switch] = data * 64;
+				break;
+			case 0x1ef4:
+				/* Switch 1k VROM at $1800 */
+				nes_vram [6 ^ vrom_switch] = data * 64;
+				break;
+			case 0x1ef5:
+				/* Switch 1k VROM at $1c00 */
+				nes_vram [7 ^ vrom_switch] = data * 64;
+				break;
+			case 0x1ef6:
+				vrom_switch = ((data & 0x02) << 1)!=0?0:1;
+				break;
+	
+			case 0x1efa:
+				/* Switch 8k ROM at $8000 */
+				prg8_89 (data >> 2);
+				break;
+			case 0x1efb:
+				/* Switch 8k ROM at $a000 */
+				prg8_ab (data >> 2);
+				break;
+			case 0x1efc:
+				/* Switch 8k ROM at $c000 */
+				prg8_cd (data >> 2);
+				break;
+			default:
+				logerror("mapper82_m_w uncaught addr: %04x, value: %02x\n", offset + 0x6000, data);
+				break;
+		}
+            }
+        };
+	
+	public static WriteHandlerPtr konami_vrc7_w = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+	//	logerror("konami_vrc7_w offset: %04x, data: %02x, scanline: %d\n", offset, data, current_scanline);
+	
+		switch (offset & 0x7018)
+		{
+			case 0x0000:
+				/* Switch 8k bank at $8000 */
+				prg8_89 (data);
+				break;
+			case 0x0008: case 0x0010: case 0x0018:
+				/* Switch 8k bank at $a000 */
+				prg8_ab (data);
+				break;
+	
+			case 0x1000:
+				/* Switch 8k bank at $c000 */
+				prg8_cd (data);
+				break;
+	
+	/* TODO: there are sound regs in here */
+	
+			case 0x2000:
+				/* Switch 1k VROM at $0000 */
+				nes_vram [0] = data * 64;
+				break;
+			case 0x2008: case 0x2010: case 0x2018:
+				/* Switch 1k VROM at $0400 */
+				nes_vram [1] = data * 64;
+				break;
+			case 0x3000:
+				/* Switch 1k VROM at $0800 */
+				nes_vram [2] = data * 64;
+				break;
+			case 0x3008: case 0x3010: case 0x3018:
+				/* Switch 1k VROM at $0c00 */
+				nes_vram [3] = data * 64;
+				break;
+			case 0x4000:
+				/* Switch 1k VROM at $1000 */
+				nes_vram [4] = data * 64;
+				break;
+			case 0x4008: case 0x4010: case 0x4018:
+				/* Switch 1k VROM at $1400 */
+				nes_vram [5] = data * 64;
+				break;
+			case 0x5000:
+				/* Switch 1k VROM at $1800 */
+				nes_vram [6] = data * 64;
+				break;
+			case 0x5008: case 0x5010: case 0x5018:
+				/* Switch 1k VROM at $1c00 */
+				nes_vram [7] = data * 64;
+				break;
+	
+			case 0x6000:
+				switch (data & 0x03)
+				{
+					case 0x00: ppu_mirror_v (); break;
+					case 0x01: ppu_mirror_h (); break;
+					case 0x02: ppu_mirror_low (); break;
+					case 0x03: ppu_mirror_high (); break;
+				}
+				break;
+			case 0x6008: case 0x6010: case 0x6018:
+				IRQ_count_latch = data;
+				break;
+			case 0x7000:
+				IRQ_count = IRQ_count_latch;
+				IRQ_enable = data & 0x02;
+				IRQ_enable_latch = data & 0x01;
+				break;
+			case 0x7008: case 0x7010: case 0x7018:
+				IRQ_enable = IRQ_enable_latch;
+				break;
+	
+			default:
+				logerror("konami_vrc7_w uncaught addr: %04x value: %02x\n", offset + 0x8000, data);
+				break;
+		}
+            }
+        };
+	
+	public static WriteHandlerPtr mapper86_w = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+		logerror("mapper86_w, offset: %04x, data: %02x\n", offset, data);
+		switch (offset)
+		{
+			case 0x7541:
+				prg16_89ab (data >> 4);
+	//			prg16_cdef (data >> 4);
+				break;
+			case 0x7d41:
+	//			prg16_89ab (data >> 4);
+	//			prg16_cdef (data >> 4);
+				break;
+		}
+            }
+        };
+	
+	public static WriteHandlerPtr mapper87_m_w = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+		logerror("mapper87_m_w %04x:%02x\n", offset, data);
+	
+		/* TODO: verify */
+		chr8 (data >> 1);
+            }
+        };
+	
+	public static WriteHandlerPtr mapper91_m_w = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+		logerror ("mapper91_m_w, offset: %04x, data: %02x\n", offset, data);
+	
+		switch (offset & 0x7000)
+		{
+			case 0x0000:
+				switch (offset & 0x03)
+				{
+					case 0x00: chr2_0 (data); break;
+					case 0x01: chr2_2 (data); break;
+					case 0x02: chr2_4 (data); break;
+					case 0x03: chr2_6 (data); break;
+				}
+				break;
+			case 0x1000:
+				switch (offset & 0x01)
+				{
+					case 0x00: prg8_89 (data); break;
+					case 0x01: prg8_ab (data); break;
+				}
+				break;
+			default:
+				logerror("mapper91_m_w uncaught addr: %04x value: %02x\n", offset + 0x6000, data);
+				break;
+		}
+            }
+        };
+	
+	public static WriteHandlerPtr mapper93_m_w = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
 /*TODO*///	#ifdef LOG_MMC
 /*TODO*///		logerror("mapper93_m_w %04x:%02x\n", offset, data);
 /*TODO*///	#endif
-/*TODO*///	
-/*TODO*///		prg16_89ab (data);
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void mapper93_w (int offset, int data)
-/*TODO*///	{
+	
+		prg16_89ab (data);
+            }
+        };
+	
+	public static WriteHandlerPtr mapper93_w = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
 /*TODO*///	#ifdef LOG_MMC
 /*TODO*///		logerror("mapper93_w %04x:%02x\n", offset, data);
 /*TODO*///	#endif
-/*TODO*///		/* The high nibble appears to be the same prg bank as */
-/*TODO*///		/* was written to the mid-area mapper */
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void mapper94_w (int offset, int data)
-/*TODO*///	{
+		/* The high nibble appears to be the same prg bank as */
+		/* was written to the mid-area mapper */
+            }
+        };
+	
+	public static WriteHandlerPtr mapper94_w = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
 /*TODO*///	#ifdef LOG_MMC
 /*TODO*///		logerror("mapper94_w %04x:%02x\n", offset, data);
 /*TODO*///	#endif
-/*TODO*///	
-/*TODO*///		prg16_89ab (data >> 2);
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void mapper95_w (int offset, int data)
-/*TODO*///	{
+	
+		prg16_89ab (data >> 2);
+            }
+        };
+	
+	public static WriteHandlerPtr mapper95_w = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
 /*TODO*///	#ifdef LOG_MMC
 /*TODO*///		logerror("mapper95_w %04x:%02x\n", offset, data);
 /*TODO*///	#endif
-/*TODO*///	
-/*TODO*///		switch (offset)
-/*TODO*///		{
-/*TODO*///			case 0x0000:
-/*TODO*///				/* Switch 8k bank at $8000 */
-/*TODO*///	//			prg8_89 (data);
-/*TODO*///	//			prg8_ab (data);
-/*TODO*///	//			prg16_89ab (data);
-/*TODO*///				break;
-/*TODO*///			case 0x0001:
-/*TODO*///				/* Switch 8k bank at $a000 */
-/*TODO*///				prg8_ab (data >> 1);
-/*TODO*///				break;
-/*TODO*///		}
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void mapper101_m_w (int offset, int data)
-/*TODO*///	{
+	
+		switch (offset)
+		{
+			case 0x0000:
+				/* Switch 8k bank at $8000 */
+	//			prg8_89 (data);
+	//			prg8_ab (data);
+	//			prg16_89ab (data);
+				break;
+			case 0x0001:
+				/* Switch 8k bank at $a000 */
+				prg8_ab (data >> 1);
+				break;
+		}
+            }
+        };
+	
+	public static WriteHandlerPtr mapper101_m_w = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
 /*TODO*///	#ifdef LOG_MMC
 /*TODO*///		logerror("mapper101_m_w %04x:%02x\n", offset, data);
 /*TODO*///	#endif
-/*TODO*///	
-/*TODO*///		chr8 (data);
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void mapper101_w (int offset, int data)
-/*TODO*///	{
+	
+		chr8 (data);
+            }
+        };
+	
+	public static WriteHandlerPtr mapper101_w = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
 /*TODO*///	#ifdef LOG_MMC
 /*TODO*///		logerror("mapper101_w %04x:%02x\n", offset, data);
 /*TODO*///	#endif
-/*TODO*///	
-/*TODO*///		/* ??? */
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void mapper225_w (int offset, int data)
-/*TODO*///	{
-/*TODO*///		int hi_bank;
-/*TODO*///		int size_16;
-/*TODO*///		int bank;
-/*TODO*///	
+	
+		/* ??? */
+            }
+        };
+	
+	public static WriteHandlerPtr mapper225_w = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+		int hi_bank;
+		int size_16;
+		int bank;
+	
 /*TODO*///	#ifdef LOG_MMC
 /*TODO*///		logerror ("mapper225_w, offset: %04x, data: %02x\n", offset, data);
 /*TODO*///	#endif
-/*TODO*///	
-/*TODO*///		chr8 (offset & 0x3f);
-/*TODO*///		hi_bank = offset & 0x40;
-/*TODO*///		size_16 = offset & 0x1000;
-/*TODO*///		bank = (offset & 0xf80) >> 7;
-/*TODO*///		if (size_16 != 0)
-/*TODO*///		{
-/*TODO*///			bank <<= 1;
-/*TODO*///			if (hi_bank != 0)
-/*TODO*///				bank ++;
-/*TODO*///	
-/*TODO*///			prg16_89ab (bank);
-/*TODO*///			prg16_cdef (bank);
-/*TODO*///		}
-/*TODO*///		else
-/*TODO*///			prg32 (bank);
-/*TODO*///	
-/*TODO*///		if ((offset & 0x2000) != 0)
-/*TODO*///			ppu_mirror_h();
-/*TODO*///		else
-/*TODO*///			ppu_mirror_v();
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void mapper226_w (int offset, int data)
-/*TODO*///	{
-/*TODO*///		int hi_bank;
-/*TODO*///		int size_16;
-/*TODO*///		int bank;
-/*TODO*///		static int reg0, reg1;
-/*TODO*///	
+	
+		chr8 (offset & 0x3f);
+		hi_bank = offset & 0x40;
+		size_16 = offset & 0x1000;
+		bank = (offset & 0xf80) >> 7;
+		if (size_16 != 0)
+		{
+			bank <<= 1;
+			if (hi_bank != 0)
+				bank ++;
+	
+			prg16_89ab (bank);
+			prg16_cdef (bank);
+		}
+		else
+			prg32 (bank);
+	
+		if ((offset & 0x2000) != 0)
+			ppu_mirror_h();
+		else
+			ppu_mirror_v();
+            }
+        };
+        
+        static int reg0, reg1;
+	
+	public static WriteHandlerPtr mapper226_w = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+		int hi_bank;
+		int size_16;
+		int bank;
+		
+	
 /*TODO*///	#ifdef LOG_MMC
 /*TODO*///		logerror ("mapper226_w, offset: %04x, data: %02x\n", offset, data);
 /*TODO*///	#endif
-/*TODO*///	
-/*TODO*///		if ((offset & 0x01) != 0)
-/*TODO*///		{
-/*TODO*///			reg1 = data;
-/*TODO*///		}
-/*TODO*///		else
-/*TODO*///		{
-/*TODO*///			reg0 = data;
-/*TODO*///		}
-/*TODO*///	
-/*TODO*///		hi_bank = reg0 & 0x01;
-/*TODO*///		size_16 = reg0 & 0x20;
-/*TODO*///		if ((reg0 & 0x40) != 0)
-/*TODO*///			ppu_mirror_h();
-/*TODO*///		else
-/*TODO*///			ppu_mirror_v();
-/*TODO*///	
-/*TODO*///		bank = ((reg0 & 0x1e) >> 1) | ((reg1 & 0x01) << 4);
-/*TODO*///	
-/*TODO*///		if (size_16 != 0)
-/*TODO*///		{
-/*TODO*///			bank <<= 1;
-/*TODO*///			if (hi_bank != 0)
-/*TODO*///				bank ++;
-/*TODO*///	
-/*TODO*///			prg16_89ab (bank);
-/*TODO*///			prg16_cdef (bank);
-/*TODO*///		}
-/*TODO*///		else
-/*TODO*///			prg32 (bank);
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void mapper227_w (int offset, int data)
-/*TODO*///	{
-/*TODO*///		int hi_bank;
-/*TODO*///		int size_32;
-/*TODO*///		int bank;
-/*TODO*///	
+	
+		if ((offset & 0x01) != 0)
+		{
+			reg1 = data;
+		}
+		else
+		{
+			reg0 = data;
+		}
+	
+		hi_bank = reg0 & 0x01;
+		size_16 = reg0 & 0x20;
+		if ((reg0 & 0x40) != 0)
+			ppu_mirror_h();
+		else
+			ppu_mirror_v();
+	
+		bank = ((reg0 & 0x1e) >> 1) | ((reg1 & 0x01) << 4);
+	
+		if (size_16 != 0)
+		{
+			bank <<= 1;
+			if (hi_bank != 0)
+				bank ++;
+	
+			prg16_89ab (bank);
+			prg16_cdef (bank);
+		}
+		else
+			prg32 (bank);
+            }
+        };
+	
+	public static WriteHandlerPtr mapper227_w = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+		int hi_bank;
+		int size_32;
+		int bank;
+	
 /*TODO*///	#ifdef LOG_MMC
 /*TODO*///		logerror ("mapper227_w, offset: %04x, data: %02x\n", offset, data);
 /*TODO*///	#endif
-/*TODO*///	
-/*TODO*///		hi_bank = offset & 0x04;
-/*TODO*///		size_32 = offset & 0x01;
-/*TODO*///		bank = ((offset & 0x78) >> 3) | ((offset & 0x0100) >> 4);
-/*TODO*///		if (!size_32)
-/*TODO*///		{
-/*TODO*///			bank <<= 1;
-/*TODO*///			if (hi_bank != 0)
-/*TODO*///				bank ++;
-/*TODO*///	
-/*TODO*///			prg16_89ab (bank);
-/*TODO*///			prg16_cdef (bank);
-/*TODO*///		}
-/*TODO*///		else
-/*TODO*///			prg32 (bank);
-/*TODO*///	
-/*TODO*///		if (!(offset & 0x80))
-/*TODO*///		{
-/*TODO*///			if ((offset & 0x200) != 0)
-/*TODO*///				prg16_cdef ((bank >> 2) + 7);
-/*TODO*///			else
-/*TODO*///				prg16_cdef (bank >> 2);
-/*TODO*///		}
-/*TODO*///	
-/*TODO*///		if ((offset & 0x02) != 0)
-/*TODO*///			ppu_mirror_h();
-/*TODO*///		else
-/*TODO*///			ppu_mirror_v();
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void mapper228_w (int offset, int data)
-/*TODO*///	{
-/*TODO*///		/* The address lines double as data */
-/*TODO*///		/* --mPPppppPP-cccc */
-/*TODO*///		int bank;
-/*TODO*///		int chr;
-/*TODO*///	
+	
+		hi_bank = offset & 0x04;
+		size_32 = offset & 0x01;
+		bank = ((offset & 0x78) >> 3) | ((offset & 0x0100) >> 4);
+		if (size_32==0)
+		{
+			bank <<= 1;
+			if (hi_bank != 0)
+				bank ++;
+	
+			prg16_89ab (bank);
+			prg16_cdef (bank);
+		}
+		else
+			prg32 (bank);
+	
+		if ((offset & 0x80)==0)
+		{
+			if ((offset & 0x200) != 0)
+				prg16_cdef ((bank >> 2) + 7);
+			else
+				prg16_cdef (bank >> 2);
+		}
+	
+		if ((offset & 0x02) != 0)
+			ppu_mirror_h();
+		else
+			ppu_mirror_v();
+            }
+        };
+	
+	public static WriteHandlerPtr mapper228_w = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+		/* The address lines double as data */
+		/* --mPPppppPP-cccc */
+		int bank;
+		int chr;
+	
 /*TODO*///	#ifdef LOG_MMC
 /*TODO*///		logerror ("mapper228_w, offset: %04x, data: %02x\n", offset, data);
 /*TODO*///	#endif
-/*TODO*///	
-/*TODO*///		/* Determine low 4 bits of program bank */
-/*TODO*///		bank = (offset & 0x780) >> 7;
-/*TODO*///	
+	
+		/* Determine low 4 bits of program bank */
+		bank = (offset & 0x780) >> 7;
+	
 /*TODO*///	#if 1
-/*TODO*///		/* Determine high 2 bits of program bank */
-/*TODO*///		switch (offset & 0x1800)
-/*TODO*///		{
-/*TODO*///			case 0x0800:
-/*TODO*///				bank |= 0x10;
-/*TODO*///				break;
-/*TODO*///			case 0x1800:
-/*TODO*///				bank |= 0x20;
-/*TODO*///				break;
-/*TODO*///		}
+		/* Determine high 2 bits of program bank */
+		switch (offset & 0x1800)
+		{
+			case 0x0800:
+				bank |= 0x10;
+				break;
+			case 0x1800:
+				bank |= 0x20;
+				break;
+		}
 /*TODO*///	#else
 /*TODO*///		bank |= (offset & 0x1800) >> 7;
 /*TODO*///	#endif
-/*TODO*///	
-/*TODO*///		/* see if the bank value is 16k or 32k */
-/*TODO*///		if ((offset & 0x20) != 0)
-/*TODO*///		{
-/*TODO*///			/* 16k bank value, adjust */
-/*TODO*///			bank <<= 1;
-/*TODO*///			if ((offset & 0x40) != 0)
-/*TODO*///				bank ++;
-/*TODO*///	
-/*TODO*///			prg16_89ab (bank);
-/*TODO*///			prg16_cdef (bank);
-/*TODO*///		}
-/*TODO*///		else
-/*TODO*///		{
-/*TODO*///			prg32 (bank);
-/*TODO*///		}
-/*TODO*///	
-/*TODO*///		if ((offset & 0x2000) != 0)
-/*TODO*///			ppu_mirror_h();
-/*TODO*///		else
-/*TODO*///			ppu_mirror_v();
-/*TODO*///	
-/*TODO*///		/* Now handle vrom banking */
-/*TODO*///		chr = (data & 0x03) + ((offset & 0x0f) << 2);
-/*TODO*///		chr8 (chr);
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void mapper229_w (int offset, int data)
-/*TODO*///	{
+	
+		/* see if the bank value is 16k or 32k */
+		if ((offset & 0x20) != 0)
+		{
+			/* 16k bank value, adjust */
+			bank <<= 1;
+			if ((offset & 0x40) != 0)
+				bank ++;
+	
+			prg16_89ab (bank);
+			prg16_cdef (bank);
+		}
+		else
+		{
+			prg32 (bank);
+		}
+	
+		if ((offset & 0x2000) != 0)
+			ppu_mirror_h();
+		else
+			ppu_mirror_v();
+	
+		/* Now handle vrom banking */
+		chr = (data & 0x03) + ((offset & 0x0f) << 2);
+		chr8 (chr);
+            }
+        };
+	
+	public static WriteHandlerPtr mapper229_w = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
 /*TODO*///	#ifdef LOG_MMC
 /*TODO*///		logerror ("mapper229_w, offset: %04x, data: %02x\n", offset, data);
 /*TODO*///	#endif
-/*TODO*///	
-/*TODO*///		if ((offset & 0x20) != 0)
-/*TODO*///			ppu_mirror_h();
-/*TODO*///		else
-/*TODO*///			ppu_mirror_v();
-/*TODO*///	
-/*TODO*///		if ((offset & 0x1e) == 0)
-/*TODO*///		{
-/*TODO*///			prg32 (0);
-/*TODO*///			chr8 (0);
-/*TODO*///		}
-/*TODO*///		else
-/*TODO*///		{
-/*TODO*///			prg16_89ab (offset & 0x1f);
-/*TODO*///			prg16_89ab (offset & 0x1f);
-/*TODO*///			chr8 (offset);
-/*TODO*///		}
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	static void mapper231_w (int offset, int data)
-/*TODO*///	{
-/*TODO*///		int bank;
-/*TODO*///	
+	
+		if ((offset & 0x20) != 0)
+			ppu_mirror_h();
+		else
+			ppu_mirror_v();
+	
+		if ((offset & 0x1e) == 0)
+		{
+			prg32 (0);
+			chr8 (0);
+		}
+		else
+		{
+			prg16_89ab (offset & 0x1f);
+			prg16_89ab (offset & 0x1f);
+			chr8 (offset);
+		}
+            }
+        };
+	
+	public static WriteHandlerPtr mapper231_w = new WriteHandlerPtr() {
+            public void handler(int offset, int data) {
+		int bank;
+	
 /*TODO*///	#ifdef LOG_MMC
 /*TODO*///		logerror("mapper231_w, offset: %04x, data: %02x\n", offset, data);
 /*TODO*///	#endif
-/*TODO*///	
-/*TODO*///		bank = (data & 0x03) | ((data & 0x80) >> 5);
-/*TODO*///		prg32 (bank);
-/*TODO*///		chr8 ((data & 0x70) >> 4);
-/*TODO*///	}
+	
+		bank = (data & 0x03) | ((data & 0x80) >> 5);
+		prg32 (bank);
+		chr8 ((data & 0x70) >> 4);
+            }
+        };
 
     /*
 	// mapper_reset
@@ -4388,81 +4515,81 @@ public class nes_mmc {
 
         return err;
     }
-    /*TODO*///	
-/*TODO*///	mmc mmc_list[] = {
-/*TODO*///	/*	INES   DESC						LOW_W, LOW_R, MED_W, HIGH_W, PPU_latch, IRQ */
-/*TODO*///		{ 0, "No Mapper",				NULL, NULL, NULL, NULL, NULL, NULL },
-/*TODO*///		{ 1, "MMC1",					NULL, NULL, NULL, mapper1_w, NULL, NULL },
-/*TODO*///		{ 2, "74161/32 ROM sw",			NULL, NULL, NULL, mapper2_w, NULL, NULL },
-/*TODO*///		{ 3, "74161/32 VROM sw",		NULL, NULL, NULL, mapper3_w, NULL, NULL },
-/*TODO*///		{ 4, "MMC3",					NULL, NULL, NULL, mapper4_w, NULL, mapper4_irq },
-/*TODO*///		{ 5, "MMC5",					mapper5_l_w, mapper5_l_r, NULL, mapper5_w, NULL, mapper5_irq },
-/*TODO*///		{ 7, "ROM Switch",				NULL, NULL, NULL, mapper7_w, NULL, NULL },
-/*TODO*///		{ 8, "FFE F3xxxx",				NULL, NULL, NULL, mapper8_w, NULL, NULL },
-/*TODO*///	//	{ 9, "MMC2",					NULL, NULL, NULL, mapper9_w, mapper9_latch, NULL},
-/*TODO*///		{ 9, "MMC2",					NULL, NULL, NULL, mapper10_w, mapper10_latch, NULL},
-/*TODO*///		{ 10, "MMC4",					NULL, NULL, NULL, mapper10_w, mapper10_latch, NULL },
-/*TODO*///		{ 11, "Color Dreams Mapper",	NULL, NULL, NULL, mapper11_w, NULL, NULL },
-/*TODO*///		{ 15, "100-in-1",				NULL, NULL, NULL, mapper15_w, NULL, NULL },
-/*TODO*///		{ 16, "Bandai",					NULL, NULL, mapper16_w, mapper16_w, NULL, bandai_irq },
-/*TODO*///		{ 17, "FFE F8xxx",				mapper17_l_w, NULL, NULL, NULL, NULL, mapper4_irq },
-/*TODO*///		{ 18, "Jaleco",					NULL, NULL, NULL, mapper18_w, NULL, jaleco_irq },
-/*TODO*///		{ 19, "Namco 106",				mapper19_l_w, NULL, NULL, mapper19_w, NULL, namcot_irq },
-/*TODO*///		{ 20, "Famicom Disk System",	NULL, NULL, NULL, NULL, NULL, fds_irq },
-/*TODO*///		{ 21, "Konami VRC 4",			NULL, NULL, NULL, konami_vrc4_w, NULL, konami_irq },
-/*TODO*///		{ 22, "Konami VRC 2a",			NULL, NULL, NULL, konami_vrc2a_w, NULL, konami_irq },
-/*TODO*///		{ 23, "Konami VRC 2b",			NULL, NULL, NULL, konami_vrc2b_w, NULL, konami_irq },
-/*TODO*///		{ 24, "Konami VRC 6a",			NULL, NULL, NULL, konami_vrc6a_w, NULL, konami_irq },
-/*TODO*///		{ 25, "Konami VRC 4",			NULL, NULL, NULL, konami_vrc4_w, NULL, konami_irq },
-/*TODO*///		{ 26, "Konami VRC 6b",			NULL, NULL, NULL, konami_vrc6b_w, NULL, konami_irq },
-/*TODO*///		{ 32, "Irem G-101",				NULL, NULL, NULL, mapper32_w, NULL, NULL },
-/*TODO*///		{ 33, "Taito TC0190",			NULL, NULL, NULL, mapper33_w, NULL, NULL },
-/*TODO*///		{ 34, "Nina-1",					NULL, NULL, mapper34_m_w, mapper34_w, NULL, NULL },
-/*TODO*///		{ 40, "SMB2j (bootleg)",		NULL, NULL, NULL, mapper40_w, NULL, mapper40_irq },
-/*TODO*///		{ 41, "Caltron 6-in-1",			NULL, NULL, mapper41_m_w, mapper41_w, NULL, NULL },
-/*TODO*///	// 42 - "Mario Baby" pirate cart
-/*TODO*///		{ 64, "Tengen",					NULL, NULL, mapper64_m_w, mapper64_w, NULL, mapper4_irq },
-/*TODO*///		{ 65, "Irem H3001",				NULL, NULL, NULL, mapper65_w, NULL, irem_irq },
-/*TODO*///		{ 66, "74161/32 Jaleco",		NULL, NULL, NULL, mapper66_w, NULL, NULL },
-/*TODO*///		{ 67, "SunSoft 3",				NULL, NULL, NULL, mapper67_w, NULL, mapper4_irq },
-/*TODO*///		{ 68, "SunSoft 4",				NULL, NULL, NULL, mapper68_w, NULL, NULL },
-/*TODO*///		{ 69, "SunSoft 5",				NULL, NULL, NULL, mapper69_w, NULL, sunsoft_irq },
-/*TODO*///		{ 70, "74161/32 Bandai",		NULL, NULL, NULL, mapper70_w, NULL, NULL },
-/*TODO*///		{ 71, "Camerica",				NULL, NULL, mapper71_m_w, mapper71_w, NULL, NULL },
-/*TODO*///		{ 72, "74161/32 Jaleco",		NULL, NULL, NULL, mapper72_w, NULL, NULL },
-/*TODO*///		{ 73, "Konami VRC 3",			NULL, NULL, NULL, mapper73_w, NULL, konami_irq },
-/*TODO*///		{ 75, "Konami VRC 1",			NULL, NULL, NULL, mapper75_w, NULL, NULL },
-/*TODO*///		{ 77, "74161/32 ?",				NULL, NULL, NULL, mapper77_w, NULL, NULL },
-/*TODO*///		{ 78, "74161/32 Irem",			NULL, NULL, NULL, mapper78_w, NULL, NULL },
-/*TODO*///		{ 79, "Nina-3 (AVE)",			mapper79_l_w, NULL, mapper79_w, mapper79_w, NULL, NULL },
-/*TODO*///		{ 80, "Taito X1-005",			NULL, NULL, mapper80_m_w, NULL, NULL, NULL },
-/*TODO*///		{ 82, "Taito C075",				NULL, NULL, mapper82_m_w, NULL, NULL, NULL },
-/*TODO*///	// 83
-/*TODO*///		{ 84, "Pasofami",				NULL, NULL, NULL, NULL, NULL, NULL },
-/*TODO*///		{ 85, "Konami VRC 7",			NULL, NULL, NULL, konami_vrc7_w, NULL, konami_irq },
-/*TODO*///		{ 86, "?",				NULL, NULL, NULL, mapper86_w, NULL, NULL },
-/*TODO*///		{ 87, "74161/32 VROM sw-a",		NULL, NULL, mapper87_m_w, NULL, NULL, NULL },
-/*TODO*///		{ 88, "Namco 118",				NULL, NULL, NULL, mapper4_w, NULL, mapper4_irq },
-/*TODO*///	// 90 - pirate mapper
-/*TODO*///		{ 91, "HK-SF3 (bootleg)",		NULL, NULL, mapper91_m_w, NULL, NULL, NULL },
-/*TODO*///		{ 93, "Sunsoft LS161",			NULL, NULL, mapper93_m_w, mapper93_w, NULL, NULL },
-/*TODO*///		{ 94, "Capcom LS161",			NULL, NULL, NULL, mapper94_w, NULL, NULL },
-/*TODO*///		{ 95, "Namco ??",				NULL, NULL, NULL, mapper95_w, NULL, NULL },
-/*TODO*///		{ 96, "??",			NULL, NULL, NULL, NULL, NULL, NULL },
-/*TODO*///		{ 97, "??",			NULL, NULL, NULL, NULL, NULL, NULL },
-/*TODO*///	// 99 - vs. system
-/*TODO*///	// 100 - images hacked to work with nesticle
-/*TODO*///		{ 101, "?? LS161",				NULL, NULL, mapper101_m_w, mapper101_w, NULL, NULL },
-/*TODO*///		{ 118, "MMC3?",					NULL, NULL, NULL, mapper118_w, NULL, mapper4_irq },
-/*TODO*///	// 119 - Pinbot
-/*TODO*///		{ 225, "72-in-1 bootleg",		NULL, NULL, NULL, mapper225_w, NULL, NULL },
-/*TODO*///		{ 226, "76-in-1 bootleg",		NULL, NULL, NULL, mapper226_w, NULL, NULL },
-/*TODO*///		{ 227, "1200-in-1 bootleg",		NULL, NULL, NULL, mapper227_w, NULL, NULL },
-/*TODO*///		{ 228, "Action 52",				NULL, NULL, NULL, mapper228_w, NULL, NULL },
-/*TODO*///		{ 229, "31-in-1",				NULL, NULL, NULL, mapper229_w, NULL, NULL },
-/*TODO*///	//	{ 230, "22-in-1",				NULL, NULL, NULL, mapper230_w, NULL, NULL },
-/*TODO*///		{ 231, "Nina-7 (AVE)",			NULL, NULL, NULL, mapper231_w, NULL, NULL },
-/*TODO*///	// 234 - maxi-15
-/*TODO*///		{ -1, "Not Supported",			NULL, NULL, NULL, NULL, NULL, NULL },
-/*TODO*///	};
+    
+    public static _mmc mmc_list[] = {
+	/*	INES   DESC					LOW_W, LOW_R, MED_W, HIGH_W, PPU_latch, IRQ */
+		new _mmc( 0, "No Mapper",			null, null, null, null, null, null ),
+		new _mmc( 1, "MMC1",				null, null, null, mapper1_w, null, null ),
+		new _mmc( 2, "74161/32 ROM sw",                 null, null, null, mapper2_w, null, null ),
+		new _mmc( 3, "74161/32 VROM sw",                null, null, null, mapper3_w, null, null ),
+		new _mmc( 4, "MMC3",				null, null, null, mapper4_w, null, mapper4_irq ),
+		new _mmc( 5, "MMC5",				mapper5_l_w, mapper5_l_r, null, mapper5_w, null, mapper5_irq ),
+		new _mmc( 7, "ROM Switch",			null, null, null, mapper7_w, null, null ),
+		new _mmc( 8, "FFE F3xxxx",			null, null, null, mapper8_w, null, null ),
+	//	new _mmc( 9, "MMC2",					null, null, null, mapper9_w, mapper9_latch, null),
+		new _mmc( 9, "MMC2",				null, null, null, mapper10_w, mapper10_latch, null),
+		new _mmc( 10, "MMC4",				null, null, null, mapper10_w, mapper10_latch, null ),
+		new _mmc( 11, "Color Dreams Mapper",            null, null, null, mapper11_w, null, null ),
+		new _mmc( 15, "100-in-1",			null, null, null, mapper15_w, null, null ),
+		new _mmc( 16, "Bandai",				null, null, mapper16_w, mapper16_w, null, bandai_irq ),
+		new _mmc( 17, "FFE F8xxx",			mapper17_l_w, null, null, null, null, mapper4_irq ),
+		new _mmc( 18, "Jaleco",				null, null, null, mapper18_w, null, jaleco_irq ),
+		new _mmc( 19, "Namco 106",			mapper19_l_w, null, null, mapper19_w, null, namcot_irq ),
+		new _mmc( 20, "Famicom Disk System",            null, null, null, null, null, fds_irq ),
+		new _mmc( 21, "Konami VRC 4",			null, null, null, konami_vrc4_w, null, konami_irq ),
+		new _mmc( 22, "Konami VRC 2a",			null, null, null, konami_vrc2a_w, null, konami_irq ),
+		new _mmc( 23, "Konami VRC 2b",			null, null, null, konami_vrc2b_w, null, konami_irq ),
+		new _mmc( 24, "Konami VRC 6a",			null, null, null, konami_vrc6a_w, null, konami_irq ),
+		new _mmc( 25, "Konami VRC 4",			null, null, null, konami_vrc4_w, null, konami_irq ),
+		new _mmc( 26, "Konami VRC 6b",			null, null, null, konami_vrc6b_w, null, konami_irq ),
+		new _mmc( 32, "Irem G-101",			null, null, null, mapper32_w, null, null ),
+		new _mmc( 33, "Taito TC0190",			null, null, null, mapper33_w, null, null ),
+		new _mmc( 34, "Nina-1",				null, null, mapper34_m_w, mapper34_w, null, null ),
+		new _mmc( 40, "SMB2j (bootleg)",		null, null, null, mapper40_w, null, mapper40_irq ),
+		new _mmc( 41, "Caltron 6-in-1",			null, null, mapper41_m_w, mapper41_w, null, null ),
+	// 42 - "Mario Baby" pirate cart
+		new _mmc( 64, "Tengen",				null, null, mapper64_m_w, mapper64_w, null, mapper4_irq ),
+		new _mmc( 65, "Irem H3001",			null, null, null, mapper65_w, null, irem_irq ),
+		new _mmc( 66, "74161/32 Jaleco",		null, null, null, mapper66_w, null, null ),
+		new _mmc( 67, "SunSoft 3",			null, null, null, mapper67_w, null, mapper4_irq ),
+		new _mmc( 68, "SunSoft 4",			null, null, null, mapper68_w, null, null ),
+		new _mmc( 69, "SunSoft 5",			null, null, null, mapper69_w, null, sunsoft_irq ),
+		new _mmc( 70, "74161/32 Bandai",		null, null, null, mapper70_w, null, null ),
+		new _mmc( 71, "Camerica",			null, null, mapper71_m_w, mapper71_w, null, null ),
+		new _mmc( 72, "74161/32 Jaleco",		null, null, null, mapper72_w, null, null ),
+		new _mmc( 73, "Konami VRC 3",			null, null, null, mapper73_w, null, konami_irq ),
+		new _mmc( 75, "Konami VRC 1",			null, null, null, mapper75_w, null, null ),
+		new _mmc( 77, "74161/32 ?",			null, null, null, mapper77_w, null, null ),
+		new _mmc( 78, "74161/32 Irem",			null, null, null, mapper78_w, null, null ),
+		new _mmc( 79, "Nina-3 (AVE)",			mapper79_l_w, null, mapper79_w, mapper79_w, null, null ),
+		new _mmc( 80, "Taito X1-005",			null, null, mapper80_m_w, null, null, null ),
+		new _mmc( 82, "Taito C075",			null, null, mapper82_m_w, null, null, null ),
+	// 83
+		new _mmc( 84, "Pasofami",			null, null, null, null, null, null ),
+		new _mmc( 85, "Konami VRC 7",			null, null, null, konami_vrc7_w, null, konami_irq ),
+		new _mmc( 86, "?",				null, null, null, mapper86_w, null, null ),
+		new _mmc( 87, "74161/32 VROM sw-a",		null, null, mapper87_m_w, null, null, null ),
+		new _mmc( 88, "Namco 118",			null, null, null, mapper4_w, null, mapper4_irq ),
+	// 90 - pirate mapper
+		new _mmc( 91, "HK-SF3 (bootleg)",		null, null, mapper91_m_w, null, null, null ),
+		new _mmc( 93, "Sunsoft LS161",			null, null, mapper93_m_w, mapper93_w, null, null ),
+		new _mmc( 94, "Capcom LS161",			null, null, null, mapper94_w, null, null ),
+		new _mmc( 95, "Namco ??",			null, null, null, mapper95_w, null, null ),
+		new _mmc( 96, "??",                             null, null, null, null, null, null ),
+		new _mmc( 97, "??",                             null, null, null, null, null, null ),
+	// 99 - vs. system
+	// 100 - images hacked to work with nesticle
+		new _mmc( 101, "?? LS161",			null, null, mapper101_m_w, mapper101_w, null, null ),
+		new _mmc( 118, "MMC3?",				null, null, null, mapper118_w, null, mapper4_irq ),
+	// 119 - Pinbot
+		new _mmc( 225, "72-in-1 bootleg",		null, null, null, mapper225_w, null, null ),
+		new _mmc( 226, "76-in-1 bootleg",		null, null, null, mapper226_w, null, null ),
+		new _mmc( 227, "1200-in-1 bootleg",		null, null, null, mapper227_w, null, null ),
+		new _mmc( 228, "Action 52",			null, null, null, mapper228_w, null, null ),
+		new _mmc( 229, "31-in-1",			null, null, null, mapper229_w, null, null ),
+	//	new _mmc( 230, "22-in-1",				null, null, null, mapper230_w, null, null ),
+		new _mmc( 231, "Nina-7 (AVE)",			null, null, null, mapper231_w, null, null ),
+	// 234 - maxi-15
+		new _mmc( -1, "Not Supported",			null, null, null, null, null, null )
+	};
 }

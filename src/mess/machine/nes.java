@@ -49,13 +49,13 @@ public class nes {
     public static final int BATTERY_SIZE = 0x2000;
     static String battery_name = "";
     public static char[] battery_data = new char[BATTERY_SIZE];
-    /*TODO*///	
-/*TODO*///	void nes_vh_renderscanline (int scanline);
-/*TODO*///	
+    
+    public static ReadHandlerPtr nes_vh_renderscanline;
+
     public static ppu_struct _ppu = new ppu_struct();
     public static nes_struct _nes = new nes_struct();
-    /*TODO*///	struct fds_struct nes_fds;
-/*TODO*///	
+    public static fds_struct nes_fds=new fds_struct();
+
     static int ppu_scanlines_per_frame;
 
     public static UBytePtr[] ppu_page = new UBytePtr[4];
@@ -100,29 +100,29 @@ public class nes {
 
             battery_ram = _nes.wram;
 
-            /*TODO*///		/* Set up the memory handlers for the mapper */
-/*TODO*///		switch (nes.mapper)
-/*TODO*///		{
-/*TODO*///			case 20:
-/*TODO*///				nes.slow_banking = 0;
-/*TODO*///				install_mem_read_handler(0, 0x4030, 0x403f, fds_r);
-/*TODO*///				install_mem_read_handler(0, 0x6000, 0xdfff, MRA_RAM);
-/*TODO*///				install_mem_read_handler(0, 0xe000, 0xffff, MRA_ROM);
-/*TODO*///	
-/*TODO*///				install_mem_write_handler(0, 0x4020, 0x402f, fds_w);
-/*TODO*///				install_mem_write_handler(0, 0x6000, 0xdfff, MWA_RAM);
-/*TODO*///				install_mem_write_handler(0, 0xe000, 0xffff, MWA_ROM);
-/*TODO*///				break;
-/*TODO*///			case 40:
-/*TODO*///				nes.slow_banking = 1;
-/*TODO*///				/* Game runs code in between banks, so we do things different */
-/*TODO*///				install_mem_read_handler(0, 0x6000, 0x7fff, MRA_RAM);
-/*TODO*///				install_mem_read_handler(0, 0x8000, 0xffff, MRA_ROM);
-/*TODO*///	
-/*TODO*///				install_mem_write_handler(0, 0x6000, 0x7fff, nes_mid_mapper_w);
-/*TODO*///				install_mem_write_handler(0, 0x8000, 0xffff, nes_mapper_w);
-/*TODO*///				break;
-/*TODO*///			default:
+    /* Set up the memory handlers for the mapper */
+    switch (_nes.mapper)
+    {
+            case 20:
+                    _nes.u8_slow_banking = 0;
+/*TODO*///                    install_mem_read_handler(0, 0x4030, 0x403f, fds_r);
+                    install_mem_read_handler(0, 0x6000, 0xdfff, MRA_RAM);
+                    install_mem_read_handler(0, 0xe000, 0xffff, MRA_ROM);
+
+/*TODO*///                    install_mem_write_handler(0, 0x4020, 0x402f, fds_w);
+                    install_mem_write_handler(0, 0x6000, 0xdfff, MWA_RAM);
+                    install_mem_write_handler(0, 0xe000, 0xffff, MWA_ROM);
+                    break;
+            case 40:
+                    _nes.u8_slow_banking = 1;
+                    /* Game runs code in between banks, so we do things different */
+                    install_mem_read_handler(0, 0x6000, 0x7fff, MRA_RAM);
+                    install_mem_read_handler(0, 0x8000, 0xffff, MRA_ROM);
+
+                    install_mem_write_handler(0, 0x6000, 0x7fff, nes_mid_mapper_w);
+                    install_mem_write_handler(0, 0x8000, 0xffff, nes_mapper_w);
+                    break;
+            default:
             _nes.u8_slow_banking = 0;
             install_mem_read_handler(0, 0x6000, 0x7fff, MRA_BANK5);
             install_mem_read_handler(0, 0x8000, 0x9fff, MRA_BANK1);
@@ -137,37 +137,37 @@ public class nes {
 
             install_mem_write_handler(0, 0x6000, 0x7fff, nes_mid_mapper_w);
             install_mem_write_handler(0, 0x8000, 0xffff, nes_mapper_w);
-            /*TODO*///				break;
-/*TODO*///		}
-/*TODO*///	
-/*TODO*///		/* Set up the mapper callbacks */
-/*TODO*///		{
-/*TODO*///			int i = 0;
-/*TODO*///	
-/*TODO*///			while (mmc_list[i].iNesMapper != -1)
-/*TODO*///			{
-/*TODO*///				if (mmc_list[i].iNesMapper == nes.mapper)
-/*TODO*///				{
-/*TODO*///					mmc_write_low = mmc_list[i].mmc_write_low;
-/*TODO*///					mmc_read_low = mmc_list[i].mmc_read_low;
-/*TODO*///					mmc_write_mid = mmc_list[i].mmc_write_mid;
-/*TODO*///					mmc_write = mmc_list[i].mmc_write;
-/*TODO*///					ppu_latch = mmc_list[i].ppu_latch;
-/*TODO*///					mmc_irq = mmc_list[i].mmc_irq;
-/*TODO*///					break;
-/*TODO*///				}
-/*TODO*///				i ++;
-/*TODO*///			}
-/*TODO*///			if (mmc_list[i].iNesMapper == -1)
-/*TODO*///			{
-/*TODO*///				printf ("Mapper %d is not yet supported, defaulting to no mapper.\n",nes.mapper);
-/*TODO*///				mmc_write_low = mmc_write_mid = mmc_write = NULL;
-/*TODO*///				mmc_read_low = NULL;
-/*TODO*///				ppu_latch = NULL;
-/*TODO*///				mmc_irq = NULL;
-/*TODO*///			}
-/*TODO*///		}
-/*TODO*///	
+            				break;
+		}
+	
+		/* Set up the mapper callbacks */
+		{
+			int i = 0;
+	
+			while (mmc_list[i].iNesMapper != -1)
+			{
+				if (mmc_list[i].iNesMapper == _nes.mapper)
+				{
+					mmc_write_low = mmc_list[i].mmc_write_low;
+					mmc_read_low = mmc_list[i].mmc_read_low;
+					mmc_write_mid = mmc_list[i].mmc_write_mid;
+					mmc_write = mmc_list[i].mmc_write;
+					ppu_latch = mmc_list[i].ppu_latch;
+					mmc_irq = mmc_list[i].mmc_irq;
+					break;
+				}
+				i ++;
+			}
+			if (mmc_list[i].iNesMapper == -1)
+			{
+				printf ("Mapper %d is not yet supported, defaulting to no mapper.\n",_nes.mapper);
+				mmc_write_low = mmc_write_mid = mmc_write = null;
+				mmc_read_low = null;
+				ppu_latch = null;
+				mmc_irq = null;
+			}
+		}
+	
             /* Load a battery file, but only if there's no trainer since they share */
  /* overlapping memory. */
             if (_nes.u8_trainer != 0) {
@@ -452,7 +452,7 @@ public class nes {
             ret = M6502_INT_NONE;
 
             /* See if a mapper generated an irq */
- /*TODO*///	    if (*mmc_irq != NULL) ret = (*mmc_irq)(current_scanline);
+ /*TODO*///	    if (*mmc_irq != null) ret = (*mmc_irq)(current_scanline);
             if (current_scanline <= BOTTOM_VISIBLE_SCANLINE) {
                 /* If background or sprites are enabled, copy the ppu address latch */
                 if ((PPU_Control1 & 0x18) != 0) {
@@ -573,7 +573,7 @@ public class nes {
                 case 7:
                     u8_retVal = u8_PPU_data_latch & 0xFF;
 
-                    /*TODO*///	            if (*ppu_latch != NULL) (*ppu_latch)(PPU_address & 0x3fff);
+                    /*TODO*///	            if (*ppu_latch != null) (*ppu_latch)(PPU_address & 0x3fff);
                     if ((u16_PPU_address >= 0x2000) && (u16_PPU_address <= 0x3fef)) {
                         u8_PPU_data_latch = ppu_page[(u16_PPU_address & 0xc00) >> 10].read(u16_PPU_address & 0x3ff);
                     } else {
@@ -738,47 +738,47 @@ public class nes {
         }
     };
 
-    /*TODO*///	
-/*TODO*///	void ppu_mirror_h (void)
-/*TODO*///	{
-/*TODO*///		if (nes.four_screen_vram) return;
-/*TODO*///	
+    	
+	public static void ppu_mirror_h ()
+	{
+		if (_nes.u8_four_screen_vram != 0) return;
+	
 /*TODO*///	#ifdef LOG_PPU
 /*TODO*///		logerror ("mirror: horizontal\n");
 /*TODO*///	#endif
-/*TODO*///	
+
 /*TODO*///	#ifdef NO_MIRRORING
 /*TODO*///		return;
 /*TODO*///	#endif
-/*TODO*///	
-/*TODO*///		ppu_page[0] = &(videoram.read(0x2000));
-/*TODO*///		ppu_page[1] = &(videoram.read(0x2000));
-/*TODO*///		ppu_page[2] = &(videoram.read(0x2400));
-/*TODO*///		ppu_page[3] = &(videoram.read(0x2400));
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	void ppu_mirror_v (void)
-/*TODO*///	{
-/*TODO*///		if (nes.four_screen_vram) return;
-/*TODO*///	
+	
+		ppu_page[0] = new UBytePtr(videoram, 0x2000);
+		ppu_page[1] = new UBytePtr(videoram, 0x2000);
+		ppu_page[2] = new UBytePtr(videoram, 0x2400);
+		ppu_page[3] = new UBytePtr(videoram, 0x2400);
+	}
+	
+	public static void ppu_mirror_v ()
+	{
+		if (_nes.u8_four_screen_vram != 0) return;
+	
 /*TODO*///	#ifdef LOG_PPU
 /*TODO*///		logerror ("mirror: vertical\n");
 /*TODO*///	#endif
-/*TODO*///	
+
 /*TODO*///	#ifdef NO_MIRRORING
 /*TODO*///		return;
 /*TODO*///	#endif
-/*TODO*///	
-/*TODO*///		ppu_page[0] = &(videoram.read(0x2000));
-/*TODO*///		ppu_page[1] = &(videoram.read(0x2400));
-/*TODO*///		ppu_page[2] = &(videoram.read(0x2000));
-/*TODO*///		ppu_page[3] = &(videoram.read(0x2400));
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	void ppu_mirror_low (void)
-/*TODO*///	{
-/*TODO*///		if (nes.four_screen_vram) return;
-/*TODO*///	
+	
+		ppu_page[0] = new UBytePtr(videoram, 0x2000);
+		ppu_page[1] = new UBytePtr(videoram, 0x2400);
+		ppu_page[2] = new UBytePtr(videoram, 0x2000);
+		ppu_page[3] = new UBytePtr(videoram, 0x2400);
+	}
+	
+	public static void ppu_mirror_low ()
+	{
+		if (_nes.u8_four_screen_vram != 0) return;
+	
 /*TODO*///	#ifdef LOG_PPU
 /*TODO*///		logerror ("mirror: $2000\n");
 /*TODO*///	#endif
@@ -786,67 +786,67 @@ public class nes {
 /*TODO*///	#ifdef NO_MIRRORING
 /*TODO*///		return;
 /*TODO*///	#endif
-/*TODO*///	
-/*TODO*///		ppu_page[0] = &(videoram.read(0x2000));
-/*TODO*///		ppu_page[1] = &(videoram.read(0x2000));
-/*TODO*///		ppu_page[2] = &(videoram.read(0x2000));
-/*TODO*///		ppu_page[3] = &(videoram.read(0x2000));
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	void ppu_mirror_high (void)
-/*TODO*///	{
-/*TODO*///		if (nes.four_screen_vram) return;
-/*TODO*///	
+	
+		ppu_page[0] = new UBytePtr(videoram, 0x2000);
+		ppu_page[1] = new UBytePtr(videoram, 0x2000);
+		ppu_page[2] = new UBytePtr(videoram, 0x2000);
+		ppu_page[3] = new UBytePtr(videoram, 0x2000);
+	}
+	
+	public static void ppu_mirror_high ()
+	{
+		if (_nes.u8_four_screen_vram != 0) return;
+	
 /*TODO*///	#ifdef LOG_PPU
 /*TODO*///		logerror ("mirror: $2400\n");
 /*TODO*///	#endif
-/*TODO*///	
+	
 /*TODO*///	#ifdef NO_MIRRORING
 /*TODO*///		return;
 /*TODO*///	#endif
-/*TODO*///	
-/*TODO*///		ppu_page[0] = &(videoram.read(0x2400));
-/*TODO*///		ppu_page[1] = &(videoram.read(0x2400));
-/*TODO*///		ppu_page[2] = &(videoram.read(0x2400));
-/*TODO*///		ppu_page[3] = &(videoram.read(0x2400));
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	void ppu_mirror_custom (int page, int address)
-/*TODO*///	{
-/*TODO*///		if (nes.four_screen_vram) return;
-/*TODO*///	
-/*TODO*///		address = (address << 10) | 0x2000;
-/*TODO*///	
+	
+		ppu_page[0] = new UBytePtr(videoram, 0x2400);
+		ppu_page[1] = new UBytePtr(videoram, 0x2400);
+		ppu_page[2] = new UBytePtr(videoram, 0x2400);
+		ppu_page[3] = new UBytePtr(videoram, 0x2400);
+	}
+	
+	public static void ppu_mirror_custom (int page, int address)
+	{
+		if (_nes.u8_four_screen_vram != 0) return;
+	
+		address = (address << 10) | 0x2000;
+	
 /*TODO*///	#ifdef LOG_PPU
 /*TODO*///		logerror ("mirror custom, page: %d, address: %04x\n", page, address);
 /*TODO*///	#endif
-/*TODO*///	
+
 /*TODO*///	#ifdef NO_MIRRORING
 /*TODO*///		return;
 /*TODO*///	#endif
-/*TODO*///	
-/*TODO*///		ppu_page[page] = &(videoram.read(address));
-/*TODO*///	}
-/*TODO*///	
-/*TODO*///	void ppu_mirror_custom_vrom (int page, int address)
-/*TODO*///	{
-/*TODO*///		if (nes.four_screen_vram) return;
-/*TODO*///	
+	
+		ppu_page[page] = new UBytePtr(videoram, address);
+	}
+	
+	public static void ppu_mirror_custom_vrom (int page, int address)
+	{
+		if (_nes.u8_four_screen_vram != 0) return;
+	
 /*TODO*///	#ifdef LOG_PPU
 /*TODO*///		logerror ("mirror custom vrom, page: %d, address: %04x\n", page, address);
 /*TODO*///	#endif
-/*TODO*///	
+	
 /*TODO*///	#ifdef NO_MIRRORING
 /*TODO*///		return;
 /*TODO*///	#endif
-/*TODO*///	
-/*TODO*///		ppu_page[page] = &(nes.vrom[address]);
-/*TODO*///	}
-/*TODO*///	
+	
+		ppu_page[page] = new UBytePtr(_nes.vrom, address);
+	}
+	
     static void Write_PPU(int data) {
         int tempAddr = u16_PPU_address & 0x3fff;
 
-        /*TODO*///	    if (*ppu_latch != NULL) (*ppu_latch)(tempAddr);
+        /*TODO*///	    if (*ppu_latch != null) (*ppu_latch)(tempAddr);
         if (tempAddr < 0x2000) {
             /* This ROM writes to the character gen portion of VRAM */
             dirtychar[tempAddr >> 4] = 1;
@@ -1156,7 +1156,7 @@ public class nes {
 /*TODO*///		nes.hard_mirroring = 0;
 /*TODO*///	
 /*TODO*///		nes_fds.sides = 0;
-/*TODO*///		nes_fds.data = NULL;
+/*TODO*///		nes_fds.data = null;
 /*TODO*///	
 /*TODO*///		/* read in all the sides */
 /*TODO*///		while (!osd_feof (diskfile))
@@ -1185,7 +1185,7 @@ public class nes {
 /*TODO*///	{
 /*TODO*///		/* TODO: should write out changes here as well */
 /*TODO*///		free (nes_fds.data);
-/*TODO*///		nes_fds.data = NULL;
+/*TODO*///		nes_fds.data = null;
 /*TODO*///	}
 /*TODO*///	
 }
