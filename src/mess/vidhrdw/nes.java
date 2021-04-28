@@ -26,13 +26,16 @@ import static cpu.z80.z80.*;
 import static old.arcadeflex.libc_old.sizeof;
 import static WIP.arcadeflex.libc.memcpy.*;
 import WIP.arcadeflex.libc_v2.UShortArray;
+import static mame.commonH.*;
 import static mess.machine.nes._nes;
 import static vidhrdw.generic.*;
 import static old.arcadeflex.video.osd_alloc_bitmap;
 import static old.mame.inptport.readinputport;
 import static mess.machine.nes.*;
 import static mess.includes.nesH.*;
+import static mess.machine.nes_mmc.*;
 import static old.arcadeflex.osdepend.logerror;
+import static old.mame.common.*;
 
 public class nes {
 
@@ -389,13 +392,13 @@ public class nes {
             index2 = nes_vram[(ppu_page[page].read(address) >> 6) | PPU_tile_page] + (ppu_page[page].read(address) & 0x3f);
             /*TODO*///	
 /*TODO*///	#ifdef MMC5_VRAM
-/*TODO*///			/* Use the extended bits if necessary */
-/*TODO*///			if ((MMC5_vram_control & 0x01) != 0)
-/*TODO*///			{
-/*TODO*///				index2 |= (MMC5_vram[address] & 0x3f) << 8;
-/*TODO*///			}
+            /* Use the extended bits if necessary */
+            if ((MMC5_vram_control & 0x01) != 0)
+            {
+                    index2 |= (MMC5_vram[address] & 0x3f) << 8;
+            }
 /*TODO*///	#endif
-/*TODO*///	
+
             {
                 UShortArray paldata;
                 UBytePtr sd;
@@ -418,12 +421,12 @@ public class nes {
                         }
                     }
                 }
-                /*TODO*///	
-/*TODO*///				if (*ppu_latch)
-/*TODO*///				{
-/*TODO*///					(*ppu_latch)((PPU_tile_page << 10) | (ppu_page[page][address] << 4));
-/*TODO*///				}
-/*TODO*///	
+                	
+                if (ppu_latch != null)
+                {
+                        ppu_latch.handler((PPU_tile_page << 10) | (ppu_page[page].read(address) << 4));
+                }
+	
             }
 
             start_x += 8;
@@ -665,10 +668,10 @@ public class nes {
 
     public static WriteHandlerPtr nes_vh_sprite_dma_w = new WriteHandlerPtr() {
         public void handler(int offset, int data) {
-            throw new UnsupportedOperationException("Not supported yet.");
-            /*TODO*///		UBytePtr RAM = memory_region(REGION_CPU1);
-/*TODO*///	
-/*TODO*///		memcpy (spriteram, &RAM[data * 0x100], 0x100);
+            //throw new UnsupportedOperationException("Not supported yet.");
+            UBytePtr RAM = memory_region(REGION_CPU1);
+	
+            memcpy (spriteram, new UBytePtr(RAM, data * 0x100), 0x100);
 /*TODO*///	#ifdef MAME_DEBUG
 /*TODO*///	#ifdef macintosh
 /*TODO*///		if (data >= 0x40) SysBeep (0);
