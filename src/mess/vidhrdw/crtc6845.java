@@ -27,223 +27,148 @@ import static mess.vidhrdw.m6845.*;
 
 public class crtc6845
 {
-    public static boolean VERBOSE = false;
 
-    /*TODO*////#if VERBOSE
-    /*TODO*////#define DBG_LOG(N,M,A)      \
-    /*TODO*////    if(VERBOSE>=N){ if( M )logerror("%11.6f: %-24s",timer_get_time(),(char*)M ); logerror A; }
-    /*TODO*////#else
-    /*TODO*////#define DBG_LOG(N,M,A)
-    /*TODO*////#endif
+    public static ReadHandlerPtr crtc6845_register_r = new ReadHandlerPtr() {
+        public int handler(int offset) {
+            int retval = 0;
 
-    public static class CRTC6845 {
-            CRTC6845_CONFIG config;
-            int[] reg= new int[18];
-            int index;
-            int lightpen_pos;
-            int changed;
-            double cursor_time;
-            int cursor_on;
-    };
-
-    public static CRTC6845 crtc6845_static;
-    public static CRTC6845 crtc6845=crtc6845_static;
-
-    void crtc6845_init (CRTC6845 crtc, CRTC6845_CONFIG config)
-    {
-            //memset(crtc, 0, sizeof(*crtc));
-        
-            crtc.cursor_time=timer_get_time();
-            crtc.config=config;           
-            
-    }
-
-    /*TODO*////static const struct { 
-    /*TODO*////        int stored, 
-    /*TODO*////                read;
-    /*TODO*////} reg_mask[]= { 
-    public static int[][] reg_mask = {
-            { 0xff, 0 },
-            { 0xff, 0 },
-            { 0xff, 0 },
-            { 0xff, 0 },
-            { 0x7f, 0 },
-            { 0x1f, 0 },
-            { 0x7f, 0 },
-            { 0x7f, 0 },
-            {  0x3f, 0 },
-            {  0x1f, 0 },
-            {  0x7f, 0 },
-            {  0x1f, 0 },
-            {  0x3f, 0x3f },
-            {  0xff, 0xff },
-            {  0x3f, 0x3f },
-            {  0xff, 0xff },
-            {  -1, 0x3f },
-            {  -1, 0xff },
-    };
-    
-    public static int REG(int x) {
-            return (crtc.registers[x]&reg_mask[x][0]);
-    }
-    
-    static int crtc6845_clocks_in_frame(CRTC6845 crtc)
-    {
-            int clocks=CRTC6845_COLUMNS*CRTC6845_LINES;
-            switch (CRTC6845_INTERLACE_MODE) {
-            case CRTC6845_INTERLACE_SIGNAL: // interlace generation of video signals only
-            case CRTC6845_INTERLACE: // interlace
-                    return clocks/2;
-            default:
-                    return clocks;
-            }
-    }
-
-    void crtc6845_set_clock(CRTC6845 crtc, int freq)
-    {
-            crtc.config.freq=freq;
-            crtc.changed=1;
-    }
-
-    int crtc6845_do_full_refresh(CRTC6845 crtc) 
-    {
-            int t=crtc.changed;
-            crtc.changed=0;
-            return t;
-    }
-
-    void crtc6845_time(CRTC6845 crtc)
-    {
-            double neu, ftime;
-            CRTC6845_CURSOR cursor=new CRTC6845_CURSOR();
-
-            neu=timer_get_time();
-
-            if (crtc6845_clocks_in_frame(crtc)==0.0) return;
-            ftime=crtc6845_clocks_in_frame(crtc)*16.0/crtc6845.config.freq;
-            if ( CRTC6845_CURSOR_MODE==CRTC6845_CURSOR_32FRAMES) ftime*=2;
-            if (neu-crtc.cursor_time>ftime) {
-                    crtc.cursor_time+=ftime;
-                    crtc6845_get_cursor(crtc, cursor);
-                    //if (crtc.config.cursor_changed != 0) 
-                        crtc.config.cursor_changed(cursor);
-                    crtc.cursor_on^=1;
-            }
-    }
-
-    int crtc6845_get_char_columns(CRTC6845 crtc) 
-    { 
-            return CRTC6845_CHAR_COLUMNS;
-    }
-
-    int crtc6845_get_char_height(CRTC6845 crtc) 
-    {
-            return CRTC6845_CHAR_HEIGHT;
-    }
-
-    int crtc6845_get_char_lines(CRTC6845 crtc) 
-    { 
-            return CRTC6845_CHAR_LINES;
-    }
-
-    int crtc6845_get_start(CRTC6845 crtc) 
-    {
-            return CRTC6845_VIDEO_START;
-    }
-
-    public static void crtc6845_get_cursor(CRTC6845 crtc, CRTC6845_CURSOR cursor)
-    {
-            cursor.pos=CRTC6845_CURSOR_POS;
-            switch (CRTC6845_CURSOR_MODE) {
-            default: cursor.on=1;break;
-            case CRTC6845_CURSOR_OFF: cursor.on=0;break;
-            case CRTC6845_CURSOR_16FRAMES:
-                    cursor.on=crtc.cursor_on;
-            case CRTC6845_CURSOR_32FRAMES:
-                    cursor.on=crtc.cursor_on;
+            switch (crtc6845_address_latch) {
+                case 0:
+                    retval = crtc6845_horiz_total;
+                    break;
+                case 1:
+                    retval = crtc6845_horiz_disp;
+                    break;
+                case 2:
+                    retval = crtc6845_horiz_sync_pos;
+                    break;
+                case 3:
+                    retval = crtc6845_sync_width;
+                    break;
+                case 4:
+                    retval = crtc6845_vert_total;
+                    break;
+                case 5:
+                    retval = crtc6845_vert_total_adj;
+                    break;
+                case 6:
+                    retval = crtc6845_vert_disp;
+                    break;
+                case 7:
+                    retval = crtc6845_vert_sync_pos;
+                    break;
+                case 8:
+                    retval = crtc6845_intl_skew;
+                    break;
+                case 9:
+                    retval = crtc6845_max_ras_addr;
+                    break;
+                case 10:
+                    retval = crtc6845_cursor_start_ras;
+                    break;
+                case 11:
+                    retval = crtc6845_cursor_end_ras;
+                    break;
+                case 12:
+                    retval = (crtc6845_start_addr & 0x3f) >> 8;
+                    break;
+                case 13:
+                    retval = crtc6845_start_addr & 0xff;
+                    break;
+                case 14:
+                    retval = (crtc6845_cursor & 0x3f) >> 8;
+                    break;
+                case 15:
+                    retval = crtc6845_cursor & 0xff;
+                    break;
+                case 16:
+                    retval = (crtc6845_light_pen & 0x3f) >> 8;
+                    break;
+                case 17:
+                    retval = crtc6845_light_pen & 0xff;
+                    break;
+                default:
                     break;
             }
-            cursor.top=CRTC6845_CURSOR_TOP;
-            cursor.bottom=CRTC6845_CURSOR_BOTTOM;
-    }
+            return retval;
+        }
+    };
 
-    public static void crtc6845_port_w(CRTC6845 crtc, int offset, int data)
-    {
-            CRTC6845_CURSOR cursor=new CRTC6845_CURSOR();
-            
-            if ((offset & 1) != 0)
-            {
-                    if ((crtc.index & 0x1f) < 18) {
-                            switch (crtc.index & 0x1f) {
-                            case 0xa:case 0xb:
-                            case 0xe:case 0xf:
-                                    crtc6845_get_cursor(crtc, cursor);
-                                    crtc.reg[crtc.index]=data;
-                                    //if (crtc.config.cursor_changed != 0) 
-                                        crtc.config.cursor_changed(cursor);
-                                    break;
-                            default:
-                                    crtc.changed=1;
-                                    crtc.reg[crtc.index]=data;
-                            }
-                                    //DBG_LOG (2, "crtc_port_w", ("%.2x:%.2x\n", crtc->index, data));
-                    } else { 
-                            //DBG_LOG (1, "crtc6845_port_w", ("%.2x:%.2x\n", crtc->index, data));
-                    }
+    public static WriteHandlerPtr crtc6845_address_w = new WriteHandlerPtr() {
+        public void handler(int offset, int data) {
+            crtc6845_address_latch = data & 0x1f;
+        }
+    };
+
+    public static WriteHandlerPtr crtc6845_register_w = new WriteHandlerPtr() {
+        public void handler(int offset, int data) {
+
+            //logerror("CRT #0 PC %04x: WRITE reg 0x%02x data 0x%02x\n",cpu_get_pc(),crtc6845_address_latch,data);
+            switch (crtc6845_address_latch) {
+                case 0:
+                    crtc6845_horiz_total = data;
+                    break;
+                case 1:
+                    crtc6845_horiz_disp = data;
+                    break;
+                case 2:
+                    crtc6845_horiz_sync_pos = data;
+                    break;
+                case 3:
+                    crtc6845_sync_width = data;
+                    break;
+                case 4:
+                    crtc6845_vert_total = data & 0x7f;
+                    break;
+                case 5:
+                    crtc6845_vert_total_adj = data & 0x1f;
+                    break;
+                case 6:
+                    crtc6845_vert_disp = data & 0x7f;
+                    break;
+                case 7:
+                    crtc6845_vert_sync_pos = data & 0x7f;
+                    break;
+                case 8:
+                    crtc6845_intl_skew = data;
+                    break;
+                case 9:
+                    crtc6845_max_ras_addr = data & 0x1f;
+                    break;
+                case 10:
+                    crtc6845_cursor_start_ras = data & 0x7f;
+                    break;
+                case 11:
+                    crtc6845_cursor_end_ras = data & 0x1f;
+                    break;
+                case 12:
+                    crtc6845_start_addr &= 0x00ff;
+                    crtc6845_start_addr |= (data & 0x3f) << 8;
+                    crtc6845_page_flip = data & 0x40;
+                    break;
+                case 13:
+                    crtc6845_start_addr &= 0xff00;
+                    crtc6845_start_addr |= data;
+                    break;
+                case 14:
+                    crtc6845_cursor &= 0x00ff;
+                    crtc6845_cursor |= (data & 0x3f) << 8;
+                    break;
+                case 15:
+                    crtc6845_cursor &= 0xff00;
+                    crtc6845_cursor |= data;
+                    break;
+                case 16:
+                    crtc6845_light_pen &= 0x00ff;
+                    crtc6845_light_pen |= (data & 0x3f) << 8;
+                    break;
+                case 17:
+                    crtc6845_light_pen &= 0xff00;
+                    crtc6845_light_pen |= data;
+                    break;
+                default:
+                    break;
             }
-            else
-            {
-                    crtc.index = data;
-            }
-    }
-
-    public static int crtc6845_port_r(CRTC6845 crtc, int offset)
-    {
-            int val;
-
-            val = 0xff;
-            if ((offset & 1) != 0)
-            {
-                    if ((crtc.index & 0x1f) < 18)
-                    {
-                            switch (crtc.index & 0x1f)
-                            {
-                            case 0x10: val=crtc.lightpen_pos>>8;break;
-                            case 0x11: val=crtc.lightpen_pos&0xff;break;
-                                    
-                            default:
-                                    val=crtc.reg[crtc.index&0x1f]&reg_mask[crtc.index&0x1f][1];
-                            }
-                    }
-                    //DBG_LOG (1, "crtc6845_port_r", ("%.2x:%.2x\n", crtc->index, val));
-            }
-            else
-            {
-                    val = crtc.index;
-            }
-            return val;
-    }
-
-    void crtc6845_state ()
-    {
-            String text="";
-
-            /*TODO*////snprintf (text, sizeof (text), "crtc6845 %.2x %.2x %.2x %.2x",
-            /*TODO*////                  crtc6845->reg[0xc], crtc6845->reg[0xd], crtc6845->reg[0xe],crtc6845->reg[0xf]);
-
-            /*TODO*////state_display_text(text);
-    }
-
-    //WRITE_HANDLER ( crtc6845_0_port_w ) { 
-    public static WriteHandlerPtr crtc6845_0_port_w = new WriteHandlerPtr() {
-            public void handler(int offset, int data){
-                crtc6845_port_w(crtc6845, offset, data); 
-    }};
-    
-    //READ_HANDLER ( crtc6845_0_port_r ) { 
-    public static ReadHandlerPtr crtc6845_0_port_r = new ReadHandlerPtr() {
-            public int handler(int offset) {
-                return crtc6845_port_r(crtc6845, offset); 
-    }};
-
+        }
+    };
 }

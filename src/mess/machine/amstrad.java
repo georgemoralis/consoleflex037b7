@@ -66,7 +66,6 @@ public class amstrad
 	
 	public static UBytePtr snapshot = null;
 	
-	public static UBytePtr Amstrad_Memory;
 	static int snapshot_loaded=0;
         
         public static io_initPtr amstrad_floppy_init = new io_initPtr() {

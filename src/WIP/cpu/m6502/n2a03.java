@@ -37,6 +37,14 @@ public class n2a03 extends cpu_interface {
         m6502_ICount[0] = 0;
     }
 
+    public int internal_read(int offset) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    public void internal_write(int offset, int data) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
     public static class PAIR {
         //L = low 8 bits
         //H = high 8 bits

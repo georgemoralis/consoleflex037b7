@@ -37,6 +37,14 @@ public class m6502 extends cpu_interface {
         m6502_ICount[0] = 0;
     }
 
+    public int internal_read(int offset) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    public void internal_write(int offset, int data) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
     public static class PAIR {
         //L = low 8 bits
         //H = high 8 bits
@@ -151,7 +159,8 @@ public class m6502 extends cpu_interface {
             m6502.u8_p = (m6502.u8_p | F_I) & 0xFF;
             /* set I flag */
             m6502.pc.SetL(RDMEM(m6502.ea.D));
-            m6502.pc.SetH(RDMEM(m6502.ea.D + 1));
+            m6502.ea.AddD(1);
+            m6502.pc.SetH(RDMEM(m6502.ea.D));
             logerror("M6502#%d takes IRQ ($%04x)\n", cpu_getactivecpu(), m6502.pc.D);
             /* call back the cpuintrf to let it clear the line */
             if (m6502.irq_callback != null) {
@@ -318,16 +327,17 @@ public class m6502 extends cpu_interface {
         }
         m6502.u8_nmi_state = state;
         if (state != CLEAR_LINE) {
-            logerror( "M6502#%d set_nmi_line(ASSERT)\n", cpu_getactivecpu());
+            logerror("M6502#%d set_nmi_line(ASSERT)\n", cpu_getactivecpu());
             m6502.ea.SetD(M6502_NMI_VEC);
             m6502_ICount[0] -= 7;
             PUSH(m6502.pc.H);
             PUSH(m6502.pc.L);
             PUSH(m6502.u8_p & ~F_B);
-            m6502.u8_p = (m6502.u8_p | F_I)&0xFF;
+            m6502.u8_p = (m6502.u8_p | F_I) & 0xFF;
             /* set I flag */
             m6502.pc.SetL(RDMEM(m6502.ea.D));
-            m6502.pc.SetH(RDMEM(m6502.ea.D + 1));
+            m6502.ea.AddD(1);
+            m6502.pc.SetH(RDMEM(m6502.ea.D));
             logerror("M6502#%d takes NMI ($%04x)\n", cpu_getactivecpu(), m6502.pc.D);
             change_pc16(m6502.pc.D);
         }
@@ -337,7 +347,7 @@ public class m6502 extends cpu_interface {
     public void set_irq_line(int irqline, int state) {
         if (irqline == M6502_SET_OVERFLOW) {
             if (m6502.u8_so_state != 0 && state == 0) {
-                logerror( "M6502#%d set overflow\n", cpu_getactivecpu());
+                logerror("M6502#%d set overflow\n", cpu_getactivecpu());
                 m6502.u8_p = (m6502.u8_p | F_V) & 0xFF;
             }
             m6502.u8_so_state = state;
@@ -345,7 +355,7 @@ public class m6502 extends cpu_interface {
         }
         m6502.u8_irq_state = state;
         if (state != CLEAR_LINE) {
-            logerror( "M6502#%d set_irq_line(ASSERT)\n", cpu_getactivecpu());
+            logerror("M6502#%d set_irq_line(ASSERT)\n", cpu_getactivecpu());
             m6502.u8_pending_irq = 1;
         }
     }
@@ -423,12 +433,12 @@ public class m6502 extends cpu_interface {
 
     @Override
     public int memory_read(int offset) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return cpu_readmem16(offset);
     }
 
     @Override
     public void memory_write(int offset, int data) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+       cpu_writemem16(offset, data);
     }
 
     @Override
@@ -524,10 +534,10 @@ public class m6502 extends cpu_interface {
     public static final int F_N = 0x80;
 
     public static void SET_NZ(int n) {
-        if ((n) == 0) {
-            m6502.u8_p = ((m6502.u8_p & ~F_N) | F_Z) & 0xFF;
+        if (n == 0) {
+            m6502.u8_p = (m6502.u8_p & (F_N ^ 0xFFFFFFFF) | F_Z);
         } else {
-            m6502.u8_p = ((m6502.u8_p & ~(F_N | F_Z)) | ((n) & F_N)) & 0xFF;
+            m6502.u8_p = (m6502.u8_p & ((F_N | F_Z) ^ 0xFFFFFFFF) | n & F_N);
         }
     }
 
@@ -576,7 +586,7 @@ public class m6502 extends cpu_interface {
      * *************************************************************
      */
     public static void WRMEM(int addr, int data) {
-        cpu_writemem16(addr, data & 0xFF);
+        cpu_writemem16(addr & 0xffff, data & 0xFF);
     }
 
     /**
@@ -838,41 +848,41 @@ public class m6502 extends cpu_interface {
     ***************************************************************/
     public static void ADC(int tmp) {
         if ((m6502.u8_p & F_D) != 0) {
-            int c = (m6502.u8_p & F_C);
-            int lo = (m6502.u8_a & 0x0f) + (tmp & 0x0f) + c;
-            int hi = (m6502.u8_a & 0xf0) + (tmp & 0xf0);
-            m6502.u8_p = (m6502.u8_p & ~(F_V | F_C | F_N | F_Z)) & 0xFF;
-            if (((lo + hi) & 0xff) == 0) {
-                m6502.u8_p = (m6502.u8_p | F_Z) & 0xFF;
+            int c = m6502.u8_p & F_C;
+            int lo = (m6502.u8_a & 0xF) + (tmp & 0xF) + c;
+            int hi = (m6502.u8_a & 0xF0) + (tmp & 0xF0);
+            m6502.u8_p &= ((F_V | F_C | F_N | F_Z) ^ 0xFFFFFFFF);
+            if ((lo + hi & 0xFF) == 0) {
+                m6502.u8_p |= F_Z;
             }
-            if (lo > 0x09) {
-                hi += 0x10;
-                lo += 0x06;
+            if (lo > 9) {
+                hi += 16;
+                lo += 6;
             }
             if ((hi & 0x80) != 0) {
-                m6502.u8_p = (m6502.u8_p | F_N) & 0xFF;
+                m6502.u8_p |= F_N;
             }
-            if ((~(m6502.u8_a ^ tmp) & (m6502.u8_a ^ hi) & F_N) != 0) {
-                m6502.u8_p = (m6502.u8_p | F_V) & 0xFF;
+            if (((m6502.u8_a ^ tmp ^ 0xFFFFFFFF) & (m6502.u8_a ^ hi) & F_N) != 0) {
+                m6502.u8_p |= F_V;
             }
-            if (hi > 0x90) {
-                hi += 0x60;
+            if (hi > 144) {
+                hi += 96;
             }
-            if ((hi & 0xff00) != 0) {
-                m6502.u8_p = (m6502.u8_p | F_C) & 0xFF;
+            if ((hi & 0xFF00) != 0) {
+                m6502.u8_p |= F_C;
             }
-            m6502.u8_a = (lo & 0x0f) + (hi & 0xf0);
+            m6502.u8_a = ((lo & 0xF) + (hi & 0xF0));
         } else {
-            int c = (m6502.u8_p & F_C);
+            int c = m6502.u8_p & F_C;
             int sum = m6502.u8_a + tmp + c;
-            m6502.u8_p = (m6502.u8_p & ~(F_V | F_C)) & 0xFF;
-            if ((~(m6502.u8_a ^ tmp) & (m6502.u8_a ^ sum) & F_N) != 0) {
-                m6502.u8_p = (m6502.u8_p | F_V) & 0xFF;
+            m6502.u8_p &= ((F_V | F_C) ^ 0xFFFFFFFF);
+            if (((m6502.u8_p ^ tmp ^ 0xFFFFFFFF) & (m6502.u8_p ^ sum) & F_N) != 0) {
+                m6502.u8_p |= F_V;
             }
-            if ((sum & 0xff00) != 0) {
-                m6502.u8_p = (m6502.u8_p | F_C) & 0xFF;
+            if ((sum & 0xFF00) != 0) {
+                m6502.u8_p |= F_C;
             }
-            m6502.u8_a = sum & 0xFF;
+            m6502.u8_a = (sum & 0xFF);
             SET_NZ(m6502.u8_a);
         }
     }
@@ -889,8 +899,8 @@ public class m6502 extends cpu_interface {
  *	ASL Arithmetic shift left
  ***************************************************************/
     public static int ASL(int tmp) {
-        m6502.u8_p = ((m6502.u8_p & ~F_C) | ((tmp >> 7) & F_C)) & 0xFF;
-        tmp = (tmp << 1) & 0xFF;
+        m6502.u8_p = (m6502.u8_p & (F_C ^ 0xFFFFFFFF) | tmp >> 7 & F_C);
+        tmp = tmp << 1 & 0xFF;
         SET_NZ(tmp);
         return tmp;
     }
@@ -920,10 +930,10 @@ public class m6502 extends cpu_interface {
     *	BIT Bit test
     ***************************************************************/
     public static void BIT(int tmp) {
-        m6502.u8_p = (m6502.u8_p & ~(F_N | F_V | F_Z)) & 0xFF;
-        m6502.u8_p = (m6502.u8_p | tmp & (F_N | F_V)) & 0xFF;
+        m6502.u8_p &= ((F_N | F_V | F_Z) ^ 0xFFFFFFFF);
+        m6502.u8_p |= tmp & (F_N | F_V);
         if ((tmp & m6502.u8_a) == 0) {
-            m6502.u8_p = (m6502.u8_p | F_Z) & 0xFF;
+            m6502.u8_p |= F_Z;
         }
     }
 
@@ -982,14 +992,14 @@ public class m6502 extends cpu_interface {
     * CLC	Clear carry flag
     ***************************************************************/
     public static void CLC() {
-        m6502.u8_p = (m6502.u8_p & ~F_C) & 0xFF;
+        m6502.u8_p &= (F_C ^ 0xFFFFFFFF);
     }
 
     /* 6502 ********************************************************
     * CLD	Clear decimal flag
     ***************************************************************/
     public static void CLD() {
-        m6502.u8_p = (m6502.u8_p & ~F_D) & 0xFF;
+        m6502.u8_p &= (F_D ^ 0xFFFFFFFF);
     }
 
     /* 6502 ********************************************************
@@ -1007,16 +1017,16 @@ public class m6502 extends cpu_interface {
     * CLV	Clear overflow flag
     ***************************************************************/
     public static void CLV() {
-        m6502.u8_p = (m6502.u8_p & ~F_V) & 0xFF;
+        m6502.u8_p &= (F_V ^ 0xFFFFFFFF);
     }
 
     /* 6502 ********************************************************
     *	CMP Compare accumulator
     ***************************************************************/
     public static void CMP(int tmp) {
-        m6502.u8_p = (m6502.u8_p & ~F_C) & 0xFF;
+        m6502.u8_p &= (F_C ^ 0xFFFFFFFF);
         if (m6502.u8_a >= tmp) {
-            m6502.u8_p = (m6502.u8_p | F_C) & 0xFF;
+            m6502.u8_p |= F_C;
         }
         SET_NZ((m6502.u8_a - tmp) & 0xFF);
     }
@@ -1025,9 +1035,9 @@ public class m6502 extends cpu_interface {
     *	CPX Compare index X
     ***************************************************************/
     public static void CPX(int tmp) {
-        m6502.u8_p = (m6502.u8_p & ~F_C) & 0xFF;
+        m6502.u8_p &= (F_C ^ 0xFFFFFFFF);
         if (m6502.u8_x >= tmp) {
-            m6502.u8_p = (m6502.u8_p | F_C) & 0xFF;
+            m6502.u8_p |= F_C;
         }
         SET_NZ((m6502.u8_x - tmp) & 0xFF);
     }
@@ -1036,9 +1046,9 @@ public class m6502 extends cpu_interface {
     *	CPY Compare index Y
     ***************************************************************/
     public static void CPY(int tmp) {
-        m6502.u8_p = (m6502.u8_p & ~F_C) & 0xFF;
+        m6502.u8_p &= (F_C ^ 0xFFFFFFFF);
         if (m6502.u8_y >= tmp) {
-            m6502.u8_p = (m6502.u8_p | F_C) & 0xFF;
+            m6502.u8_p |= F_C;
         }
         SET_NZ((m6502.u8_y - tmp) & 0xFF);
     }
@@ -1165,8 +1175,8 @@ public class m6502 extends cpu_interface {
      *	0 -> [7][6][5][4][3][2][1][0] -> C
      ***************************************************************/
     public static int LSR(int tmp) {
-        m6502.u8_p = ((m6502.u8_p & ~F_C) | (tmp & F_C)) & 0xFF;
-        tmp = (tmp >> 1) & 0xFF;
+        m6502.u8_p = (m6502.u8_p & (F_C ^ 0xFFFFFFFF) | tmp & F_C);
+        tmp = tmp >> 1 & 0xFF;
         SET_NZ(tmp);
         return tmp;
     }
@@ -1214,7 +1224,7 @@ public class m6502 extends cpu_interface {
         if ((m6502.u8_p & F_I) != 0) {
             m6502.u8_p = PULL();
             if ((m6502.u8_irq_state != CLEAR_LINE) && (m6502.u8_p & F_I) == 0) {
-                logerror("M6502#%d PLP sets after_cli\n",cpu_getactivecpu()); 
+                logerror("M6502#%d PLP sets after_cli\n", cpu_getactivecpu());
                 m6502.u8_after_cli = 1;
             }
         } else {
@@ -1228,9 +1238,9 @@ public class m6502 extends cpu_interface {
     *	new C <- [7][6][5][4][3][2][1][0] <- C
     ***************************************************************/
     public static int ROL(int tmp) {
-        tmp = (tmp << 1) | (m6502.u8_p & F_C);
-        m6502.u8_p = ((m6502.u8_p & ~F_C) | ((tmp >> 8) & F_C)) & 0xFF;
-        tmp = tmp & 0xFF;
+        tmp = tmp << 1 | m6502.u8_p & F_C;
+        m6502.u8_p = (m6502.u8_p & (F_C ^ 0xFFFFFFFF) | tmp >> 8 & F_C);
+        tmp &= 0xFF;
         SET_NZ(tmp);
         return tmp;
     }
@@ -1241,8 +1251,8 @@ public class m6502 extends cpu_interface {
     ***************************************************************/
     public static int ROR(int tmp) {
         tmp |= (m6502.u8_p & F_C) << 8;
-        m6502.u8_p = ((m6502.u8_p & ~F_C) | (tmp & F_C)) & 0xFF;
-        tmp = (tmp >> 1) & 0xFF;
+        m6502.u8_p = (m6502.u8_p & (F_C ^ 0xFFFFFFFF) | tmp & F_C);
+        tmp = tmp >> 1 & 0xFF;
         SET_NZ(tmp);
         return tmp;
     }
@@ -1258,7 +1268,7 @@ public class m6502 extends cpu_interface {
         m6502.pc.SetH(PULL());
         m6502.u8_p = (m6502.u8_p | (F_T | F_B)) & 0xFF;
         if ((m6502.u8_irq_state != CLEAR_LINE) && (m6502.u8_p & F_I) == 0) {
-            logerror("M6502#%d RTI sets after_cli\n", cpu_getactivecpu()); 
+            logerror("M6502#%d RTI sets after_cli\n", cpu_getactivecpu());
             m6502.u8_after_cli = 1;
         }
         change_pc16(m6502.pc.D);
@@ -1280,42 +1290,42 @@ public class m6502 extends cpu_interface {
     ***************************************************************/
     public static void SBC(int tmp) {
         if ((m6502.u8_p & F_D) != 0) {
-            int c = (m6502.u8_p & F_C) ^ F_C;
+            int c = m6502.u8_p & F_C ^ F_C;
             int sum = m6502.u8_a - tmp - c;
-            int lo = (m6502.u8_a & 0x0f) - (tmp & 0x0f) - c;
-            int hi = (m6502.u8_a & 0xf0) - (tmp & 0xf0);
+            int lo = (m6502.u8_a & 0xF) - (tmp & 0xF) - c;
+            int hi = (m6502.u8_a & 0xF0) - (tmp & 0xF0);
             if ((lo & 0x10) != 0) {
                 lo -= 6;
                 hi--;
             }
-            m6502.u8_p = (m6502.u8_p & ~(F_V | F_C | F_Z | F_N)) & 0xFF;
+            m6502.u8_p &= ((F_V | F_C | F_Z | F_N) ^ 0xFFFFFFFF);
             if (((m6502.u8_a ^ tmp) & (m6502.u8_a ^ sum) & F_N) != 0) {
-                m6502.u8_p = (m6502.u8_p | F_V) & 0xFF;
+                m6502.u8_p |= F_V;
             }
-            if ((hi & 0x0100) != 0) {
-                hi -= 0x60;
+            if ((hi & 0x100) != 0) {
+                hi -= 96;
             }
-            if ((sum & 0xff00) == 0) {
-                m6502.u8_p = (m6502.u8_p | F_C) & 0xFF;
+            if ((sum & 0xFF00) == 0) {
+                m6502.u8_p |= F_C;
             }
-            if (((m6502.u8_a - tmp - c) & 0xff) == 0) {
-                m6502.u8_p = (m6502.u8_p | F_Z) & 0xFF;
+            if ((m6502.u8_a - tmp - c & 0xFF) == 0) {
+                m6502.u8_p |= F_Z;
             }
-            if (((m6502.u8_a - tmp - c) & 0x80) != 0) {
-                m6502.u8_p = (m6502.u8_p | F_N) & 0xFF;
+            if ((m6502.u8_a - tmp - c & 0x80) != 0) {
+                m6502.u8_p |= F_N;
             }
-            m6502.u8_a = (lo & 0x0f) | (hi & 0xf0);
+            m6502.u8_a = (lo & 0xF | hi & 0xF0);
         } else {
-            int c = (m6502.u8_p & F_C) ^ F_C;
+            int c = m6502.u8_p & F_C ^ F_C;
             int sum = m6502.u8_a - tmp - c;
-            m6502.u8_p = (m6502.u8_p & ~(F_V | F_C)) & 0xFF;
+            m6502.u8_p &= ((F_V | F_C) ^ 0xFFFFFFFF);
             if (((m6502.u8_a ^ tmp) & (m6502.u8_a ^ sum) & F_N) != 0) {
-                m6502.u8_p = (m6502.u8_p | F_V) & 0xFF;
+                m6502.u8_p |= F_V;
             }
-            if ((sum & 0xff00) == 0) {
-                m6502.u8_p = (m6502.u8_p | F_C) & 0xFF;
+            if ((sum & 0xFF00) == 0) {
+                m6502.u8_p |= F_C;
             }
-            m6502.u8_a = sum & 0xFF;
+            m6502.u8_a = (sum & 0xFF);
             SET_NZ(m6502.u8_a);
         }
     }
@@ -1324,21 +1334,21 @@ public class m6502 extends cpu_interface {
     *	SEC Set carry flag
     ***************************************************************/
     public static void SEC() {
-        m6502.u8_p = (m6502.u8_p | F_C) & 0xFF;
+        m6502.u8_p |= F_C;
     }
 
     /* 6502 ********************************************************
     *	SED Set decimal flag
     ***************************************************************/
     public static void SED() {
-        m6502.u8_p = (m6502.u8_p | F_D) & 0xFF;
+        m6502.u8_p |= F_D;
     }
 
     /* 6502 ********************************************************
     *	SEI Set interrupt flag
     ***************************************************************/
     public static void SEI() {
-        m6502.u8_p = (m6502.u8_p | F_I) & 0xFF;
+        m6502.u8_p |= F_I;
     }
 
 
@@ -1407,7 +1417,7 @@ public class m6502 extends cpu_interface {
      * TYA	Transfer index Y to accumulator
      ***************************************************************/
     public static void TYA() {
-        m6502.u8_a = m6502.u8_y;
+        m6502.u8_a = m6502.u8_y & 0xFF;
         SET_NZ(m6502.u8_a);
     }
     /**

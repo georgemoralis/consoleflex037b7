@@ -334,7 +334,7 @@ public class amstrad
         };
 	
 	/* base of all ram allocated - 128k */
-	static UBytePtr Amstrad_Memory = new UBytePtr(0x20000);
+	public static UBytePtr Amstrad_Memory = new UBytePtr(0x20000);
 	
 	/* current selected upper rom */
 	static UBytePtr Amstrad_UpperRom;
